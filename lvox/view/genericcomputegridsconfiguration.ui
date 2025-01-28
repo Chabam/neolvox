@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>GenericComputeGridsConfiguration</class>
+ <widget class="QWidget" name="GenericComputeGridsConfiguration">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>996</width>
+    <height>557</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>996</width>
+    <height>557</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Configuration de(s) grille(s) de sortie</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_6">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="label_4">
+       <property name="maximumSize">
+        <size>
+         <width>100</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Fonction prédéfinie :</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="comboBoxPredefinedCompute"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButtonApplyPredefinedCompute">
+       <property name="toolTip">
+        <string>Si vous appliquez la fonction prédéfinie : toutes les grilles de sorties que vous avez mise en place jusqu'à présent seront supprimées et remplacées par celles de la fonction prédéfinie.</string>
+       </property>
+       <property name="text">
+        <string>Valider</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButtonAddPredefinedCompute">
+       <property name="toolTip">
+        <string>Si vous ajoutez une fonction prédéfinie : toutes les grilles de sorties mise en place jusqu'à présent seront conservées.</string>
+       </property>
+       <property name="text">
+        <string>Ajouter</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QLabel" name="label_3">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Variable de la grille de sortie</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="comboBoxOutGridToConfigure"/>
+       </item>
+       <item>
+        <widget class="QLabel" name="labelConfigureOutGrid">
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Configuration de la grille de sortie&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="title">
+          <string> Résultat </string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_7">
+          <item>
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Valeur de chaque case de la grille si aucune condition ci-dessous n'est satisfaite :</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEditComputeFormula">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Définissez ici la formule finale&lt;/span&gt;&lt;/p&gt;&lt;p&gt;La formule finale est executée seulement si aucune condition ci-dessus n'est satisfaite.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; text-decoration: underline;&quot;&gt;Pseudo code (exemple) :&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Si condition[1] Alors&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;case(i) = codeErreur[1]&lt;br/&gt;Sinon Si condition[2] Alors&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;case(i) = codeErreur[2]&lt;br/&gt;Sinon&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;case(i) = formuleFinal&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span&gt;Si vous voulez vous référer à la grille de sortie écrivez dans la formule le mot clé &quot;&lt;b&gt;this&lt;/b&gt;&quot;.&lt;/span&gt;&lt;p&gt;Exemple : &lt;i&gt;this + a*2&lt;/i&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
+          <string> Vérification et code d'erreur </string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QTableWidget" name="tableWidgetChecks">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Définissez ici des formules conditionnelles. &lt;/span&gt;&lt;/p&gt;&lt;p&gt;Elles seront executées dans l'ordre dans lequel vous les avez définies et si l'une d'entre elles est vérifié ni les autres ni la formule finale ne seront exécutés.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; text-decoration: underline;&quot;&gt;Pseudo code (exemple) :&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;Si condition[1] Alors&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;case(i) = codeErreur[1]&lt;br/&gt;Sinon Si condition[2] Alors&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;case(i) = codeErreur[2]&lt;br/&gt;Sinon&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;case(i) = formuleFinal&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span&gt;Si vous voulez vous référer à la grille de sortie écrivez dans la formule le mot clé &quot;&lt;b&gt;this&lt;/b&gt;&quot;.&lt;/span&gt;&lt;p&gt;Exemple : &lt;i&gt;this &amp;lt; -1&lt;/i&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QPushButton" name="pushButtonAddCheck">
+              <property name="text">
+               <string>Ajouter</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButtonDeleteCheck">
+              <property name="text">
+               <string>Supprimer</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_5">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Grilles d'entrées&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTableWidget" name="tableWidgetInGrid"/>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Grilles de sorties&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QTableWidget" name="tableWidgetOutGrid"/>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QPushButton" name="pushButtonAddOutGrid">
+               <property name="text">
+                <string>Ajouter</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pushButtonDeleteOutGrid">
+               <property name="text">
+                <string>Supprimer</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>comboBoxPredefinedCompute</tabstop>
+  <tabstop>pushButtonApplyPredefinedCompute</tabstop>
+  <tabstop>pushButtonAddPredefinedCompute</tabstop>
+  <tabstop>comboBoxOutGridToConfigure</tabstop>
+  <tabstop>tableWidgetChecks</tabstop>
+  <tabstop>pushButtonAddCheck</tabstop>
+  <tabstop>pushButtonDeleteCheck</tabstop>
+  <tabstop>lineEditComputeFormula</tabstop>
+  <tabstop>tableWidgetInGrid</tabstop>
+  <tabstop>tableWidgetOutGrid</tabstop>
+  <tabstop>pushButtonAddOutGrid</tabstop>
+  <tabstop>pushButtonDeleteOutGrid</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

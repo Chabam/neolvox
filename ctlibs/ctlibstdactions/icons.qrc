@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/cursor.png</file>
+        <file>icons/cursor_checked.png</file>
+        <file>icons/cursor_multi.png</file>
+        <file>icons/cursor_multi_Checked.png</file>
+        <file>icons/cursor_polygon.png</file>
+        <file>icons/select_addMode.png</file>
+        <file>icons/select_addMode_checked.png</file>
+        <file>icons/select_intersectMode.png</file>
+        <file>icons/select_intersectMode_checked.png</file>
+        <file>icons/select_removeMode.png</file>
+        <file>icons/select_removeMode_checked.png</file>
+        <file>icons/select_replaceMode.png</file>
+        <file>icons/select_replaceMode_checked.png</file>
+        <file>icons/toggle.png</file>
+    </qresource>
+</RCC>

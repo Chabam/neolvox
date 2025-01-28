@@ -1,0 +1,9 @@
+cmake_minimum_required(VERSION 3.26)
+
+project(neolvox VERSION 0.0.0 LANGUAGES CXX)
+
+
+add_subdirectory(external)
+add_subdirectory(ctlibs)
+
+add_executable(dummy dummy.cpp)
