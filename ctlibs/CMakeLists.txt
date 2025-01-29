@@ -2,3 +2,4 @@
 
 add_subdirectory(ctlibcommon)
 add_subdirectory(ctlibmodels)
+add_subdirectory(ctlibmodelsextraviews)

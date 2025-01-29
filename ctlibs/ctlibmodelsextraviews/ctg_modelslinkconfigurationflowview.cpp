@@ -18,7 +18,7 @@
 #include <nodes/FlowScene>
 #include <nodes/ConnectionStyle>
 
-#include "PortType.hpp"
+#include "nodes/internal/PortType.hpp"
 
 #include <QPushButton>
 #include <QLabel>

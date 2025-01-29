@@ -4,5 +4,3 @@ project(neolvox VERSION 0.0.0 LANGUAGES CXX)
 
 include(${CMAKE_SOURCE_DIR}/external/dependencies.cmake)
 add_subdirectory(ctlibs)
-
-add_executable(dummy dummy.cpp)

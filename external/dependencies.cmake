@@ -19,3 +19,15 @@ find_package(Qhull REQUIRED)
 find_package(flann REQUIRED)
 find_package(GSL REQUIRED)
 find_package(LASzip REQUIRED)
+
+include(FetchContent)
+
+set(NodeEditorPatch git apply ${CMAKE_SOURCE_DIR}/external/computree-custom.patch)
+FetchContent_Declare(NodeEditor
+    GIT_REPOSITORY https://github.com/Daguerreo/NodeEditor
+    GIT_TAG 9bf1549e9bf1f4bf75c2a381402593c4a8b21a27
+    PATCH_COMMAND ${NodeEditorPatch}
+    UPDATE_DISCONNECTED 1
+)
+FetchContent_MakeAvailable(NodeEditor)
+find_package(nodes)
