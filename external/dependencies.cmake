@@ -22,6 +22,7 @@ find_package(LASzip REQUIRED)
 
 include(FetchContent)
 
+# NOTE: The original authors of Computree did some changes to this fork...
 set(NodeEditorPatch git apply ${CMAKE_SOURCE_DIR}/external/computree-custom.patch)
 FetchContent_Declare(NodeEditor
     GIT_REPOSITORY https://github.com/Daguerreo/NodeEditor
