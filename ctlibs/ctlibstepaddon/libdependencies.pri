@@ -1,2 +1,0 @@
-COMPUTREE *= ctlibstep
-COMPUTREE *= ctlibstructureaddon

@@ -32,9 +32,9 @@ target_include_directories(ctlibstructure PUBLIC
 
 target_compile_definitions(ctlibstructure PRIVATE CTLIBSTRUCTURE_LIBRARY)
 target_link_libraries(ctlibstructure
-	ctlibcommon
+    ctlibcommon
     ctlibmodels
     Eigen3::Eigen
-	Qt5::Core
-	Qt5::Widgets
+    Qt5::Core
+    Qt5::Widgets
 )

@@ -18,8 +18,10 @@ add_library(ctlibmodelsextraviews SHARED
     ${CTLIBMODELSEXTRAVIEWS_TRANSLATIONS}
 )
 
-target_include_directories(ctlibmodels PUBLIC
+target_include_directories(ctlibmodelsextraviews PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/
+    # TODO: fix the actual include
+    ${CMAKE_SOURCE_DIR}/ctlibs
 )
 
 target_compile_definitions(ctlibmodelsextraviews PRIVATE CTLIBMODELSEXTRAVIEWS_LIBRARY)
