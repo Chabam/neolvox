@@ -36,6 +36,10 @@ set(CTLIBMODELS_SOURCES
     ct_categories/tools/ct_categorymanager.cpp
 )
 
+set(CTLIBMODELS_RESOURCES
+    icons.qrc
+)
+
 set(CTLIBMODELS_FORMS
     ct_model/inModel/views/ctg_inmodelpossibilitieschoice.ui
     ct_model/inModel/views/ctg_inresultmodelconfiguration.ui
@@ -49,6 +53,7 @@ set(CTLIBMODELS_TRANSLATIONS
 
 add_library(ctlibmodels SHARED
     ${CTLIBMODELS_SOURCES}
+    ${CTLIBMODELS_RESOURCES}
     ${CTLIBMODELS_FORMS}
     ${CTLIBMODELS_TRANSLATIONS}
 )

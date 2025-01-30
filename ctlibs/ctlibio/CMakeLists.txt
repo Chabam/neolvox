@@ -1,0 +1,93 @@
+set(CTLIBIO_SOURCES
+    exporters/asciitrajectory/pb_asciitrajectory.cpp
+    exporters/ascxyz/pb_ascxyzexporter.cpp
+    exporters/grid3d/pb_grid3dastableexporter.cpp
+    exporters/grid3d/pb_grid3dexporter.cpp
+    exporters/polygon2d/pb_polygon2dexporter.cpp
+    exporters/profile/pb_profileexporter.cpp
+    readers/ct_reader_ascrgb.cpp
+    readers/ct_reader_ctindex.cpp
+    readers/ct_reader_gdal.cpp
+    readers/ct_reader_larchitect_grid.cpp
+    readers/ct_reader_opf.cpp
+    readers/ct_reader_terrascanprj.cpp
+    readers/ct_reader_trj.cpp
+    readers/ct_reader_xyb.cpp
+    readers/ct_reader_obj.cpp
+    readers/ct_reader_asciigrid3d.cpp
+    readers/ct_reader_points_ascii.cpp
+    readers/ct_reader_idxyz.cpp
+    readers/headers/ct_ctiheader.cpp
+    readers/headers/ct_trjheader.cpp
+    readers/headers/ct_xybheader.cpp
+    readers/headers/ct_gdalheader.cpp
+    readers/ct_reader_ptx.cpp
+    readers/tools/ply/plyheader.cpp
+    readers/tools/ply/internal/plyelement.cpp
+    readers/tools/ply/internal/plyproperty.cpp
+    readers/tools/ply/plyheaderreader.cpp
+    readers/headers/ct_plyheader.cpp
+    readers/ct_reader_ply.cpp
+    readers/tools/ply/internal/plyelementreader.cpp
+    readers/tools/ply/internal/plyqtextstream.cpp
+    readers/tools/ply/views/gplyreadconfiguration.cpp
+    readers/tools/ply/views/sub/gplycolorconfiguration.cpp
+    readers/tools/ply/views/sub/gplyscalarconfiguration.cpp
+    readers/tools/ply/views/sub/gplynormalconfiguration.cpp
+    readers/tools/ply/views/sub/gplyvertexconfiguration.cpp
+    readers/ct_reader_trajectory.cpp
+    exporters/ascid/pb_ascidexporter.cpp
+    exporters/ascrgb/pb_ascrgbexporter.cpp
+    exporters/csv/pb_csvexporter.cpp
+    exporters/csv/pb_csvexportercolumn.cpp
+    exporters/csv/pb_csvexporterconfiguration.cpp
+    exporters/gdal/pb_gdalexporter.cpp
+    exporters/grid2d/pb_grid2dexporter.cpp
+    exporters/groupdata/pb_groupdataexporter.cpp
+    exporters/mesh/pb_meshobjexporter.cpp
+    exporters/topology/pb_opfexporter.cpp
+    exporters/xyb/pb_xybexporter.cpp
+    exporters/xyb/private/pb_xybpiecebypieceprivateexporter.cpp
+    views/exporters/csv/pbg_csvconfigurationdialog.cpp
+    views/exporters/csv/pbg_csvdatareflistwidget.cpp
+    views/exporters/csv/pbg_csvpreviewwidget.cpp
+)
+
+set(CTLIBIO_FORMS
+    readers/tools/ply/views/gplyreadconfiguration.ui
+    readers/tools/ply/views/sub/gplycolorconfiguration.ui
+    readers/tools/ply/views/sub/gplyscalarconfiguration.ui
+    readers/tools/ply/views/sub/gplynormalconfiguration.ui
+    readers/tools/ply/views/sub/gplyvertexconfiguration.ui
+    views/exporters/csv/pbg_csvconfigurationdialog.ui
+    views/exporters/csv/pbg_csvdatareflistwidget.ui
+    views/exporters/csv/pbg_csvpreviewwidget.ui
+)
+
+set(CTLIBIO_TRANSLATIONS
+    languages/ctlibio_fr.ts
+    languages/ctlibio_en.ts
+)
+
+add_library(ctlibio SHARED
+    ${CTLIBIO_SOURCES}
+    ${CTLIBIO_FORMS}
+    ${CTLIBIO_TRANSLATIONS}
+)
+
+target_include_directories(ctlibio PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/
+)
+
+target_compile_definitions(ctlibio PRIVATE CTLIBIO_LIBRARY)
+target_link_libraries(ctlibio
+	ctlibcommon
+    ctlibreader
+    ctlibexporter
+    ctlibstructureaddon
+    ctlibplugin
+    ctliblas
+    ctliblaz
+	Qt5::Core
+	Qt5::Widgets
+)

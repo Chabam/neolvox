@@ -159,6 +159,7 @@ target_link_libraries(ctlibstructureaddon
 	ctlibstructure
 	ctlibmodels
 	ctlibclouds
+	ctlibmath
 	Qt5::Core
 	Qt5::Widgets
 )
