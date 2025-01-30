@@ -42,8 +42,8 @@ target_include_directories(ctlibcore PUBLIC
 
 target_compile_definitions(ctlibcore PRIVATE CTLIBCORE_LIBRARY)
 target_link_libraries(ctlibcore
-	ctlibcommon
+    ctlibcommon
     ctlibplugin
-	Qt5::Core
-	Qt5::Widgets
+    Qt5::Core
+    Qt5::Widgets
 )
