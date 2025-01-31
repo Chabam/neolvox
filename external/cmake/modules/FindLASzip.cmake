@@ -16,13 +16,13 @@ if(UNIX)
       /lib
       /usr/lib
       /usr/local/lib)
-elseif(UNIX)
+elseif(WIN32)
   find_library(LASzip_SHARED_LIBRARY
     NAMES laszip laszip3
     PATHS
       /bin)
 else()
-  error(Unsupported platform)
+  message(FATAL_ERROR Unsupported platform)
 endif()
 
 include(FindPackageHandleStandardArgs)
