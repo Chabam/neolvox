@@ -36,10 +36,10 @@ target_include_directories(ctlibmetrics PUBLIC
 
 target_compile_definitions(ctlibmetrics PRIVATE CTLIBMETRICS_LIBRARY)
 target_link_libraries(ctlibmetrics
-	ctlibcommon
+    ctlibcommon
     ctlibwidget
     ctlibstructureaddon
     ctliblog
-	Qt5::Core
-	Qt5::Widgets
+    Qt5::Core
+    Qt5::Widgets
 )
