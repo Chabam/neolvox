@@ -38,7 +38,7 @@ set(CTLIBCLOUDS_HEADERS
     ct_cloudindex/registered/ct_standardmodifiablecloudindexregisteredt.h
     ct_cloudindex/registered/ct_standardmodifiablecloudindexregisteredt.hpp
     ct_cloudindex/registered/ct_standardnotmodifiablecloudindexregisteredt.h
-    ct_cloudindex/registered/ct_standardnotmodifiablecloudindexregisteredt.hpp \
+    ct_cloudindex/registered/ct_standardnotmodifiablecloudindexregisteredt.hpp
     ct_cloudindex/tools/abstract/ct_abstractcloudindexregistrationmanager.h
     ct_cloudindex/tools/abstract/ct_abstractcloudindexregistrationmanagert.h
     ct_cloudindex/tools/abstract/ct_abstractcloudindexregistrationmanagert.hpp
@@ -146,7 +146,7 @@ set(CTLIBCLOUDS_SOURCES
     ct_accessor/ct_repositoryaccess.cpp
     ct_attributes/abstract/ct_abstractattributesscalar.cpp
     ct_cloud/abstract/ct_abstractcloud.cpp
-    ct_cloud/ct_bitcloud.c
+    ct_cloud/ct_bitcloud.cpp
     ct_cloud/registered/abstract/ct_abstractcloudregistered.cpp
     ct_cloud/tools/abstract/ct_abstractcloudsynctoglobalcloudmanager.cpp
     ct_cloud/tools/abstract/ct_abstractglobalcloudmanager.cpp
@@ -206,4 +206,5 @@ target_link_libraries(ctlibclouds
     Qt5::Core
     Qt5::Gui
     Qt5::Widgets
+    Eigen3::Eigen
 )
