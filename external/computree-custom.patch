@@ -1,3 +1,59 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e7056d3..bd3390e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -45,12 +45,17 @@ find_package(Qt5 5.3 COMPONENTS
+              Gui
+              OpenGL)
+ 
+-qt5_add_resources(RESOURCES ./resources/resources.qrc)
++qt5_add_resources(RESOURCES
++  ./resources/resources.qrc
++  ./resources/nodeeditor.qrc
++)
+ 
+ # Unfortunately, as we have a split include/src, AUTOMOC doesn't work.
+ # We'll have to manually specify some files
+ set(CMAKE_AUTOMOC ON)
+ 
++file(GLOB_RECURSE HEADERS_TO_MOC include/nodes/internal/*.hpp)
++
+ set(CPP_SOURCE_FILES
+   src/Connection.cpp
+   src/ConnectionBlurEffect.cpp
+@@ -78,8 +83,9 @@ set(CPP_SOURCE_FILES
+ # If we want to give the option to build a static library,
+ # set BUILD_SHARED_LIBS option to OFF
+ add_library(nodes
+-  ${CPP_SOURCE_FILES}
+-  ${RESOURCES}
++    ${CPP_SOURCE_FILES}
++    ${RESOURCES}
++    ${HEADERS_TO_MOC}
+ )
+ add_library(NodeEditor::nodes ALIAS nodes)
+ 
+@@ -129,20 +135,6 @@ set_target_properties(nodes
+     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+ )
+ 
+-######
+-# Moc
+-##
+-
+-file(GLOB_RECURSE HEADERS_TO_MOC include/nodes/internal/*.hpp)
+-
+-qt5_wrap_cpp(nodes_moc
+-    ${HEADERS_TO_MOC}
+-  TARGET nodes
+-  OPTIONS --no-notes # Don't display a note for the headers which don't produce a moc_*.cpp
+-)
+-
+-target_sources(nodes PRIVATE ${nodes_moc})
+-
+ ###########
+ # Examples
+ ##
 diff --git a/external/CMakeLists.txt b/external/CMakeLists.txt
 index 8e12fb1..39dbc04 100644
 --- a/external/CMakeLists.txt
@@ -961,54 +1017,6 @@ index 8375b4a..52d1079 100644
 +    "UseDataDefinedColors": true
    }
  }
-diff --git a/resources/DefaultStyle_original.json b/resources/DefaultStyle_original.json
-new file mode 100644
-index 0000000..8375b4a
---- /dev/null
-+++ b/resources/DefaultStyle_original.json
-@@ -0,0 +1,42 @@
-+{
-+  "FlowViewStyle": {
-+    "BackgroundColor": [53, 53, 53],
-+    "FineGridColor": [60, 60, 60],
-+    "CoarseGridColor": [25, 25, 25]
-+  },
-+  "NodeStyle": {
-+    "NormalBoundaryColor": [255, 255, 255],
-+    "SelectedBoundaryColor": [255, 165, 0],
-+    "GradientColor0": "gray",
-+    "GradientColor1": [80, 80, 80],
-+    "GradientColor2": [64, 64, 64],
-+    "GradientColor3": [58, 58, 58],
-+    "ShadowColor": [20, 20, 20],
-+    "FontColor" : "white",
-+    "FontColorFaded" : "gray",
-+    "ConnectionPointColor": [169, 169, 169],
-+    "FilledConnectionPointColor": "cyan",
-+    "ErrorColor": "red",
-+    "WarningColor": [128, 128, 0],
-+
-+    "PenWidth": 1.0,
-+    "HoveredPenWidth": 1.5,
-+
-+    "ConnectionPointDiameter": 8.0,
-+
-+    "Opacity": 0.8
-+  },
-+  "ConnectionStyle": {
-+    "ConstructionColor": "gray",
-+    "NormalColor": "darkcyan",
-+    "SelectedColor": [100, 100, 100],
-+    "SelectedHaloColor": "orange",
-+    "HoveredColor": "lightcyan",
-+
-+    "LineWidth": 3.0,
-+    "ConstructionLineWidth": 2.0,
-+    "PointDiameter": 10.0,
-+
-+    "UseDataDefinedColors": false
-+  }
-+}
 diff --git a/resources/nodeeditor.qrc b/resources/nodeeditor.qrc
 new file mode 100644
 index 0000000..14ef431
