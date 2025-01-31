@@ -17,4 +17,11 @@ find_library(LASzip_LIBRARY
     /usr/lib
     /usr/local/lib)
 
-  find_package_handle_standard_args(LASzip LASzip_LIBRARY LASzip_INCLUDE_DIRS)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(LASzip LASzip_LIBRARY LASzip_INCLUDE_DIRS)
+
+add_library(LASzip SHARED IMPORTED)
+target_include_directories(LASzip ${LASzip_INCLUDE_DIRS})
+set_property(TARGET LASzip PROPERY
+  IMPORTED_LOCATION ${LASzip_INCLUDE_DIRS}
+)

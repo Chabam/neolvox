@@ -27,13 +27,14 @@ target_include_directories(ctlibpcl PUBLIC
 
 target_compile_definitions(ctlibpcl PRIVATE CTLIBPCL_LIBRARY)
 target_link_libraries(ctlibpcl
-	ctlibcommon
+    ctlibcommon
     ctlibplugin
     ctliblog
     ctlibclouds
     ctlibstructureaddon
     ctlibreader
-	Qt5::Core
-	Qt5::Widgets
+    Qt5::Core
+    Qt5::Widgets
     pcl_common
+    pcl_io
 )

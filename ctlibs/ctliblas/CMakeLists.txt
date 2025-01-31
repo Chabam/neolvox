@@ -85,6 +85,7 @@ target_link_libraries(ctliblas
     ctlibstructureaddon
     ctlibfilters
     ctlibmetrics
+    LASzip
     Qt5::Core
     Qt5::Widgets
 )
