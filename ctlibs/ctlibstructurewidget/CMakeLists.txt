@@ -1,3 +1,14 @@
+set(CTLIBSTRUCTUREWIDGET_HEADERS
+    ctlibstructurewidget_global.h
+    ct_itemdrawable/view/ct_itemdrawablehierarchycollectionmodel.h
+    ct_itemdrawable/view/ct_itemdrawablehierarchycollectionselectionmodel.h
+    ct_itemdrawable/view/ct_itemdrawablehierarchycollectionwidget.h
+    ct_itemdrawable/tools/collection/abstract/ct_abstractitemdrawablecollectionbuilder.h
+    ct_itemdrawable/tools/collection/ct_itemdrawablecollectionbuildert.h
+    ct_itemdrawable/tools/collection/ct_itemdrawablecollectionbuildert.hpp
+    ct_itemdrawable/tools/collection/ct_itemdrawablecollectionhierarchyresult.h
+    ct_itemdrawable/tools/collection/ct_itemdrawablecollectionhierarchystep.h
+)
 set(CTLIBSTRUCTUREWIDGET_SOURCES
     ct_itemdrawable/view/ct_itemdrawablehierarchycollectionmodel.cpp
     ct_itemdrawable/view/ct_itemdrawablehierarchycollectionselectionmodel.cpp
@@ -13,6 +24,7 @@ set(CTLIBSTRUCTUREWIDGET_TRANSLATIONS
 )
 
 add_library(ctlibstructurewidget SHARED
+    ${CTLIBSTRUCTUREWIDGET_HEADERS}
     ${CTLIBSTRUCTUREWIDGET_SOURCES}
     ${CTLIBSTRUCTUREWIDGET_TRANSLATIONS}
 )

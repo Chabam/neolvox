@@ -1,3 +1,14 @@
+set(CTLIBMETRICS_HEADERS
+    ctlibmetrics_global.h
+    ct_metric/abstract/ct_abstractmetric.h
+    ct_metric/abstract/ct_abstractmetric_raster.h
+    ct_metric/abstract/ct_abstractmetric_xyz.h
+    ct_metric/points/ct_cloudmetrics.h
+    tools/ct_valueandbool.h
+    ct_metric/abstract/ct_abstractmetricgeneric.h
+    ct_metric/tools/ct_metricoutmodelstructuremanager.h
+)
+
 set(CTLIBMETRICS_SOURCES
     ct_metric/abstract/ct_abstractmetric.cpp
     ct_metric/abstract/ct_abstractmetric_raster.cpp
@@ -12,6 +23,7 @@ set(CTLIBMETRICS_TRANSLATIONS
 )
 
 add_library(ctlibmetrics SHARED
+    ${CTLIBMETRICS_HEADERS}
     ${CTLIBMETRICS_SOURCES}
     ${CTLIBMETRICS_TRANSLATIONS}
 )

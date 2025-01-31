@@ -1,3 +1,11 @@
+set(CTLIBFILTERS_HEADERS
+    ctlibfilters_global.h
+    ct_filter/abstract/ct_abstractfilter.h
+    ct_filter/abstract/ct_abstractfilter_rasterfloat.h
+    ct_filter/abstract/ct_abstractfilter_rasterrgbi.h
+    ct_filter/abstract/ct_abstractfilter_xyz.h
+)
+
 set(CTLIBFILTERS_SOURCES
     ct_filter/abstract/ct_abstractfilter.cpp
     ct_filter/abstract/ct_abstractfilter_rasterfloat.cpp
@@ -11,6 +19,7 @@ set(CTLIBFILTERS_TRANSLATIONS
 )
 
 add_library(ctlibfilters SHARED
+    ${CTLIBFILTERS_HEADERS}
     ${CTLIBFILTERS_SOURCES}
     ${CTLIBFILTERS_TRANSLATIONS}
 )

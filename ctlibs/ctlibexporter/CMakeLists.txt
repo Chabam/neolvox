@@ -1,3 +1,10 @@
+set(CTLIBEXPORTER_HEADERS
+    ct_exporter/abstract/ct_abstractexporter.h
+    ctlibexporter_global.h
+    ct_exporter/tools/ct_exporterinmodelstructuremanager.h
+    ct_exporter/abstract/ct_abstractpiecebypieceexporter.h
+)
+
 set(CTLIBEXPORTER_SOURCES
     ct_exporter/abstract/ct_abstractexporter.cpp
     ct_exporter/tools/ct_exporterinmodelstructuremanager.cpp
@@ -10,6 +17,7 @@ set(CTLIBEXPORTER_TRANSLATIONS
 )
 
 add_library(ctlibexporter SHARED
+    ${CTLIBEXPORTER_HEADERS}
     ${CTLIBEXPORTER_SOURCES}
     ${CTLIBEXPORTER_TRANSLATIONS}
 )

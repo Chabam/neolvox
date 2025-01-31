@@ -1,3 +1,12 @@
+set(CTLIBLOG_HEADERS
+    ct_log/ct_fileloglistener.h
+    ct_log/ct_logmanager.h
+    ct_risformat/ct_parseris.h
+    ctliblog_global.h
+    ct_log/ct_temporarylog.h
+    ct_log/abstract/ct_abstractloglistener.h
+)
+
 set(CTLIBLOG_SOURCES
     ct_log/ct_fileloglistener.cpp
     ct_log/ct_logmanager.cpp
@@ -12,6 +21,7 @@ set(CTLIBLOG_TRANSLATIONS
 )
 
 add_library(ctliblog SHARED
+    ${CTLIBLOG_HEADERS}
     ${CTLIBLOG_SOURCES}
     ${CTLIBLOG_TRANSLATIONS}
 )

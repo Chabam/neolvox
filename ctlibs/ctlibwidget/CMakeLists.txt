@@ -1,3 +1,26 @@
+set(CTLIBWIDGET_HEADERS
+    ct_view/ct_abstractconfigurablewidget.h
+    ct_view/ct_asciifilechoicebutton.h
+    ct_view/ct_buttongroup.h
+    ct_view/ct_checkbox.h
+    ct_view/ct_combobox.h
+    ct_view/ct_doublespinbox.h
+    ct_view/ct_filechoicebutton.h
+    ct_view/ct_genericconfigurablewidget.h
+    ct_view/ct_groupbox.h
+    ct_view/ct_lineedit.h
+    ct_view/ct_multilineedit.h
+    ct_view/ct_radiobutton.h
+    ct_view/ct_spinbox.h
+    ct_view/ct_widgetwithvaluereferenceinterface.h
+    ctlibwidget_global.h
+    ct_view/tools/ct_configurablewidgettodialog.h
+    ct_view/tools/ct_textfileconfigurationdialog.h
+    ct_view/tools/fileformat.h
+    ct_view/elements/ctg_configurableelementsselector.h
+    ct_element/abstract/ct_abstractconfigurableelement.h
+)
+
 set(CTLIBWIDGET_SOURCES
     ct_element/abstract/ct_abstractconfigurableelement.h
     ct_view/ct_abstractconfigurablewidget.h
@@ -32,6 +55,7 @@ set(CTLIBWIDGET_TRANSLATIONS
 )
 
 add_library(ctlibwidget SHARED
+    ${CTLIBWIDGET_HEADERS}
     ${CTLIBWIDGET_SOURCES}
     ${CTLIBWIDGET_FORMS}
     ${CTLIBWIDGET_TRANSLATIONS}

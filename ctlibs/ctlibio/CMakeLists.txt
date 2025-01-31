@@ -1,3 +1,81 @@
+set(CTLIBIO_HEADERS
+    exporters/asciitrajectory/pb_asciitrajectory.h
+    exporters/ascxyz/pb_ascxyzexporter.h
+    exporters/grid3d/pb_grid3dastableexporter.h
+    exporters/grid3d/pb_grid3dexporter.h
+    exporters/polygon2d/pb_polygon2dexporter.h
+    exporters/profile/pb_profileexporter.h
+    readers/ct_reader_ascrgb.h
+    readers/ct_reader_ctindex.h
+    readers/ct_reader_gdal.h
+    readers/ct_reader_larchitect_grid.h
+    readers/ct_reader_opf.h
+    readers/ct_reader_terrascanprj.h
+    readers/ct_reader_trj.h
+    readers/ct_reader_xyb.h
+    ctlibio_global.h
+    readers/ct_reader_obj.h
+    readers/ct_reader_asciigrid3d.h
+    readers/ct_reader_points_ascii.h
+    readers/ct_reader_idxyz.h
+    readers/headers/ct_ctiheader.h
+    readers/headers/ct_gdalheader.h
+    readers/headers/ct_trjheader.h
+    readers/headers/ct_xybheader.h
+    readers/ct_reader_ptx.h
+    readers/tools/ply/internal/plyelement.h
+    readers/tools/ply/internal/plyproperty.h
+    readers/tools/ply/internal/plytype.h
+    readers/tools/ply/plyheader.h
+    readers/tools/ply/plyheaderreader.h
+    readers/headers/ct_plyheader.h
+    readers/ct_reader_ply.h
+    readers/tools/ply/plyfilepartreader.h
+    readers/tools/ply/plyfilepartreader.hpp
+    readers/tools/ply/internal/plyelementreader.h
+    readers/tools/ply/internal/setter/plyabstractvaluessetter.h
+    readers/tools/ply/internal/setter/plydirectvaluessetter.h
+    readers/tools/ply/internal/setter/plyfillvaluessetter.h
+    readers/tools/ply/internal/plyreadertools.h
+    readers/tools/ply/internal/setter/plyvaluesrecorder.h
+    readers/tools/ply/internal/plyqtextstream.h
+    readers/tools/ply/plycomputreewrappers.h
+    readers/tools/ply/views/gplyreadconfiguration.h
+    readers/tools/ply/views/sub/gplycolorconfiguration.h
+    readers/tools/ply/views/sub/gplyscalarconfiguration.h
+    readers/tools/ply/views/sub/gplynormalconfiguration.h
+    readers/tools/ply/views/tools/plyviewtools.h
+    readers/tools/ply/views/sub/iplygenericconfiguration.h
+    readers/tools/ply/views/sub/gplyvertexconfiguration.h
+    readers/tools/ply/plyreadconfiguration.h
+    readers/tools/ply/internal/plyvertexconfiguration.h
+    readers/tools/ply/internal/plycolorconfiguration.h
+    readers/tools/ply/internal/plynormalconfiguration.h
+    readers/tools/ply/internal/plyscalarconfiguration.h
+    readers/tools/ply/internal/setter/plyfillscalarvaluessetter.h
+    readers/tools/ply/internal/setter/plydirectscalarvaluessetter.h
+    readers/tools/ply/iplyreaderlistener.h
+    readers/ct_reader_trajectory.h
+    exporters/ascid/pb_ascidexporter.h
+    exporters/ascrgb/pb_ascrgbexporter.h
+    exporters/csv/pb_csvexporter.h
+    exporters/csv/pb_csvexportercolumn.h
+    exporters/csv/pb_csvexporterconfiguration.h
+    exporters/gdal/pb_gdalexporter.h
+    exporters/grid2d/pb_grid2dexporter.h
+    exporters/groupdata/pb_groupdataexporter.h
+    exporters/mesh/pb_meshobjexporter.h
+    exporters/topology/pb_opfexporter.h
+    exporters/xyb/pb_xybexporter.h
+    readers/tools/gdal/ct_gdaltools.h
+    exporters/xyb/private/pb_xybpiecebypieceprivateexporter.h
+    tools/ct_configurableelementtools.h
+    tools/ct_exportertools.h
+    tools/ct_readerstools.h
+    views/exporters/csv/pbg_csvconfigurationdialog.h
+    views/exporters/csv/pbg_csvdatareflistwidget.h
+    views/exporters/csv/pbg_csvpreviewwidget.h
+)
 set(CTLIBIO_SOURCES
     exporters/asciitrajectory/pb_asciitrajectory.cpp
     exporters/ascxyz/pb_ascxyzexporter.cpp
@@ -71,6 +149,7 @@ set(CTLIBIO_TRANSLATIONS
 
 add_library(ctlibio SHARED
     ${CTLIBIO_SOURCES}
+    ${CTLIBIO_HEADERS}
     ${CTLIBIO_FORMS}
     ${CTLIBIO_TRANSLATIONS}
 )
@@ -81,13 +160,13 @@ target_include_directories(ctlibio PUBLIC
 
 target_compile_definitions(ctlibio PRIVATE CTLIBIO_LIBRARY)
 target_link_libraries(ctlibio
-	ctlibcommon
+    ctlibcommon
     ctlibreader
     ctlibexporter
     ctlibstructureaddon
     ctlibplugin
     ctliblas
     ctliblaz
-	Qt5::Core
-	Qt5::Widgets
+    Qt5::Core
+    Qt5::Widgets
 )

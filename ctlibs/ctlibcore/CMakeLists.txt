@@ -1,3 +1,34 @@
+set(CTLIBCORE_HEADERS
+    cdm_configfile.h
+    cdm_steplistdocexporter.h
+    cdm_steplistinfomanager.h
+    computreeCore_global.h
+    cdm_stepmanageroptions.h
+    cdm_stepmanager.h
+    cdm_pluginmanager.h
+    cdm_scriptmanagerabstract.h
+    cdm_stdiolistener.h
+    cdm_stdioparser.h
+    parserAction/cdm_parseractionmanager.h
+    parserAction/cdm_iparseraction.h
+    parserAction/cdm_abstractparseraction.h
+    parserAction/cdm_parseractiongetplugindir.h
+    parserAction/cdm_parseractionsetplugindir.h
+    computreeCoreDefaultIOCmd.h
+    parserAction/cdm_parseractionlaunchstepmanager.h
+    cdm_actionsmanager.h
+    cdm_log.h
+    cdm_tools.h
+    cdm_internationalization.h
+    cdm_scriptproblem.h
+    cdm_stepsmenumanager.h
+    cdm_hrscriptmanagerxml.h
+    cdm_hrscriptxmlwriter.h
+    cdm_hrscriptxmlreader.h
+    cdm_xmltools.h
+    cdm_scriptmanagerxmlallversions.h
+)
+
 set(CTLIBCORE_SOURCES
     cdm_configfile.cpp
     cdm_steplistdocexporter.cpp
@@ -32,6 +63,7 @@ set(CTLIBCORE_TRANSLATIONS
 )
 
 add_library(ctlibcore SHARED
+    ${CTLIBCORE_HEADERS}
     ${CTLIBCORE_SOURCES}
     ${CTLIBCORE_TRANSLATIONS}
 )

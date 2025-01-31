@@ -1,3 +1,77 @@
+set(LVOX_HEADERS
+    qtwidgets/multiselectcombobox.h
+    step/lvox3_stepcomputenormalizedprofiles.h
+    step/lvox3_stepmakeshootingpatternformls.h
+    tools/scanner/lvox_shootingpatternformls.h
+    view/computegridsconfiguration.h
+    view/computepadconfiguration.h
+    lvox_steppluginmanager.h
+    lvox_pluginentry.h
+    step/lvox3_stepcomputelvoxgrids.h
+    step/lvox3_steploadfiles.h
+    step/lvox3_stepcomputeprofiles.h
+    step/lvox3_stepinterpolatedistance.h
+    step/lvox3_stepmergegrids.h
+    step/lvox3_stepextractcirculargrid.h
+    step/lvox3_stepcomputepad.h
+    step/lvox3_stepgridnormalisationraster.h
+    tools/worker/lvox3_computehits.h
+    tools/lvox3_errorcode.h
+    tools/worker/lvox3_worker.h
+    tools/worker/lvox3_computetheoriticals.h
+    tools/worker/lvox3_computebefore.h
+    tools/worker/lvox3_computedensity.h
+    tools/lvox3_computelvoxgridspreparator.h
+    tools/lvox3_gridmode.h
+    tools/lvox3_gridtype.h
+    tools/worker/lvox3_computeall.h
+    tools/lvox3_gridtools.h
+    tools/traversal/woo/lvox3_grid3dwootraversalalgorithm.h
+    tools/lvox3_rayboxintersectionmath.h
+    tools/traversal/woo/visitor/lvox3_countvisitor.h
+    tools/traversal/woo/visitor/lvox3_distancevisitor.h
+    view/loadfileconfiguration.h
+    view/genericcomputegridsconfiguration.h
+    view/predefinedmapperconfiguration.h
+    tools/worker/lvox3_genericcompute.h
+    tools/lvox3_genericconfiguration.h
+    view/computeprofilesconfiguration.h
+    tools/worker/lvox3_filtervoxelsbyzvaluesofraster.h
+    tools/worker/lvox3_interpolatedistance.h
+    tools/traversal/propagation/lvox3_grid3dpropagationalgorithm.h
+    tools/traversal/woo/visitor/lvox3_grid3dvoxelwoovisitorcontext.h
+    tools/traversal/woo/visitor/lvox3_grid3dvoxelwoovisitor.h
+    tools/traversal/propagation/visitor/lvox3_propagationvisitor.h
+    tools/traversal/propagation/visitor/lvox3_propagationvisitorcontext.h
+    tools/traversal/propagation/visitor/lvox3_distanceinterpolationvisitor.h
+    tools/traversal/propagation/visitor/lvox3_trustinterpolationvisitor.h
+    tools/worker/lvox3_interpolatetrustfactor.h
+    view/loadfileconfigutil.h
+    tools/lvox3_utils.h
+    view/mergegridsconfiguration.h
+    tools/lvox3_mergegrids.h
+    tools/worker/lvox3_mergegridsworker.h
+    tools/lvox3_factory.hpp
+    tools/lvox3_scannerutils.h
+    tools/3dgrid/abstract/lvox3_abstractgrid3d.h
+    tools/3dgrid/lvox3_grid3d.h
+    tools/3dgrid/lvox3_grid3d.hpp
+    tools/3dgrid/lvox3_grid3d_sparse.h
+    tools/3dgrid/lvox3_grid3d_sparse.hpp
+    tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.h
+    tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp
+    tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp
+    tools/drawmanager/lvox3_standardgrid3ddrawmanager.h
+    tools/exporter/lvox3_grid3dexporter.h
+    tools/reader/lvox3_reader_asciigrid3d.h
+    tools/reader/lvox3_reader_asciigrid3d_def_models.h
+    tools/worker/lvox3_interpolatezaverage.h
+    tools/traversal/propagation/expfit.h
+    tools/worker/lvox3_interpolatekrigingbinomial.h
+    tools/worker/lvox3_interpolatekrigingnormal.h
+    tools/lvox3_thetaphishootingpattern.h
+)
+
 set(LVOX_SOURCES
     lvox_pluginentry.cpp
     lvox_steppluginmanager.cpp
@@ -74,6 +148,7 @@ set(LVOX_TRANSLATIONS
 )
 
 add_library(plug_neolvox SHARED
+    ${LVOX_HEADERS}
     ${LVOX_SOURCES}
     ${LVOX_RESOURCES}
     ${LVOX_FORMS}

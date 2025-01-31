@@ -1,3 +1,13 @@
+set(CTLIBREADER_HEADERS
+    ct_itemdrawable/ct_indexablepointfileheader.h
+    ct_reader/extensions/ct_indexablepointsreader.h
+    ctlibreader_global.h
+    ct_reader/abstract/ct_abstractreader.h
+    ct_itemdrawable/ct_fileheader.h
+    ct_reader/tools/ct_readeroutmodelstructuremanager.h
+    ct_reader/extensions/ct_readerpointsfilteringextension.h
+)
+
 set(CTLIBREADER_SOURCES
     ct_itemdrawable/ct_indexablepointfileheader.cpp
     ct_reader/abstract/ct_abstractreader.cpp
@@ -13,6 +23,7 @@ set(CTLIBREADER_TRANSLATIONS
 )
 
 add_library(ctlibreader SHARED
+    ${CTLIBREADER_HEADERS}
     ${CTLIBREADER_SOURCES}
     ${CTLIBREADER_TRANSLATIONS}
 )
@@ -23,10 +34,10 @@ target_include_directories(ctlibreader PUBLIC
 
 target_compile_definitions(ctlibreader PRIVATE CTLIBREADER_LIBRARY)
 target_link_libraries(ctlibreader
-	ctlibcommon
+    ctlibcommon
     ctlibstructure
     ctlibstructureaddon
     ctlibwidget
-	Qt5::Core
-	Qt5::Widgets
+    Qt5::Core
+    Qt5::Widgets
 )

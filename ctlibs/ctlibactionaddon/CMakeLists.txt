@@ -1,4 +1,13 @@
 set(CTLIBACTIONADDON_SOURCES
+    ctlibactionaddon_global.h
+    actions/pb_actionselectitemdrawablegv.h
+    views/actions/pb_actionselectitemdrawablegvoptions.h
+    actions/tools/math.h
+    actions/tools/polygonforpicking.h
+    actions/tools/rectangleforpicking.h
+)
+
+set(CTLIBACTIONADDON_SOURCES
     actions/pb_actionselectitemdrawablegv.cpp
     views/actions/pb_actionselectitemdrawablegvoptions.cpp
     actions/tools/math.cpp
@@ -11,6 +20,7 @@ set(CTLIBACTIONADDON_FORMS
 )
 
 add_library(ctlibactionaddon SHARED
+    ${CTLIBACTIONADDON_HEADERS}
     ${CTLIBACTIONADDON_SOURCES}
     ${CTLIBACTIONADDON_FORMS}
 )

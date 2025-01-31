@@ -1,3 +1,15 @@
+set(CTLIBSTDACTIONS_HEADERS
+    action/tools/math.h
+    action/tools/polygonforpicking.h
+    action/tools/rectangleforpicking.h
+    action/tools/ct_actionselecttool.h
+    views/actions/ct_actionselectitemdrawablegvoptions.h
+    action/ct_actionselectitemdrawablegv.h
+    action/pb_actionpickitemsinlist.h
+    views/actions/pb_actionpickitemsinlistoptions.h
+    action/pb_actionshowitemdatagv.h
+)
+
 set(CTLIBSTDACTIONS_SOURCES
     action/ct_actionselectitemdrawablegv.cpp
     action/pb_actionpickitemsinlist.cpp
@@ -25,6 +37,7 @@ set(CTLIBSTDACTIONS_TRANSLATIONS
 )
 
 add_library(ctlibstdactions SHARED
+    ${CTLIBSTDACTIONS_HEADERS}
     ${CTLIBSTDACTIONS_SOURCES}
     ${CTLIBSTDACTIONS_FORMS}
     ${CTLIBSTDACTIONS_RESOURCES}

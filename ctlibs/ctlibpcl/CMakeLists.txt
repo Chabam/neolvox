@@ -1,4 +1,11 @@
 set(CTLIBPCL_SOURCES
+    ctlibpcl_global.h
+    readers/ct_reader_pcd.h
+    tools/ct_pcltools.h
+    ct_pcldefines.h
+)
+
+set(CTLIBPCL_SOURCES
     readers/ct_reader_pcd.cpp
     tools/ct_pcltools.cpp
 )
@@ -9,6 +16,7 @@ set(CTLIBPCL_TRANSLATIONS
 )
 
 add_library(ctlibpcl SHARED
+    ${CTLIBPCL_HEADERS}
     ${CTLIBPCL_SOURCES}
     ${CTLIBPCL_TRANSLATIONS}
 )

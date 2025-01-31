@@ -1,3 +1,17 @@
+set(CTLIBSTEP_HEADERS
+    ct_step/abstract/ct_abstractstep.h
+    ct_step/abstract/ct_abstractsteploadfile.h
+    ct_step/abstract/ct_virtualabstractstep.h
+    ct_step/interfacesforstep.h
+    ct_step/tools/input/ct_inmanager.h
+    ct_step/tools/output/ct_outmanager.h
+    ct_step/view/ct_stepconfigurabledialog.h
+    ct_step/abstract/ct_abstractstepcanbeaddedfirst.h
+    ct_step/tools/ct_uniqueindexgenerator.h
+    ct_step/tools/ct_logmanageradapterforstep.h
+    ctlibstep_global.h
+)
+
 set(CTLIBSTEP_SOURCES
     ct_step/abstract/ct_abstractsteploadfile.cpp
     ct_step/abstract/ct_virtualabstractstep.cpp
@@ -13,6 +27,7 @@ set(CTLIBSTEP_TRANSLATIONS
 )
 
 add_library(ctlibstep SHARED
+    ${CTLIBSTEP_HEADERS}
     ${CTLIBSTEP_SOURCES}
     ${CTLIBSTEP_TRANSLATIONS}
 )

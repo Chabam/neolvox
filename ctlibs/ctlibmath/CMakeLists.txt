@@ -1,3 +1,12 @@
+set(CTLIBMATH_HEADERS
+    ct_math/ct_math2dlines.h
+    ct_math/ct_mathboundingshape.h
+    ct_math/ct_mathfittedline2d.h
+    ct_math/ct_mathpoint.h
+    ct_math/ct_mathstatistics.h
+    ctlibmath_global.h
+)
+
 set(CTLIBMATH_SOURCES
     ct_math/ct_math2dlines.cpp
     ct_math/ct_mathboundingshape.cpp
@@ -12,8 +21,8 @@ set(CTLIBMATH_TRANSLATIONS
 )
 
 add_library(ctlibmath SHARED
+    ${CTLIBMATH_HEADERS}
     ${CTLIBMATH_SOURCES}
-    ${CTLIBMATH_FORMS}
     ${CTLIBMATH_TRANSLATIONS}
 )
 

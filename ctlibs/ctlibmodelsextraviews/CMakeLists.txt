@@ -1,3 +1,12 @@
+set(CTLIBMODELSEXTRAVIEWS_HEADERS
+    ctlibmodelsextraviews_global.h
+    ctg_modelslinkconfigurationflowview.h
+    tools/ct_modelflowdata.h
+    tools/ct_modelflowdatamodel.h
+    tools/ct_indatatypetooutdatatypeconverter.h
+    tools/ct_helpgraphicsitem.h
+)
+
 set(CTLIBMODELSEXTRAVIEWS_SOURCES
     ctg_modelslinkconfigurationflowview.cpp
     tools/ct_modelflowdata.cpp
@@ -13,6 +22,7 @@ set(CTLIBMODELSEXTRAVIEWS_TRANSLATIONS
 )
 
 add_library(ctlibmodelsextraviews SHARED
+    ${CTLIBMODELSEXTRAVIEWS_HEADERS}
     ${CTLIBMODELSEXTRAVIEWS_SOURCES}
     ${CTLIBMODELSEXTRAVIEWS_FORMS}
     ${CTLIBMODELSEXTRAVIEWS_TRANSLATIONS}
