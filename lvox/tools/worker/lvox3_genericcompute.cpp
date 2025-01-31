@@ -81,7 +81,7 @@ void LVOX3_GenericCompute::doTheJob()
 
             mu::Parser* parser = m_checksParsers[j];
 
-            // the check formula returns true            
+            // the check formula returns true
             //you might want to use == here?
             //@TODO: to be verified
             if((checkVerified = (parser->Eval() != 0))) {
@@ -112,7 +112,7 @@ void LVOX3_GenericCompute::initParser(mu::Parser &parser, const std::string& for
     }
     mu::stringstream_type varss, exprss;
     varss << "this";
-    exprss << formula;
+    exprss << formula.c_str();
     parser.DefineVar(varss.str(), &m_outputVariable);
     parser.SetExpr(exprss.str());
 }

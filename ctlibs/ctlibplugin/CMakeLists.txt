@@ -1,3 +1,5 @@
+project(ctlibplugin)
+
 set(CTLIBPLUGIN_HEADERS
     ctlibplugin_global.h
     ct_abstractstepplugin.h

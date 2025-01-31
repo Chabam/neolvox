@@ -1,3 +1,5 @@
+project(ctlibstructure)
+
 set(CTLIBSTRUCTURE_HEADERS
     ctlibstructure_global.h
     ct_global/ct_structurecontext.h

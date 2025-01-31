@@ -1,3 +1,5 @@
+project(ctlibfilters)
+
 set(CTLIBFILTERS_HEADERS
     ctlibfilters_global.h
     ct_filter/abstract/ct_abstractfilter.h

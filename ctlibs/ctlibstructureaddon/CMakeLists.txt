@@ -1,3 +1,5 @@
+project(ctlibstructureaddon)
+
 set(CTLIBSTRUCTUREADDON_HEADERS
     ct_handle/ct_handleinedgecolor.h
     ct_handle/ct_handleinedgenormal.h

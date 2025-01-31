@@ -1,3 +1,5 @@
+project(ctlibcore)
+
 set(CTLIBCORE_HEADERS
     cdm_configfile.h
     cdm_steplistdocexporter.h

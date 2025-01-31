@@ -1,3 +1,5 @@
+project(ctlibexporter)
+
 set(CTLIBEXPORTER_HEADERS
     ct_exporter/abstract/ct_abstractexporter.h
     ctlibexporter_global.h

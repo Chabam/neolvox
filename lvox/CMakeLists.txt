@@ -1,4 +1,8 @@
 set(LVOX_HEADERS
+    # TODO: find a better way to handle this...
+    # NOTE: We need to explicitly add this header in order
+    # for Qt to AUTOMOC it...
+    ${ctlibplugin_SOURCE_DIR}/pluginentryinterface.h
     qtwidgets/multiselectcombobox.h
     step/lvox3_stepcomputenormalizedprofiles.h
     step/lvox3_stepmakeshootingpatternformls.h
@@ -161,19 +165,20 @@ target_include_directories(plug_neolvox PUBLIC
 
 target_compile_definitions(plug_neolvox PRIVATE USE_OPENCV)
 target_link_libraries(plug_neolvox
-	ctlibcommon
-	ctlibplugin
-	ctlibclouds
-	ctlibstep
-	ctlibstepaddon
-	ctlibio
-	ctlibfilters
-	ctlibaction
-	ctlibstdactions
-	ctlibstructure
-	ctlibmath
-	ctliblas
-	Qt5::Core
-	Qt5::Gui
-	Qt5::Widgets
+    ctlibcommon
+    ctlibplugin
+    ctlibclouds
+    ctlibstep
+    ctlibstepaddon
+    ctlibio
+    ctlibfilters
+    ctlibaction
+    ctlibstdactions
+    ctlibstructure
+    ctlibmath
+    ctliblas
+    muparser::muparser
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Widgets
 )

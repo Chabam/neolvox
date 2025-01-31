@@ -1,3 +1,5 @@
+project(ctlibstructurewidget)
+
 set(CTLIBSTRUCTUREWIDGET_HEADERS
     ctlibstructurewidget_global.h
     ct_itemdrawable/view/ct_itemdrawablehierarchycollectionmodel.h

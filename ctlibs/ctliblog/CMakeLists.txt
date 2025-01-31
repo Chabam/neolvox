@@ -1,3 +1,5 @@
+project(ctliblog)
+
 set(CTLIBLOG_HEADERS
     ct_log/ct_fileloglistener.h
     ct_log/ct_logmanager.h

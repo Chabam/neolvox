@@ -1,3 +1,5 @@
+project(ctlibmodels)
+
 set(CTLIBMODELS_HEADERS
     ct_categories/abstract/ct_abstractcategory.h
     ct_categories/tools/ct_categorymanager.h

@@ -1,3 +1,5 @@
+project(ctlibgdal)
+
 set(CTLIBGDAL_HEADERS
     tools/ct_gdaltools.h
 )

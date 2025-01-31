@@ -1,3 +1,5 @@
+project(ctliblas)
+
 set(CTLIBLAS_HEADERS
     ctliblas_global.h
     readers/ct_reader_lasv2.h

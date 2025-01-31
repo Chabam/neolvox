@@ -1,3 +1,5 @@
+project(ctlibmetrics)
+
 set(CTLIBMETRICS_HEADERS
     ctlibmetrics_global.h
     ct_metric/abstract/ct_abstractmetric.h

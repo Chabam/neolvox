@@ -1,3 +1,5 @@
+project(ctlibio)
+
 set(CTLIBIO_HEADERS
     exporters/asciitrajectory/pb_asciitrajectory.h
     exporters/ascxyz/pb_ascxyzexporter.h

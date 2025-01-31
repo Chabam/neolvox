@@ -1,3 +1,5 @@
+project(ctliblaz)
+
 set(CTLIBLAZ_HEADERS
     ctliblaz_global.h
     readers/ct_laszip_reader.h

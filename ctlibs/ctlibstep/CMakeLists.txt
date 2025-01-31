@@ -1,3 +1,5 @@
+project(ctlibstep)
+
 set(CTLIBSTEP_HEADERS
     ct_step/abstract/ct_abstractstep.h
     ct_step/abstract/ct_abstractsteploadfile.h

@@ -1,3 +1,5 @@
+project(ctlibmath)
+
 set(CTLIBMATH_HEADERS
     ct_math/ct_math2dlines.h
     ct_math/ct_mathboundingshape.h

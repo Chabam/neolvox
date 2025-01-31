@@ -1,3 +1,5 @@
+project(ctlibreader)
+
 set(CTLIBREADER_HEADERS
     ct_itemdrawable/ct_indexablepointfileheader.h
     ct_reader/extensions/ct_indexablepointsreader.h

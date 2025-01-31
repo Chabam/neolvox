@@ -1,3 +1,5 @@
+project(ctlibstdactions)
+
 set(CTLIBSTDACTIONS_HEADERS
     action/tools/math.h
     action/tools/polygonforpicking.h

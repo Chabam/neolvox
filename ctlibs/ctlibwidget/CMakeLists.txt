@@ -1,3 +1,5 @@
+project(ctlibwidget)
+
 set(CTLIBWIDGET_HEADERS
     ct_view/ct_abstractconfigurablewidget.h
     ct_view/ct_asciifilechoicebutton.h

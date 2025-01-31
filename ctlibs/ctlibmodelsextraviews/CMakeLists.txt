@@ -1,3 +1,5 @@
+project(ctlibmodelsextraviews)
+
 set(CTLIBMODELSEXTRAVIEWS_HEADERS
     ctlibmodelsextraviews_global.h
     ctg_modelslinkconfigurationflowview.h

@@ -1,3 +1,5 @@
+project(ctlibclouds)
+
 set(CTLIBCLOUDS_HEADERS
     ct_defines.h
     ctlibclouds_global.h

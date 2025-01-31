@@ -1,3 +1,5 @@
+project(ctlibstepaddon)
+
 set(CTLIBSTEPADDON_HEADERS
     ctlibstepaddon_global.h
     ct_step/abstract/ct_abstractsteploadfileinscene.h

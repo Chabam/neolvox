@@ -1,3 +1,5 @@
+project(ctlibopencv)
+
 set(CTLIBOPENCV_HEADERS
     ctlibopencv_global.h
 )
