@@ -72,7 +72,7 @@ target_include_directories(ctlibcore PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/
 )
 
-target_compile_definitions(ctlibcore PRIVATE CTLIBCORE_LIBRARY)
+target_compile_definitions(ctlibcore PRIVATE COMPUTREECORE_LIBRARY)
 target_link_libraries(ctlibcore
     ctlibcommon
     ctlibplugin
