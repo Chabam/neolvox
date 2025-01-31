@@ -1,46 +1,17 @@
-diff --git a/NodeEditor.pri b/NodeEditor.pri
-new file mode 100644
-index 0000000..5c611af
---- /dev/null
-+++ b/NodeEditor.pri
-@@ -0,0 +1,16 @@
-+# uncomment to compile as static or dynamic library
-+DEFINES += NODE_EDITOR_STATIC
-+#DEFINES += NODE_EDITOR_SHARED
-+
-+HEADERS += $$files($$PWD/include/nodes/*, true)
-+HEADERS += $$files($$PWD/src/*.hpp, true)
-+
-+SOURCES += $$files($$PWD/src/*.cpp, true)
-+
-+INCLUDEPATH += $$PWD/include
-+INCLUDEPATH += $$PWD/include/nodes/
-+INCLUDEPATH += $$PWD/include/nodes/internal/
-+INCLUDEPATH += $$PWD/src/
-+
-+RESOURCES += $$PWD/resources/DefaultStyle.json \
-+             $$PWD/resources/nodeeditor.qrc
-diff --git a/README.md b/README.md
-index c772b5e..6bc14d2 100644
---- a/README.md
-+++ b/README.md
-@@ -1,3 +1,16 @@
-+### About this Fork
-+
-+This repository keeps master branch aligned with the original repository [paceholder/nodeeditor](https://github.com/paceholder/nodeeditor).
-+
-+In the **develop branch** can be found some fix or feature never merged in the original repository and some additional feature.
-+The status of the current improvements can be found in issues tracker. 
-+However the main changes involve:
-+* Copy/paste functionality.
-+* Allow multiple connection for a single input port.
-+* Subcategories for nodes.
-+* Dynamic ports nodes.
-+* Fixed cyclic loop crash.
-+
- ### Purpose
- 
- **NodeEditor** is conceived as a general-purpose Qt-based library aimed at
+diff --git a/external/CMakeLists.txt b/external/CMakeLists.txt
+index 8e12fb1..39dbc04 100644
+--- a/external/CMakeLists.txt
++++ b/external/CMakeLists.txt
+@@ -5,9 +5,3 @@ if(BUILD_TESTING)
+     add_subdirectory(Catch2)
+   endif()
+ endif()
+-
+-macro(find_package pkg)
+-  if(NOT TARGET "${pkg}")
+-    _find_package(${ARGV})
+-  endif()
+-endmacro()
 diff --git a/include/nodes/internal/Connection.hpp b/include/nodes/internal/Connection.hpp
 index 5f79b38..9e9da72 100644
 --- a/include/nodes/internal/Connection.hpp
