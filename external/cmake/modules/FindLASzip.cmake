@@ -21,7 +21,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LASzip LASzip_LIBRARY LASzip_INCLUDE_DIRS)
 
 add_library(LASzip SHARED IMPORTED)
-target_include_directories(LASzip ${LASzip_INCLUDE_DIRS})
-set_property(TARGET LASzip PROPERY
-  IMPORTED_LOCATION ${LASzip_INCLUDE_DIRS}
+target_include_directories(LASzip INTERFACE ${LASzip_INCLUDE_DIRS})
+set_property(TARGET LASzip PROPERTY
+  IMPORTED_LOCATION ${LASzip_LIBRARY}
 )
