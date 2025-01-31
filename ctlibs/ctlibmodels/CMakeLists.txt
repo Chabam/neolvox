@@ -1,3 +1,85 @@
+set(CTLIBMODELS_HEADERS
+    ct_categories/abstract/ct_abstractcategory.h
+    ct_categories/tools/ct_categorymanager.h
+    ct_model/abstract/ct_abstractgroupmodelt.h
+    ct_model/abstract/ct_abstractgroupmodelt.hpp
+    ct_model/abstract/ct_abstractitemattributemodelt.h
+    ct_model/abstract/ct_abstractitemattributemodelt.hpp
+    ct_model/abstract/ct_abstractmodel.h
+    ct_model/abstract/ct_abstractsingularitemmodelt.h
+    ct_model/abstract/ct_abstractsingularitemmodelt.hpp
+    ct_model/handle/ct_handlewithmodelt.h
+    ct_model/handle/ct_handlewithmultipleabstractmodel.h
+    ct_model/handle/ct_handlewithmultiplemodelt.h
+    ct_model/inModel/abstract/ct_inabstractgroupmodel.h
+    ct_model/inModel/abstract/ct_inabstractitemattributemodel.h
+    ct_model/inModel/abstract/ct_inabstractitemmodel.h
+    ct_model/inModel/abstract/ct_inabstractmodel.h
+    ct_model/inModel/abstract/ct_inabstractresultmodel.h
+    ct_model/inModel/abstract/ct_inabstractsingularitemmodel.h
+    ct_model/inModel/abstract/def_ct_abstractgroupmodelin.h
+    ct_model/inModel/abstract/def_ct_abstractitemdrawablemodelin.h
+    ct_model/inModel/abstract/def_ct_inabstractitemattributemodel.h
+    ct_model/inModel/ct_inresultmodelgroup.h
+    ct_model/inModel/ct_inresultmodelgrouptocopy.h
+    ct_model/inModel/ct_inresultmodelnotneedinputresult.h
+    ct_model/inModel/ct_instdgroupmodel.h
+    ct_model/inModel/ct_instditemattributemodel.h
+    ct_model/inModel/ct_instdsingularitemmodel.h
+    ct_model/inModel/ct_inzeroormoregroupmodel.h
+    ct_model/inModel/handle/abstract/ct_abstractinhandlewithmodelt.h
+    ct_model/inModel/handle/ct_handleinbase.h
+    ct_model/inModel/handle/ct_handleingroup.h
+    ct_model/inModel/handle/ct_handleinitem.h
+    ct_model/inModel/handle/ct_handleinitemattribute.h
+    ct_model/inModel/handle/ct_handleinresult.h
+    ct_model/inModel/handle/ct_handleinresultcopy.h
+    ct_model/inModel/handle/ct_handleinzeroormoregroup.h
+    ct_model/inModel/handle/ct_inhandleminmaxwithmodelt.h
+    ct_model/inModel/manager/ct_inmodelstructuremanager.h
+    ct_model/inModel/tools/ct_inresultmodelconfigurationmanager.h
+    ct_model/inModel/tools/ct_instdmodelpossibility.h
+    ct_model/inModel/tools/ct_instdmodelpossibilityselectiongroup.h
+    ct_model/inModel/tools/ct_instdresultmodelpossibility.h
+    ct_model/inModel/tools/ct_modelselectionhelper.h
+    ct_model/inModel/views/ctg_inmodelpossibilitieschoice.h
+    ct_model/inModel/views/ctg_inresultmodelconfiguration.h
+    ct_model/inModel/views/ctg_inresultmodelpossibilities.h
+    ct_model/inModel/views/iinmodelpossibilitieschoice.h
+    ct_model/interfacesformodels.h
+    ct_model/outModel/abstract/ct_outabstractgroupmodel.h
+    ct_model/outModel/abstract/ct_outabstractitemattributemodel.h
+    ct_model/outModel/abstract/ct_outabstractitemmodel.h
+    ct_model/outModel/abstract/ct_outabstractmodel.h
+    ct_model/outModel/abstract/ct_outabstractresultmodel.h
+    ct_model/outModel/abstract/ct_outabstractresultmodelgroup.h
+    ct_model/outModel/abstract/ct_outabstractsingularitemmodel.h
+    ct_model/outModel/abstract/def_ct_abstractgroupmodelout.h
+    ct_model/outModel/abstract/def_ct_abstractitemdrawablemodelout.h
+    ct_model/outModel/abstract/def_ct_outabstractitemattributemodel.h
+    ct_model/outModel/ct_outopfnodegroupmodel.h
+    ct_model/outModel/ct_outopfnodegroupmodel.hpp
+    ct_model/outModel/ct_outresultmodelgroup.h
+    ct_model/outModel/ct_outresultmodelgroup.hpp
+    ct_model/outModel/ct_outresultmodelgroupcopy.h
+    ct_model/outModel/ct_outstdgroupmodel.h
+    ct_model/outModel/ct_outstdgroupmodel.hpp
+    ct_model/outModel/ct_outstditemattributemodel.h
+    ct_model/outModel/ct_outstditemattributemodel.hpp
+    ct_model/outModel/ct_outstdsingularitemmodel.h
+    ct_model/outModel/ct_outstdsingularitemmodel.hpp
+    ct_model/outModel/handle/ct_handleoutgroup.h
+    ct_model/outModel/handle/ct_handleoutitem.h
+    ct_model/outModel/handle/ct_handleoutitemattribute.h
+    ct_model/outModel/handle/ct_handleoutresult.h
+    ct_model/outModel/manager/ct_outmodelstructuremanager.h
+    ct_model/outModel/tools/ct_outresultmodelgrouptocopypossibilities.h
+    ct_tools/ct_typeinfo.h
+    ctlibmodels_global.h
+    tools/modelsassert.h
+    tools/sfinae.h
+)
+
 set(CTLIBMODELS_SOURCES
     ct_model/inModel/ct_inresultmodelgroup.cpp
     ct_model/inModel/ct_inresultmodelgrouptocopy.cpp
@@ -52,6 +134,7 @@ set(CTLIBMODELS_TRANSLATIONS
 )
 
 add_library(ctlibmodels SHARED
+    ${CTLIBMODELS_HEADERS}
     ${CTLIBMODELS_SOURCES}
     ${CTLIBMODELS_RESOURCES}
     ${CTLIBMODELS_FORMS}
