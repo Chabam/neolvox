@@ -73,6 +73,7 @@ target_link_libraries(ctliblaz
     ctlibexporter
     ctlibstructureaddon
     ctliblas
+    LASzip
     Qt5::Core
     Qt5::Widgets
 )

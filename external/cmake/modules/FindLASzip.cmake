@@ -17,6 +17,9 @@ if(UNIX)
       /usr/lib
       /usr/local/lib)
 elseif(WIN32)
+  # NOTE: Somehow not needed on Linux...
+  get_filename_component(LASzip_INCLUDE_DIRS "${LASzip_INCLUDE_DIRS}" DIRECTORY)
+
   find_library(LASzip_SHARED_LIBRARY
     NAMES laszip laszip3
     PATHS
@@ -43,7 +46,7 @@ if (WIN32)
       /usr/bin
       /usr/local/bin)
 
-  set_target_property(LASzip APPEND PROPERTY
+  set_property(TARGET LASzip APPEND PROPERTY
     IMPORTED_IMPLIB ${LASzip_IMPLIB}
   )
 endif()
