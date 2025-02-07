@@ -182,3 +182,14 @@ target_link_libraries(plug_neolvox
     Qt5::Gui
     Qt5::Widgets
 )
+
+set_target_properties(plug_neolvox
+    PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+add_custom_command(TARGET plug_neolvox POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:plug_neolvox> $<TARGET_RUNTIME_DLLS:plug_neolvox>
+  COMMAND_EXPAND_LISTS
+)
