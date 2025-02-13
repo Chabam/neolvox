@@ -73,17 +73,23 @@ void LVOX3_StepGridNormalisationRaster::compute()
         {
             const CT_Image2D<float>* dtm = dtms.at(counter++);
 
-            float xres = inGrid->xresolution();
-            float yres = inGrid->yresolution();
-            float zres = inGrid->zresolution();
-
-            size_t xdim = inGrid->xdim();
-            size_t ydim = inGrid->ydim();
-            size_t zdim = inGrid->zdim();
+            const size_t xdim = inGrid->xdim();
+            const size_t ydim = inGrid->ydim();
+            const size_t zdim = inGrid->zdim();
+            const double res = inGrid->resolution();
 
             float NAin = inGrid->NAAsString().toFloat();
 
-            lvox::Grid3Df* itemoutiConteur = new lvox::Grid3Df(inGrid->minX(), inGrid->minY(), inGrid->minZ(), xdim, ydim, zdim, xres, yres, zres, NAin, NAin);
+            lvox::Grid3Df* itemoutiConteur = new lvox::Grid3Df(
+                    inGrid->minX(),
+                    inGrid->minY(),
+                    inGrid->minZ(),
+                    static_cast<int>(xdim),
+                    static_cast<int>(ydim),
+                    static_cast<int>(zdim),
+                    res,
+                    NAin,
+                    NAin);
 
             group->addSingularItem(_NORM, itemoutiConteur);
 
@@ -96,7 +102,7 @@ void LVOX3_StepGridNormalisationRaster::compute()
                 for(size_t yy = 0; yy < ydim; yy++)
                 {
                     //nombre de voxels
-                    //int nbValeur = div(MNT->valueAtCoords(xx,yy),zres).quot;
+                    //int nbValeur = div(MNT->valueAtCoords(xx,yy),res).quot;
                     //find first non null
                     double coordX = inGrid->getCellCenterX(xx);
                     double coordY = inGrid->getCellCenterY(yy);
@@ -117,7 +123,7 @@ void LVOX3_StepGridNormalisationRaster::compute()
                             break;
                         }
                     }
-                    int diff = (dtmZ - minZ)/zres;
+                    int diff = (dtmZ - minZ)/res;
                     if(diff > 0 && isNotEmptyColumn){
                         if( dtmZ < minDtmZ ){
                             minDtmZ = dtmZ;
@@ -139,8 +145,8 @@ void LVOX3_StepGridNormalisationRaster::compute()
                     inGrid->index(xx, yy, 0, minZIndex);
                     //double minZ = inGrid->valueAtIndexAsDouble(minZIndex);
                     //compute the number of voxel must be descended
-                    int beginZlevel = (minDtmZ - minZ)/zres;
-                    int diff = (dtmZ - minDtmZ)/zres;
+                    int beginZlevel = (minDtmZ - minZ)/res;
+                    int diff = (dtmZ - minDtmZ)/res;
                     //qDebug()<<"###diff"<< diff<< "minZ" << minZ << "dtmZ"<< dtmZ << "minDtm" << minDtmZ;
                     if(diff > 0){
                         for(size_t zz = beginZlevel + diff; zz < zdim; zz++)

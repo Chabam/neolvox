@@ -7,7 +7,7 @@
 #define LVOX3_FILTERVOXELSBELOWZVALUES_H
 
 #include "lvox3_worker.h"
-#include "tools/3dgrid/abstract/lvox3_abstractgrid3d.h"
+#include "tools/3dgrid/lvox_3dgriddefs.h"
 #include "ct_itemdrawable/abstract/ct_abstractimage2d.h"
 
 /**

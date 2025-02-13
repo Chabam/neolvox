@@ -9,7 +9,7 @@
 #include "lvox3_grid3dvoxelwoovisitor.h"
 #include "tools/lvox3_gridtype.h"
 
-#include "tools/3dgrid/lvox3_grid3d.h"
+#include "tools/3dgrid/lvox_3dgriddefs.h"
 
 template<typename T>
 class LVOX3_CountVisitor : public LVOX3_Grid3DVoxelWooVisitor

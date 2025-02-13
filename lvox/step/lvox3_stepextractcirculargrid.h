@@ -3,7 +3,7 @@
 
 #include "ct_step/abstract/ct_abstractstep.h"
 
-#include "tools/3dgrid/abstract/lvox3_abstractgrid3d.h"
+#include "tools/3dgrid/lvox_3dgriddefs.h"
 #include "tools/lvox3_gridtype.h"
 
 //This step extracts a circular(ish) grid for any 3dgrid.

@@ -8,7 +8,7 @@
 
 #include "ct_step/abstract/ct_abstractstep.h"
 
-#include "tools/3dgrid/abstract/lvox3_abstractgrid3d.h"
+#include "tools/3dgrid/lvox_3dgriddefs.h"
 #include "ct_itemdrawable/ct_profile.h"
 #include "ct_itemdrawable/ct_standarditemgroup.h"
 #include "tools/lvox3_gridtype.h"

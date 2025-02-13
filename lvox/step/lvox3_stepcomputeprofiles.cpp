@@ -114,7 +114,7 @@ bool LVOX3_StepComputeProfiles::restorePostSettings(SettingsReaderInterface &rea
     return true;
 }
 
-QString LVOX3_StepComputeProfiles::parametersDescription(bool defaultValue)
+QString LVOX3_StepComputeProfiles::parametersDescription(bool _)
 {
     return CT_AbstractStep::parametersDescription() +
             "<strong>" + tr("Step parameters:") + "</strong>"
@@ -213,7 +213,7 @@ bool LVOX3_StepComputeProfiles::postInputConfigure()
 }
 
 void LVOX3_StepComputeProfiles::declareOutputModels(CT_StepOutModelStructureManager& manager)
-{   
+{
     manager.addResultCopy(_inResult);
     manager.addGroup(_inGroup, _outGroup);;
     manager.addItem(_outGroup, _outProfile, tr("Profil"));
@@ -254,6 +254,7 @@ void LVOX3_StepComputeProfiles::compute()
         if (isStopped()) {return;}
 
         const LVOX3_AbstractGrid3D* inGrid = group->singularItem(_inGrid);
+        const double res = inGrid->resolution();
 
         QList<double> axisMinMax;
 
@@ -263,12 +264,19 @@ void LVOX3_StepComputeProfiles::compute()
             if((inGrid->xdim() > 0)
                     && (inGrid->ydim() > 0)
                     && (inGrid->zdim() > 0)
-                    && (inGrid->xresolution() > 0)
-                    && (inGrid->yresolution() > 0)
-                    && (inGrid->zresolution() > 0)) {
+                    && (res > 0)) {
 
                 //Declaring output grid to be able to export personalized grid of profile
-                lvox::Grid3Df *profileGrid = new lvox::Grid3Df(inGrid->minX(), inGrid->minY(), inGrid->minZ(), inGrid->xdim(), inGrid->ydim(), inGrid->zdim(), inGrid->xresolution(),inGrid->yresolution(),inGrid->zresolution(), lvox::Max_Error_Code, 0);
+                lvox::Grid3Df *profileGrid = new lvox::Grid3Df(
+                        inGrid->minX(),
+                        inGrid->minY(),
+                        inGrid->minZ(),
+                        inGrid->xdim(),
+                        inGrid->ydim(),
+                        inGrid->zdim(),
+                       res,
+                        lvox::Max_Error_Code,
+                        0);
 
                 //Declaration of generation axii
                 Vector3SizeT startEndStepGen(0, 0, 1);
@@ -341,7 +349,7 @@ void LVOX3_StepComputeProfiles::compute()
                     outProfile = createProfile(inGrid, currentProfileIndex, axeGen, axeOrdonnee, NAValue);
 
                     size_t begin = currentProfileIndex;
-                    size_t end = qMin(startEndStepGen(1), begin + startEndStepGen(2));                    
+                    size_t end = qMin(startEndStepGen(1), begin + startEndStepGen(2));
                     int nbVoxelsInSpot = 0;//nb voxels # 0
                     for(indexGenAbscisseOrdonnee(0) = begin; indexGenAbscisseOrdonnee(0) < end; indexGenAbscisseOrdonnee(0) += 1)
                     {
@@ -362,7 +370,7 @@ void LVOX3_StepComputeProfiles::compute()
                                     profileGrid->addValueAtIndex(index,value);
                                     //if the value is below 0, it counts the number of them per level, instead of normal behaviour
                                     if(value >= 0){
-                                        outProfile->addValueAtIndex(indexGenAbscisseOrdonnee(2), value);                                        
+                                        outProfile->addValueAtIndex(indexGenAbscisseOrdonnee(2), value);
                                     }else{
                                         //@TODO: ???
                                         outProfile->addValueAtIndex(indexGenAbscisseOrdonnee(2), 1);
@@ -397,18 +405,12 @@ CT_Profile<double>* LVOX3_StepComputeProfiles::createProfile(const LVOX3_Abstrac
 {
     Eigen::Array3d gridMin(grid->minX(), grid->minY(), grid->minZ());
     Eigen::Array3d finalMin;
-    double resolution = grid->xresolution();
-    finalMin.x() = gridMin.x() + (axeNormal.cast<double>().x()*(((double)currentIndex)*grid->xresolution()));
-    finalMin.y() = gridMin.y() + (axeNormal.cast<double>().y()*(((double)currentIndex)*grid->yresolution()));
-    finalMin.z() = gridMin.z() + (axeNormal.cast<double>().z()*(((double)currentIndex)*grid->zresolution()));
+    double resolution = grid->resolution();
+    finalMin.x() = gridMin.x() + (axeNormal.cast<double>().x()*(((double)currentIndex)*resolution));
+    finalMin.y() = gridMin.y() + (axeNormal.cast<double>().y()*(((double)currentIndex)*resolution));
+    finalMin.z() = gridMin.z() + (axeNormal.cast<double>().z()*(((double)currentIndex)*resolution));
 
     size_t profileSize = Vector3SizeT(grid->xdim(), grid->ydim(), grid->zdim()).dot(axeOrdonnee.cast<size_t>());
-
-    //Take whichever resolution is the height axis for this profile
-    if(m_configuration.ordonneeAxis.toLower() == "y")
-        resolution = grid->yresolution();
-    else if(m_configuration.ordonneeAxis.toLower() == "z")
-        resolution = grid->zresolution();
 
     // TODO : add an orientation vector to the class CT_Profile !
     return new CT_Profile<double>(finalMin.x(),
@@ -469,6 +471,7 @@ QList<double> LVOX3_StepComputeProfiles::changeToVoxel(const LVOX3_AbstractGrid3
     double voxelGridLowerX;
     double voxelGridLowerY;
     double voxelGridLowerZ;
+    const double resolution = inGrid->resolution();
 
     //Have to round because it does floor or ceiling in the function setStartEnd, which plays with data accuracy
     voxelGridLowerX = std::fabs(inGrid->minX());
@@ -487,8 +490,8 @@ QList<double> LVOX3_StepComputeProfiles::changeToVoxel(const LVOX3_AbstractGrid3
         }
         //If the grid calculations are not based on percentages
         if(!m_configuration.abscisseOrdonneeValuesInPourcent){
-            axisMinMax.append(coordinates.at(0)/inGrid->xresolution());
-            axisMinMax.append(coordinates.at(1)/inGrid->xresolution());
+            axisMinMax.append(coordinates.at(0)/resolution);
+            axisMinMax.append(coordinates.at(1)/resolution);
         }
     }else if(m_configuration.ordonneeAxis.toLower() == "y"){
         if(inGrid->minY()>= 0){
@@ -501,8 +504,8 @@ QList<double> LVOX3_StepComputeProfiles::changeToVoxel(const LVOX3_AbstractGrid3
         }
         //If the grid calculations are not based on percentages
         if(!m_configuration.abscisseOrdonneeValuesInPourcent){
-            axisMinMax.append(coordinates.at(0)/inGrid->yresolution());
-            axisMinMax.append(coordinates.at(1)/inGrid->yresolution());
+            axisMinMax.append(coordinates.at(0)/resolution);
+            axisMinMax.append(coordinates.at(1)/resolution);
         }
     }else if(m_configuration.ordonneeAxis.toLower() == "z"){
         if(inGrid->minZ()>= 0){
@@ -515,8 +518,8 @@ QList<double> LVOX3_StepComputeProfiles::changeToVoxel(const LVOX3_AbstractGrid3
         }
         //If the grid calculations are not based on percentages
         if(!m_configuration.abscisseOrdonneeValuesInPourcent){
-            axisMinMax.append(coordinates.at(0)/inGrid->zresolution());
-            axisMinMax.append(coordinates.at(1)/inGrid->zresolution());
+            axisMinMax.append(coordinates.at(0)/resolution);
+            axisMinMax.append(coordinates.at(1)/resolution);
         }
     }
 
@@ -533,8 +536,8 @@ QList<double> LVOX3_StepComputeProfiles::changeToVoxel(const LVOX3_AbstractGrid3
         }
         //If the grid calculations are not based on percentages
         if(!m_configuration.abscisseOrdonneeValuesInPourcent){
-            axisMinMax.append(coordinates.at(2)/inGrid->zresolution());
-            axisMinMax.append(coordinates.at(3)/inGrid->zresolution());
+            axisMinMax.append(coordinates.at(2)/resolution);
+            axisMinMax.append(coordinates.at(3)/resolution);
         }
     }else if(m_configuration.ordonneeAxis.toLower() == "z" && m_configuration.genAxis.toLower()=="x"){
         if(inGrid->minY()>= 0){
@@ -547,8 +550,8 @@ QList<double> LVOX3_StepComputeProfiles::changeToVoxel(const LVOX3_AbstractGrid3
         }
         //If the grid calculations are not based on percentages
         if(!m_configuration.abscisseOrdonneeValuesInPourcent){
-            axisMinMax.append(coordinates.at(2)/inGrid->yresolution());
-            axisMinMax.append(coordinates.at(3)/inGrid->yresolution());
+            axisMinMax.append(coordinates.at(2)/resolution);
+            axisMinMax.append(coordinates.at(3)/resolution);
         }
     }else if(m_configuration.ordonneeAxis.toLower() == "z" && m_configuration.genAxis.toLower()=="y"){
         if(inGrid->minX()>= 0){
@@ -561,8 +564,8 @@ QList<double> LVOX3_StepComputeProfiles::changeToVoxel(const LVOX3_AbstractGrid3
         }
         //If the grid calculations are not based on percentages
         if(!m_configuration.abscisseOrdonneeValuesInPourcent){
-            axisMinMax.append(coordinates.at(2)/inGrid->xresolution());
-            axisMinMax.append(coordinates.at(3)/inGrid->xresolution());
+            axisMinMax.append(coordinates.at(2)/resolution);
+            axisMinMax.append(coordinates.at(3)/resolution);
         }
     }
 
@@ -577,9 +580,9 @@ QList<double> LVOX3_StepComputeProfiles::changeToVoxel(const LVOX3_AbstractGrid3
             coordinates.append(MAXProfile(m_configuration.maxGen,inGrid->maxX()) + voxelGridLowerX);
         }
         if(!m_configuration.genValuesInPourcent){
-            axisMinMax.append(coordinates.at(4)/inGrid->xresolution());
-            axisMinMax.append(coordinates.at(5)/inGrid->xresolution());
-            axisMinMax.append(m_configuration.stepGen/inGrid->xresolution()); //Step Gen is in meters when coordinates is taken
+            axisMinMax.append(coordinates.at(4)/resolution);
+            axisMinMax.append(coordinates.at(5)/resolution);
+            axisMinMax.append(m_configuration.stepGen/resolution); //Step Gen is in meters when coordinates is taken
         }
     }else if(m_configuration.genAxis.toLower()=="y"){
         if(inGrid->minY()>= 0){
@@ -591,9 +594,9 @@ QList<double> LVOX3_StepComputeProfiles::changeToVoxel(const LVOX3_AbstractGrid3
             coordinates.append(MAXProfile(m_configuration.maxGen,inGrid->maxY()) + voxelGridLowerY);
         }
         if(!m_configuration.genValuesInPourcent){
-            axisMinMax.append(coordinates.at(4)/inGrid->yresolution());
-            axisMinMax.append(coordinates.at(5)/inGrid->yresolution());
-            axisMinMax.append(m_configuration.stepGen/inGrid->yresolution()); //Step Gen is in meters when coordinates is taken
+            axisMinMax.append(coordinates.at(4)/resolution);
+            axisMinMax.append(coordinates.at(5)/resolution);
+            axisMinMax.append(m_configuration.stepGen/resolution); //Step Gen is in meters when coordinates is taken
         }
     }
 

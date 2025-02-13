@@ -4,11 +4,11 @@
                      and the Association de Recherche Technologie et Sciences (ARTS), Ecole Nationale Suprieure d'Arts et Metiers (ENSAM), Cluny, France.
                      All rights reserved.
 
- Contact : alexandre.piboule@onf.fr
+ Contact : felix.chabot@usherbrooke.ca
 
- Developers : Alexandre PIBOULE (ONF)
+ Developers : Félix Chabot (UdeS)
 
- This file is part of PluginShared library 2.0.
+ This file is part of LVOX
 
  PluginShared is free library: you can redistribute it and/or modify
  it under the terms of the GNU Lesser General Public License as published by
@@ -25,27 +25,12 @@
 
 *****************************************************************************/
 
-#include "lvox3_abstractgrid3d.h"
+#ifndef LVOX_3DGRIDDRAWMANAGERREFS
+#define LVOX_3DGRIDDRAWMANAGERREFS
 
-CT_TYPE_IMPL_INIT_MACRO(LVOX3_AbstractGrid3D)
+#include <ct_itemdrawable/tools/drawmanager/ct_standardgrid3ddrawmanager.h>
 
-LVOX3_AbstractGrid3D::LVOX3_AbstractGrid3D() : CT_AbstractItemDrawableWithoutPointCloud()
-{
-}
+template <typename DataT>
+using LVOX3_StandardGrid3DDrawManager = CT_StandardGrid3DDrawManager<DataT>;
 
-LVOX3_AbstractGrid3D::LVOX3_AbstractGrid3D(const CT_OutAbstractSingularItemModel *model, const CT_AbstractResult *result) : CT_AbstractItemDrawableWithoutPointCloud()
-{
-    Q_UNUSED(model)
-    Q_UNUSED(result)
-}
-
-LVOX3_AbstractGrid3D::LVOX3_AbstractGrid3D(const QString &modelName, const CT_AbstractResult *result) : CT_AbstractItemDrawableWithoutPointCloud()
-{
-    Q_UNUSED(modelName)
-    Q_UNUSED(result)
-}
-
-LVOX3_AbstractGrid3D::~LVOX3_AbstractGrid3D()
-{
-
-}
+#endif // LVOX_3DGRIDDRAWMANAGERREFS

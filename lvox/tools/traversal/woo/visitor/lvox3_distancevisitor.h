@@ -12,7 +12,7 @@
 #include "tools/lvox3_gridtype.h"
 #include "tools/lvox3_errorcode.h"
 
-#include "tools/3dgrid/lvox3_grid3d.h"
+#include "tools/3dgrid/lvox_3dgriddefs.h"
 
 template<typename T>
 class LVOX3_DistanceVisitor : public LVOX3_Grid3DVoxelWooVisitor
@@ -35,7 +35,7 @@ public:
     /**
      * @brief Called when a voxel must be visited
      */
-    void visit(const LVOX3_Grid3DVoxelWooVisitorContext& context) {        
+    void visit(const LVOX3_Grid3DVoxelWooVisitorContext& context) {
         Eigen::Vector3d bot, top, nearInter, farInter;
         m_gridTools->computeCellBottomLeftTopRightCornerAtColLinLevel(context.colLinLevel.x(),
                                                                       context.colLinLevel.y(),
@@ -51,7 +51,7 @@ public:
             //qDebug()<<"XXXXXXXXX:"<<nearInter(0) << nearInter(1)<< nearInter(2) << farInter(0)<< farInter(1)<< farInter(2) << distance;
             if(m_multithreadCollection != NULL) {
                 QMutex* mutex = (*m_multithreadCollection)[context.currentVoxelIndex];
-                mutex->lock();                
+                mutex->lock();
                 m_grid->doSommation(context.currentVoxelIndex,distance,distance);
                 m_grid->addValueAtIndex(context.currentVoxelIndex, 1);
 

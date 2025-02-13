@@ -6,7 +6,7 @@
 #ifndef LVOX3_GRID3DPROPAGATIONALGORITHM_H
 #define LVOX3_GRID3DPROPAGATIONALGORITHM_H
 
-#include "tools/3dgrid/abstract/lvox3_abstractgrid3d.h"
+#include "tools/3dgrid/lvox_3dgriddefs.h"
 
 #include "tools/lvox3_gridtools.h"
 

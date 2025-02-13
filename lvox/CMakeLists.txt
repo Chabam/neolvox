@@ -57,18 +57,22 @@ set(LVOX_HEADERS
     tools/worker/lvox3_mergegridsworker.h
     tools/lvox3_factory.hpp
     tools/lvox3_scannerutils.h
-    tools/3dgrid/abstract/lvox3_abstractgrid3d.h
-    tools/3dgrid/lvox3_grid3d.h
-    tools/3dgrid/lvox3_grid3d.hpp
-    tools/3dgrid/lvox3_grid3d_sparse.h
-    tools/3dgrid/lvox3_grid3d_sparse.hpp
-    tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.h
-    tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp
-    tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp
-    tools/drawmanager/lvox3_standardgrid3ddrawmanager.h
-    tools/exporter/lvox3_grid3dexporter.h
-    tools/reader/lvox3_reader_asciigrid3d.h
-    tools/reader/lvox3_reader_asciigrid3d_def_models.h
+    tools/3dgrid/lvox_3dgriddefs.h
+    # tools/3dgrid/abstract/lvox3_abstractgrid3d.h
+    # tools/3dgrid/lvox3_grid3d.h
+    # tools/3dgrid/lvox3_grid3d.hpp
+    # tools/3dgrid/lvox3_grid3d_sparse.h
+    # tools/3dgrid/lvox3_grid3d_sparse.hpp
+    tools/drawmanager/lvox3_3dgriddrawmanagerdefs.h
+    # tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.h
+    # tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp
+    # tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp
+    # tools/drawmanager/lvox3_standardgrid3ddrawmanager.h
+    # tools/exporter/lvox3_grid3dexporter.h
+    tools/exporter/lvox3_grid3dexporterdefs.h
+    tools/reader/lvox3_readerdefs.h
+    # tools/reader/lvox3_reader_asciigrid3d.h
+    # tools/reader/lvox3_reader_asciigrid3d_def_models.h
     tools/worker/lvox3_interpolatezaverage.h
     tools/traversal/propagation/expfit.h
     tools/worker/lvox3_interpolatekrigingbinomial.h
@@ -89,18 +93,18 @@ set(LVOX_SOURCES
     step/lvox3_steploadfiles.cpp
     step/lvox3_stepmakeshootingpatternformls.cpp
     step/lvox3_stepmergegrids.cpp
-    tools/3dgrid/abstract/lvox3_abstractgrid3d.cpp
-    tools/3dgrid/lvox3_grid3d.cpp
-    tools/3dgrid/lvox3_grid3d_sparse.cpp
-    tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.cpp
-    tools/drawmanager/lvox3_standardgrid3ddrawmanager.cpp
-    tools/exporter/lvox3_grid3dexporter.cpp
+    # tools/3dgrid/abstract/lvox3_abstractgrid3d.cpp
+    # tools/3dgrid/lvox3_grid3d.cpp
+    # tools/3dgrid/lvox3_grid3d_sparse.cpp
+    # tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.cpp
+    # tools/drawmanager/lvox3_standardgrid3ddrawmanager.cpp
+    # tools/exporter/lvox3_grid3dexporter.cpp
     tools/lvox3_computelvoxgridspreparator.cpp
     tools/lvox3_mergegrids.cpp
     tools/lvox3_rayboxintersectionmath.cpp
     tools/lvox3_scannerutils.cpp
     tools/lvox3_utils.cpp
-    tools/reader/lvox3_reader_asciigrid3d.cpp
+    # tools/reader/lvox3_reader_asciigrid3d.cpp
     tools/scanner/lvox_shootingpatternformls.cpp
     tools/traversal/propagation/expfit.cpp
     tools/traversal/propagation/lvox3_grid3dpropagationalgorithm.cpp
@@ -166,6 +170,7 @@ target_link_libraries(plug_neolvox
     ctlibcommon
     ctlibplugin
     ctlibclouds
+    ctlibio
     ctlibstep
     ctlibstepaddon
     ctlibio
@@ -173,6 +178,7 @@ target_link_libraries(plug_neolvox
     ctlibaction
     ctlibstdactions
     ctlibstructure
+    ctlibstructureaddon
     ctlibmath
     ctliblas
     muparser::muparser

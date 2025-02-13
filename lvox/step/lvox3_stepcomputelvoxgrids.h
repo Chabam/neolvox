@@ -83,7 +83,7 @@ private:
 
     GridMode        m_gridMode;
     VegetationType  m_elementProjectedAreaMethod;
-    Eigen::Vector3d m_resolution;               /*!< voxel size on the x,y and z axis */
+    double m_resolution;               /*!< voxel size on the x,y and z axis */
     Eigen::Vector3d m_coordinates;              /*!< coordinates if gridMode == ...Coordinates... */
     Eigen::Vector3d m_dimensions;               /*!< dimensions if gridMode == ...CustomDimensions */
     QStringList     m_gridFilePath;             /*!< Name of .grid L-Architect reference 3D grid */
