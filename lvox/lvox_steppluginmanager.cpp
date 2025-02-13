@@ -43,8 +43,8 @@
 #include "step/lvox3_stepgridnormalisation.h"
 #include "step/lvox3_stepgridnormalisationraster.h"
 #include "step/lvox3_stepcomputenormalizedprofiles.h"
-#include "tools/exporter/lvox3_grid3dexporter.h"
-#include "tools/reader/lvox3_reader_asciigrid3d.h"
+#include "tools/exporter/lvox3_grid3dexporterdefs.h"
+#include "tools/reader/lvox3_readerdefs.h"
 
 
 #include "step/lvox3_stepmakeshootingpatternformls.h"

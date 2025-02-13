@@ -8,7 +8,7 @@
 
 #include "tools/worker/lvox3_worker.h"
 
-#include "tools/3dgrid/abstract/lvox3_abstractgrid3d.h"
+#include "tools/3dgrid/lvox_3dgriddefs.h"
 #include "tools/lvox3_genericconfiguration.h"
 
 #include "muParser.h"

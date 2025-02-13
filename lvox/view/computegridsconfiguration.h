@@ -31,7 +31,7 @@ public:
 
     inline const uint32_t getCurrentGridMode() { return _currentGridMode; }
 
-    Eigen::Vector3d getResolution() const;
+    double getResolution() const;
     Eigen::Vector3d getCoordinates() const;
     Eigen::Vector3d getDimensiosn() const;
     double getFlatArea() const;
@@ -46,7 +46,7 @@ public:
     void setCoordinates(Eigen::Vector3d coordinates);
     void setDimensions(Eigen::Vector3d dimensions);
     void setComputeDistances(bool value);
-    void setResolution(Eigen::Vector3d resolution);
+    void setResolution(double resolution);
     void setFlatArea(double area);
         void setLengthOrExtension1(double value);
     void setWidthOrExtension2(double value);

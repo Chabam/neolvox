@@ -182,7 +182,7 @@ void LVOX3_StepComputePAD::declareInputModels(CT_StepInModelStructureManager &ma
 
 // Creation and affiliation of OUT models
 void LVOX3_StepComputePAD::declareOutputModels(CT_StepOutModelStructureManager &manager)
-{    
+{
     manager.addResultCopy(_inResult);
     if (_methodInfos["CF"].isSelected)
         manager.addItem(_inGroup, _out_PADCF, "PAD-ContactFreq");
@@ -249,9 +249,7 @@ void LVOX3_StepComputePAD::compute()
 
         if (itemIn_deltaH != nullptr && itemIn_deltaT != nullptr && itemIn_deltaB != nullptr)
         {
-            float xres = itemIn_deltaH->xresolution();
-            float yres = itemIn_deltaH->yresolution();
-            float zres = itemIn_deltaH->zresolution();
+            double res = itemIn_deltaH->resolution();
             float NAd = itemIn_deltaH->NA();
 
             _lambda1 = itemIn_deltaT->getLambda1();
@@ -281,25 +279,133 @@ void LVOX3_StepComputePAD::compute()
             lvox::Grid3Df* itemOut_1_zleDelta_effSum = nullptr;
 
             if(_methodInfos["CF"].isSelected)
-                itemOut_PADCF = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
+                itemOut_PADCF = new lvox::Grid3Df(
+                        itemIn_deltaH->minX(),
+                        itemIn_deltaH->minY(),
+                        itemIn_deltaH->minZ(),
+                        static_cast<int>(xdim),
+                        static_cast<int>(ydim),
+                        static_cast<int>(zdim),
+                        res,
+                        NAd,
+                        NAd);
             if(_methodInfos["MLE"].isSelected)
-                itemOut_PADMLESimple = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
+                itemOut_PADMLESimple = new lvox::Grid3Df(
+                        itemIn_deltaH->minX(),
+                        itemIn_deltaH->minY(),
+                        itemIn_deltaH->minZ(),
+                        static_cast<int>(xdim),
+                        static_cast<int>(ydim),
+                        static_cast<int>(zdim),
+                        res,
+                        NAd,
+                        NAd);
             if(_methodInfos["BCMLE"].isSelected)
-                itemOut_PADMLEBias = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
+                itemOut_PADMLEBias = new lvox::Grid3Df(
+                        itemIn_deltaH->minX(),
+                        itemIn_deltaH->minY(),
+                        itemIn_deltaH->minZ(),
+                        static_cast<int>(xdim),
+                        static_cast<int>(ydim),
+                        static_cast<int>(zdim),
+                        res,
+                        NAd,
+                        NAd);
             if(_methodInfos["BL"].isSelected)
-                itemOut_PADBLBasic = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
+                itemOut_PADBLBasic = new lvox::Grid3Df(
+                        itemIn_deltaH->minX(),
+                        itemIn_deltaH->minY(),
+                        itemIn_deltaH->minZ(),
+                        static_cast<int>(xdim),
+                        static_cast<int>(ydim),
+                        static_cast<int>(zdim),
+                        res,
+                        NAd,
+                        NAd);
             if(_methodInfos["BCBL"].isSelected)
-                itemOut_PADBLEqual = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
+                itemOut_PADBLEqual = new lvox::Grid3Df(
+                        itemIn_deltaH->minX(),
+                        itemIn_deltaH->minY(),
+                        itemIn_deltaH->minZ(),
+                        static_cast<int>(xdim),
+                        static_cast<int>(ydim),
+                        static_cast<int>(zdim),
+                        res,
+                        NAd,
+                        NAd);
             if(_methodInfos["BC2BL"].isSelected)
-                itemOut_PADBLUnequal = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
+                itemOut_PADBLUnequal = new lvox::Grid3Df(
+                        itemIn_deltaH->minX(),
+                        itemIn_deltaH->minY(),
+                        itemIn_deltaH->minZ(),
+                        static_cast<int>(xdim),
+                        static_cast<int>(ydim),
+                        static_cast<int>(zdim),
+                        res,
+                        NAd,
+                        NAd);
             if(_grilleSup)
             {
-                itemOut_deltaSum = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
-                itemOut_deltaEffSum = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
-                itemOut_zSum = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
-                itemOut_zEffSum = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
-                itemOut_deltaSquareSum = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
-                itemOut_1_zleDelta_effSum = new lvox::Grid3Df(itemIn_deltaH->minX(), itemIn_deltaH->minY(), itemIn_deltaH->minZ(), xdim, ydim, zdim, xres,yres,zres, NAd, NAd);
+                itemOut_deltaSum = new lvox::Grid3Df(
+                        itemIn_deltaH->minX(),
+                        itemIn_deltaH->minY(),
+                        itemIn_deltaH->minZ(),
+                        static_cast<int>(xdim),
+                        static_cast<int>(ydim),
+                        static_cast<int>(zdim),
+                        res,
+                        NAd,
+                        NAd);
+                itemOut_deltaEffSum = new lvox::Grid3Df(
+                        itemIn_deltaH->minX(),
+                        itemIn_deltaH->minY(),
+                        itemIn_deltaH->minZ(),
+                        static_cast<int>(xdim),
+                        static_cast<int>(ydim),
+                        static_cast<int>(zdim),
+                        res,
+                        NAd,
+                        NAd);
+                itemOut_zSum = new lvox::Grid3Df(
+                    itemIn_deltaH->minX(),
+                     itemIn_deltaH->minY(),
+                     itemIn_deltaH->minZ(),
+                     static_cast<int>(xdim),
+                     static_cast<int>(ydim),
+                     static_cast<int>(zdim),
+                     res,
+                     NAd,
+                     NAd);
+                itemOut_zEffSum = new lvox::Grid3Df(
+                        itemIn_deltaH->minX(),
+                        itemIn_deltaH->minY(),
+                        itemIn_deltaH->minZ(),
+                        static_cast<int>(xdim),
+                        static_cast<int>(ydim),
+                        static_cast<int>(zdim),
+                        res,
+                        NAd,
+                        NAd);
+                itemOut_deltaSquareSum = new lvox::Grid3Df(
+                        itemIn_deltaH->minX(),
+                        itemIn_deltaH->minY(),
+                        itemIn_deltaH->minZ(),
+                        static_cast<int>(xdim),
+                        static_cast<int>(ydim),
+                        static_cast<int>(zdim),
+                        res,
+                        NAd,
+                        NAd);
+                itemOut_1_zleDelta_effSum = new lvox::Grid3Df(
+                        itemIn_deltaH->minX(),
+                        itemIn_deltaH->minY(),
+                        itemIn_deltaH->minZ(),
+                        static_cast<int>(xdim),
+                        static_cast<int>(ydim),
+                        static_cast<int>(zdim),
+                        res,
+                        NAd,
+                        NAd);
             }
 
 

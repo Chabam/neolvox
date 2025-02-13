@@ -38,7 +38,7 @@ void LVOX3_ComputeBefore::doTheJob()
     else list.append(&countVisitor);
 
     // Creates traversal algorithm
-    LVOX3_Grid3DWooTraversalAlgorithm<lvox::Grid3DiType> algo(m_before, false, list);
+    LVOX3_Grid3DWooTraversalAlgorithm algo(m_before, false, list);
 
     setProgressRange(0, /*(_shotStatsDistance != NULL)*/_computeDistance ? n_points+1 : n_points);
 

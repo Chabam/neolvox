@@ -8,7 +8,7 @@
 
 #include <QElapsedTimer>
 
-#include "tools/3dgrid/lvox3_grid3d.h"
+#include "tools/3dgrid/lvox_3dgriddefs.h"
 #include "ct_itemdrawable/tools/scanner/ct_shot.h"
 #include "ct_itemdrawable/tools/gridtools/ct_abstractgrid3dbeamvisitor.h"
 
@@ -35,9 +35,10 @@ public:
         m_grid = grid;
         m_grid->boundingBox(m_gridBottom, m_gridTop);
 
-        m_gridResolution(0) = grid->xresolution();
-        m_gridResolution(1) = grid->yresolution();
-        m_gridResolution(2) = grid->zresolution();
+        const double res = grid->resolution();
+        m_gridResolution(0) = res;
+        m_gridResolution(1) = res;
+        m_gridResolution(2) = res;
         m_visitFirstVoxelTouched = visitFirstVoxelTouched;
 
         m_chooseAxis[0] = 2;

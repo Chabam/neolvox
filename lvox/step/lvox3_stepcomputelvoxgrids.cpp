@@ -19,9 +19,7 @@
  */
 LVOX3_StepComputeLvoxGrids::LVOX3_StepComputeLvoxGrids() : SuperClass()
 {
-    m_resolution.x() = 0.5;
-    m_resolution.y() = 0.5;
-    m_resolution.z() = 0.5;
+    m_resolution = 0.5;
     m_computeDistances = false;
     //_onlyHits = false;
 
@@ -90,9 +88,9 @@ void LVOX3_StepComputeLvoxGrids::savePostSettings(SettingsWriterInterface& write
 {
     CT_AbstractStep::savePostSettings(writer);
 
-    writer.addParameter(this, "gridResolutionX", m_resolution.x());
-    writer.addParameter(this, "gridResolutionY", m_resolution.y());
-    writer.addParameter(this, "gridResolutionZ", m_resolution.z());
+    writer.addParameter(this, "gridResolutionX", m_resolution);
+    writer.addParameter(this, "gridResolutionY", m_resolution);
+    writer.addParameter(this, "gridResolutionZ", m_resolution);
     writer.addParameter(this, "computeDistances", m_computeDistances);
 
     writer.addParameter(this, "projectedAreaMethod", m_elementProjectedAreaMethod);
@@ -118,13 +116,13 @@ bool LVOX3_StepComputeLvoxGrids::restorePostSettings(SettingsReaderInterface &re
     QVariant value;
 
     reader.parameter(this, "gridResolutionX", value);
-    m_resolution.x() = value.toDouble();
+    m_resolution = value.toDouble();
 
     reader.parameter(this, "gridResolutionY", value);
-    m_resolution.y() = value.toDouble();
+    m_resolution = value.toDouble();
 
     reader.parameter(this, "gridResolutionZ", value);
-    m_resolution.z() = value.toDouble();
+    m_resolution = value.toDouble();
 
     reader.parameter(this, "computeDistances", value);
     m_computeDistances = value.toBool();
@@ -286,9 +284,9 @@ void LVOX3_StepComputeLvoxGrids::compute()
                                                               _inScene,
                                                               _inScan,
                                                               _inShootingPattern,
-                                                              m_resolution.x(),
-                                                              m_resolution.y(),
-                                                              m_resolution.z(),
+                                                              m_resolution,
+                                                              m_resolution,
+                                                              m_resolution,
                                                               m_gridMode,
                                                               coo,
                                                               m_gridFilePath.isEmpty() ? "" : m_gridFilePath.first());
@@ -322,12 +320,12 @@ void LVOX3_StepComputeLvoxGrids::compute()
         // qDebug() << "coords + dimensions: "<< pRes.minBBox.x() << pRes.minBBox.y() << pRes.minBBox.z() << pRes.maxBBox.x() - pRes.minBBox.x()<< pRes.maxBBox.y() - pRes.minBBox.y() << pRes.maxBBox.z() - pRes.minBBox.z();
         hitGrid = lvox::Grid3Di::createGrid3DFromXYZCoords(pRes.minBBox.x(), pRes.minBBox.y(), pRes.minBBox.z(),
                                                            pRes.maxBBox.x(), pRes.maxBBox.y(), pRes.maxBBox.z(),
-                                                           m_resolution.x(),m_resolution.y(),m_resolution.z(), -9, 0);
+                                                           m_resolution, -9, 0, false);
         theoriticalGrid = new lvox::Grid3Di(hitGrid->minX(), hitGrid->minY(), hitGrid->minZ(), hitGrid->xdim(),
-                                            hitGrid->ydim(), hitGrid->zdim(), m_resolution.x(),m_resolution.y(),m_resolution.z(),
+                                            hitGrid->ydim(), hitGrid->zdim(), m_resolution,
                                             -9, 0);
         beforeGrid = new lvox::Grid3Di(hitGrid->minX(), hitGrid->minY(), hitGrid->minZ(), hitGrid->xdim(),
-                                       hitGrid->ydim(), hitGrid->zdim(), m_resolution.x(),m_resolution.y(),m_resolution.z(),
+                                       hitGrid->ydim(), hitGrid->zdim(), m_resolution,
                                        -9, 0);
 
         allGrids.append(hitGrid);

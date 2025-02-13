@@ -6,7 +6,7 @@
 #ifndef LVOX3_GRIDTYPE_H
 #define LVOX3_GRIDTYPE_H
 
-#include "3dgrid/lvox3_grid3d.h"
+#include "3dgrid/lvox_3dgriddefs.h"
 #include "ct_itemdrawable/ct_image2d.h"
 
 #include <QMutex>
