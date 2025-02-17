@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>resources/computeprofiles.png</file>
+        <file>resources/help.png</file>
+    </qresource>
+</RCC>
