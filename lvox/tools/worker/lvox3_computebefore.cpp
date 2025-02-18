@@ -2,7 +2,8 @@
 #include "lvox3_computebefore.h"
 
 //Tools/Traversal algorithms
-#include "tools/traversal/woo/lvox3_grid3dwootraversalalgorithm.h"
+#include "ct_itemdrawable/tools/gridtools/ct_abstractgrid3dbeamvisitor.h"
+#include "tools/traversal/woo/lvox3_traversaldefs.h"
 #include "tools/traversal/woo/visitor/lvox3_countvisitor.h"
 #include "tools/traversal/woo/visitor/lvox3_distancevisitor.h"
 
@@ -26,7 +27,7 @@ void LVOX3_ComputeBefore::doTheJob()
     size_t n_points = m_pointCloudIndex->size();
 
     // Creates visitors
-    QVector<LVOX3_Grid3DVoxelWooVisitor*> list;
+    QList<CT_AbstractGrid3DBeamVisitor*> list;
 
     LVOX3_CountVisitor<lvox::Grid3DiType> countVisitor(m_before);
     LVOX3_DistanceVisitor<lvox::Grid3DiType> distVisitor(m_before);
@@ -56,8 +57,8 @@ void LVOX3_ComputeBefore::doTheJob()
         //Eigen::Vector3d direction = m_pattern->getShotForPoint(point).getDirection();
         // algo already check if the beam touch the grid or not so we don't have to do twice !
         //algo.compute(point, point - shotOrigin);
-        auto direction = (point - shotOrigin).normalized();
-        algo.compute(point, direction);
+        CT_Beam beam(point, (point - shotOrigin).normalized());
+        algo.compute(beam);
 
         ++i;
         setProgress(i);

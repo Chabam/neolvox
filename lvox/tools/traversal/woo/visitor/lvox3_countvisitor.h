@@ -6,39 +6,36 @@
 #ifndef LVOX3_COUNTVISITOR_H
 #define LVOX3_COUNTVISITOR_H
 
-#include "lvox3_grid3dvoxelwoovisitor.h"
 #include "tools/lvox3_gridtype.h"
 
 #include "tools/3dgrid/lvox_3dgriddefs.h"
+#include "ct_itemdrawable/tools/gridtools/ct_abstractgrid3dbeamvisitor.h"
 
 template<typename T>
-class LVOX3_CountVisitor : public LVOX3_Grid3DVoxelWooVisitor
+class LVOX3_CountVisitor : public CT_AbstractGrid3DBeamVisitor
 {
 public:
-    LVOX3_CountVisitor(const LVOX3_Grid3D<T>* grid,
-                       const lvox::MutexCollection* collection = NULL) {
-        m_grid = (LVOX3_Grid3D<T>*)grid;
-
-        m_multithreadCollection = (lvox::MutexCollection*)collection;
+    LVOX3_CountVisitor(LVOX3_Grid3D<T>* grid,
+                       lvox::MutexCollection* collection = nullptr) {
+        m_grid = grid;
+        m_multithreadCollection = collection;
     }
 
     /**
      * @brief Called when a voxel must be visited
      */
-    void visit(const LVOX3_Grid3DVoxelWooVisitorContext& context) {
+    virtual void visit(const size_t &index, [[maybe_unused]] const CT_Beam *beam) {
         if(m_multithreadCollection != NULL) {
-            QMutex* mutex = (*m_multithreadCollection)[context.currentVoxelIndex];
+            QMutex* mutex = (*m_multithreadCollection)[index];
             mutex->lock();
-            m_grid->addValueAtIndex(context.currentVoxelIndex, 1);
+            m_grid->addValueAtIndex(index, 1);
             mutex->unlock();
         } else {
-            m_grid->addValueAtIndex(context.currentVoxelIndex, 1);
+            m_grid->addValueAtIndex(index, 1);
         }
     }
 
-
 private:
-
     LVOX3_Grid3D<T>*        m_grid;
     lvox::MutexCollection*  m_multithreadCollection;
 };
