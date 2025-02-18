@@ -30,7 +30,8 @@ set(LVOX_HEADERS
     tools/lvox3_gridtype.h
     tools/worker/lvox3_computeall.h
     tools/lvox3_gridtools.h
-    tools/traversal/woo/lvox3_grid3dwootraversalalgorithm.h
+    # tools/traversal/woo/lvox3_grid3dwootraversalalgorithm.h
+    tools/traversal/woo/lvox3_traversaldefs.h
     tools/lvox3_rayboxintersectionmath.h
     tools/traversal/woo/visitor/lvox3_countvisitor.h
     tools/traversal/woo/visitor/lvox3_distancevisitor.h

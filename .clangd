@@ -1,6 +1,0 @@
-CompileFlags:
-  CompilationDatabase: build/
-  Add: [
-  -Iinclude
-  -I_build/external/gladsources/glad/include
-  ]
