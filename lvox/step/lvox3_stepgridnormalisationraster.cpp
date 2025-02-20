@@ -67,7 +67,7 @@ void LVOX3_StepGridNormalisationRaster::compute()
     {
         if (isStopped()) {return;}
 
-        const LVOX3_AbstractGrid3D* inGrid = group->singularItem(_inGrid);
+        const CT_AbstractGrid3D* inGrid = group->singularItem(_inGrid);
 
         if (inGrid != nullptr)
         {

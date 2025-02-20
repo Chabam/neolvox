@@ -11,14 +11,14 @@
 #include "tools/lvox3_gridtype.h"
 #include "tools/lvox3_errorcode.h"
 
-#include "tools/3dgrid/lvox_3dgriddefs.h"
+#include "tools/3dgrid/lvox_grid3d.h"
 #include "ct_itemdrawable/tools/gridtools/ct_abstractgrid3dbeamvisitor.h"
 
 template<typename T>
 class LVOX3_DistanceVisitor : public CT_AbstractGrid3DBeamVisitor
 {
 public:
-    LVOX3_DistanceVisitor(LVOX3_Grid3D<T>* grid,
+    LVOX3_DistanceVisitor(LVOX_Grid3D<T>* grid,
                           lvox::MutexCollection* collection = nullptr) {
         m_grid = grid;
         m_multithreadCollection = collection;
@@ -70,7 +70,7 @@ public:
     }
 
 private:
-    LVOX3_Grid3D<T>*        m_grid;
+    LVOX_Grid3D<T>*        m_grid;
     LVOX3_GridTools*        m_gridTools;
     lvox::MutexCollection*  m_multithreadCollection;
 };

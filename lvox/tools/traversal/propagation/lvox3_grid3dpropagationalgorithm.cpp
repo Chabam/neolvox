@@ -4,12 +4,12 @@
 
 #include <QStack>
 
-LVOX3_Grid3DPropagationAlgorithm::LVOX3_Grid3DPropagationAlgorithm(const LVOX3_AbstractGrid3D* grid,
+LVOX3_Grid3DPropagationAlgorithm::LVOX3_Grid3DPropagationAlgorithm(const CT_AbstractGrid3D* grid,
                                                                    const VisitorCollection& list,
                                                                    const double &radius,
                                                                    const size_t &startCellIndex) : m_visitors(list)
 {
-    m_grid = (LVOX3_AbstractGrid3D*)grid;
+    m_grid = (CT_AbstractGrid3D*)grid;
     m_gridTools = new LVOX3_GridTools(grid);
     m_radius = radius;
     m_startCellIndex = startCellIndex;

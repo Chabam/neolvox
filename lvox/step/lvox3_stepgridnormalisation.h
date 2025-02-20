@@ -35,12 +35,12 @@ private:
     CT_HandleInResultGroupCopy<>                        _inResult;
     CT_HandleInStdZeroOrMoreGroup                       _inZeroOrMoreRootGroup;
     CT_HandleInStdGroup<>                               _inGroup;
-    CT_HandleInSingularItem<LVOX3_AbstractGrid3D >      _inGrid;
+    CT_HandleInSingularItem<CT_AbstractGrid3D >      _inGrid;
 
     CT_HandleInResultGroupCopy<>                        _inResultDTM;
     CT_HandleInStdZeroOrMoreGroup                       _inZeroOrMoreRootGroupDTM;
     CT_HandleInStdGroup<>                               _inGroupDTM;
-    CT_HandleInSingularItem<LVOX3_AbstractGrid3D >      _inGridDTM;
+    CT_HandleInSingularItem<CT_AbstractGrid3D >      _inGridDTM;
 
     CT_HandleOutSingularItem<lvox::Grid3Df>             _NORM;
     CT_HandleOutSingularItem<lvox::Grid3Df>             _ELevation;

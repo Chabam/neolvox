@@ -46,7 +46,7 @@ void LVOX3_StepGridNormalisation::declareOutputModels(CT_StepOutModelStructureMa
 
 void LVOX3_StepGridNormalisation::compute()
 {
-    QList<const LVOX3_AbstractGrid3D*> dtms;
+    QList<const CT_AbstractGrid3D*> dtms;
     for (CT_StandardItemGroup* groupDTM : _inGroupDTM.iterateOutputs(_inResultDTM))
     {
         dtms.append(groupDTM->singularItem(_inGridDTM));
@@ -57,8 +57,8 @@ void LVOX3_StepGridNormalisation::compute()
     {
         if (isStopped()) {return;}
 
-        const LVOX3_AbstractGrid3D* inGrid = group->singularItem(_inGrid);
-        const LVOX3_AbstractGrid3D* dtmGrid = dtms.at(counter++);
+        const CT_AbstractGrid3D* inGrid = group->singularItem(_inGrid);
+        const CT_AbstractGrid3D* dtmGrid = dtms.at(counter++);
 
         float xres = inGrid->xresolution();
         float yres = inGrid->yresolution();
@@ -126,7 +126,7 @@ void LVOX3_StepGridNormalisation::compute()
         for(size_t xx = 0; xx < xdim; xx++)
         {
             for(size_t yy = 0; yy < ydim; yy++)
-            {                
+            {
                 double coordX = inGrid->getCellCenterX(xx);
                 double coordY = inGrid->getCellCenterY(yy);
 

@@ -314,7 +314,7 @@ void LVOX3_StepComputeLvoxGrids::compute()
         LVOX3_ComputeBefore* beforeWorker = nullptr;
 
         //Used to pass to voxel filtering step more easily
-        QList<LVOX3_AbstractGrid3D*> allGrids;
+        QList<CT_AbstractGrid3D*> allGrids;
         // Declaring the output grids
         // qDebug() << "Box"<< pRes.minBBox.x() << pRes.minBBox.y() << pRes.minBBox.z() << pRes.maxBBox.x() << pRes.maxBBox.y() << pRes.maxBBox.z();
         // qDebug() << "coords + dimensions: "<< pRes.minBBox.x() << pRes.minBBox.y() << pRes.minBBox.z() << pRes.maxBBox.x() - pRes.minBBox.x()<< pRes.maxBBox.y() - pRes.minBBox.y() << pRes.maxBBox.z() - pRes.minBBox.z();
