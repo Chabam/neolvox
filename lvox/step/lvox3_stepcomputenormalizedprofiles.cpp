@@ -102,7 +102,7 @@ void LVOX3_StepComputeNormalizedProfiles::compute()
 
     for (CT_StandardItemGroup* group : _inGroup.iterateOutputs(_inResult))
     {
-        for (const LVOX3_AbstractGrid3D* inGrid : group->singularItems(_inGrid))
+        for (const CT_AbstractGrid3D* inGrid : group->singularItems(_inGrid))
         {
             if (isStopped()) {return;}
 

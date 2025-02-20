@@ -5,7 +5,7 @@
 #include "tools/lvox3_errorcode.h"
 
 //This class is a legacy class used to filtering voxels either with a DTM or a Sky raster(or any raster)
-LVOX3_FilterVoxelsByZValuesOfRaster::LVOX3_FilterVoxelsByZValuesOfRaster(const QList<LVOX3_AbstractGrid3D *> &grids,
+LVOX3_FilterVoxelsByZValuesOfRaster::LVOX3_FilterVoxelsByZValuesOfRaster(const QList<CT_AbstractGrid3D *> &grids,
                                                                const CT_AbstractImage2D *zValues,
                                                                FilterType filter,
                                                                double replacementValue) : LVOX3_Worker()
@@ -23,7 +23,7 @@ void LVOX3_FilterVoxelsByZValuesOfRaster::doTheJob()
     if(nGrids == 0)
         return;
 
-    LVOX3_AbstractGrid3D* refGrid = m_grids[0];
+    CT_AbstractGrid3D* refGrid = m_grids[0];
 
     size_t nCells = refGrid->nCells();
 

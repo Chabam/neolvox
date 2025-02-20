@@ -8,7 +8,7 @@
 
 #include "tools/worker/lvox3_worker.h"
 
-#include "tools/3dgrid/lvox_3dgriddefs.h"
+#include "tools/3dgrid/lvox_grid3d.h"
 #include "tools/lvox3_genericconfiguration.h"
 
 #include "muParser.h"
@@ -23,7 +23,7 @@ class LVOX3_GenericCompute : public LVOX3_Worker
 public:
     struct Input {
         char gridLetterInFormula;
-        LVOX3_AbstractGrid3D* grid;
+        CT_AbstractGrid3D* grid;
     };
 
     /**
@@ -35,7 +35,7 @@ public:
     LVOX3_GenericCompute(const QList<Input>& inputs,
                          const QList<lvox::CheckConfiguration>& checksFormula,
                          const std::string& finalFormula,
-                         LVOX3_AbstractGrid3D* output);
+                         CT_AbstractGrid3D* output);
     ~LVOX3_GenericCompute();
 
 protected:
@@ -48,14 +48,14 @@ private:
 
     struct InternalInput {
         int indexInVariables;
-        LVOX3_AbstractGrid3D* grid;
+        CT_AbstractGrid3D* grid;
     };
 
     QVector<InternalInput>  m_inputs;
     QVector<mu::Parser*>    m_checksErrorParsers;
 
     std::string             m_finalFormula;
-    LVOX3_AbstractGrid3D*   m_output;
+    CT_AbstractGrid3D*   m_output;
 
     QVector<mu::Parser*>    m_checksParsers;
     mu::Parser              m_finalParser;

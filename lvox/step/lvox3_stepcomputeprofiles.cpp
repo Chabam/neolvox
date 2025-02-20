@@ -253,7 +253,7 @@ void LVOX3_StepComputeProfiles::compute()
     {
         if (isStopped()) {return;}
 
-        const LVOX3_AbstractGrid3D* inGrid = group->singularItem(_inGrid);
+        const CT_AbstractGrid3D* inGrid = group->singularItem(_inGrid);
         const double res = inGrid->resolution();
 
         QList<double> axisMinMax;
@@ -397,7 +397,7 @@ void LVOX3_StepComputeProfiles::compute()
 }
 
 //Creates the density profile of the inGrid + personnalized information
-CT_Profile<double>* LVOX3_StepComputeProfiles::createProfile(const LVOX3_AbstractGrid3D* grid,
+CT_Profile<double>* LVOX3_StepComputeProfiles::createProfile(const CT_AbstractGrid3D* grid,
                                                              const size_t& currentIndex,
                                                              const Eigen::Vector3i& axeNormal,
                                                              const Eigen::Vector3i& axeOrdonnee,
@@ -465,7 +465,7 @@ void LVOX3_StepComputeProfiles::setStep(size_t step, LVOX3_StepComputeProfiles::
 }
 
 //Changes the user entered values for axis limits from coordinates to voxels (to remove user calculation)
-QList<double> LVOX3_StepComputeProfiles::changeToVoxel(const LVOX3_AbstractGrid3D* inGrid){
+QList<double> LVOX3_StepComputeProfiles::changeToVoxel(const CT_AbstractGrid3D* inGrid){
     QList<double> axisMinMax;
     QList<double> coordinates;
     double voxelGridLowerX;

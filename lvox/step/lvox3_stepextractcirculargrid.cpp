@@ -79,7 +79,7 @@ void LVOX3_StepExtractCircularGrid::compute()
     {
         if (isStopped()) {return;}
 
-        const LVOX3_AbstractGrid3D* inGrid = group->singularItem(_inGrid);
+        const CT_AbstractGrid3D* inGrid = group->singularItem(_inGrid);
 
         size_t counterVoxels = 0;
         size_t n_voxels;

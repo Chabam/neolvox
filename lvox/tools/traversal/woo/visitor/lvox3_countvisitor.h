@@ -8,14 +8,14 @@
 
 #include "tools/lvox3_gridtype.h"
 
-#include "tools/3dgrid/lvox_3dgriddefs.h"
+#include "tools/3dgrid/lvox_grid3d.h"
 #include "ct_itemdrawable/tools/gridtools/ct_abstractgrid3dbeamvisitor.h"
 
 template<typename T>
 class LVOX3_CountVisitor : public CT_AbstractGrid3DBeamVisitor
 {
 public:
-    LVOX3_CountVisitor(LVOX3_Grid3D<T>* grid,
+    LVOX3_CountVisitor(LVOX_Grid3D<T>* grid,
                        lvox::MutexCollection* collection = nullptr) {
         m_grid = grid;
         m_multithreadCollection = collection;
@@ -36,7 +36,7 @@ public:
     }
 
 private:
-    LVOX3_Grid3D<T>*        m_grid;
+    LVOX_Grid3D<T>*        m_grid;
     lvox::MutexCollection*  m_multithreadCollection;
 };
 

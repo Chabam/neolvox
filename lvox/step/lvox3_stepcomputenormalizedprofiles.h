@@ -27,7 +27,7 @@
 
 #include "ct_step/abstract/ct_abstractstep.h"
 
-#include "tools/3dgrid/lvox_3dgriddefs.h"
+#include "tools/3dgrid/lvox_grid3d.h"
 #include "ct_itemdrawable/ct_profile.h"
 #include "ct_itemdrawable/ct_image2d.h"
 
@@ -69,7 +69,7 @@ private:
     CT_HandleInResultGroupCopy<>                                                        _inResult;
     CT_HandleInStdZeroOrMoreGroup                                                       _inZeroOrMoreRootGroup;
     CT_HandleInStdGroup<>                                                               _inGroup;
-    CT_HandleInSingularItem<LVOX3_AbstractGrid3D>                                       _inGrid;
+    CT_HandleInSingularItem<CT_AbstractGrid3D>                                       _inGrid;
 
     CT_HandleInResultGroup<0,1>                                                         _inResultDTM;
     CT_HandleInStdZeroOrMoreGroup                                                       _inZeroOrMoreRootGroupDTM;

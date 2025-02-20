@@ -16,7 +16,8 @@ set(LVOX_HEADERS
     step/lvox3_steploadfiles.h
     step/lvox3_stepmakeshootingpatternformls.h
     step/lvox3_stepmergegrids.h
-    tools/3dgrid/lvox_3dgriddefs.h
+    tools/3dgrid/lvox_grid3d.h
+    tools/3dgrid/lvox_grid3d.hpp
     tools/drawmanager/lvox3_3dgriddrawmanagerdefs.h
     tools/exporter/lvox3_grid3dexporterdefs.h
     tools/lvox3_computelvoxgridspreparator.h
