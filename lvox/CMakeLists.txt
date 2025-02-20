@@ -18,8 +18,6 @@ set(LVOX_HEADERS
     step/lvox3_stepmergegrids.h
     tools/3dgrid/lvox_grid3d.h
     tools/3dgrid/lvox_grid3d.hpp
-    tools/drawmanager/lvox3_3dgriddrawmanagerdefs.h
-    tools/exporter/lvox3_grid3dexporterdefs.h
     tools/lvox3_computelvoxgridspreparator.h
     tools/lvox3_errorcode.h
     tools/lvox3_factory.hpp
@@ -32,7 +30,6 @@ set(LVOX_HEADERS
     tools/lvox3_scannerutils.h
     tools/lvox3_thetaphishootingpattern.h
     tools/lvox3_utils.h
-    tools/reader/lvox3_readerdefs.h
     tools/scanner/lvox_shootingpatternformls.h
     tools/traversal/propagation/expfit.h
     tools/traversal/propagation/lvox3_grid3dpropagationalgorithm.h
@@ -40,7 +37,6 @@ set(LVOX_HEADERS
     tools/traversal/propagation/visitor/lvox3_propagationvisitor.h
     tools/traversal/propagation/visitor/lvox3_propagationvisitorcontext.h
     tools/traversal/propagation/visitor/lvox3_trustinterpolationvisitor.h
-    tools/traversal/woo/lvox3_traversaldefs.h
     tools/traversal/woo/visitor/lvox3_countvisitor.h
     tools/traversal/woo/visitor/lvox3_distancevisitor.h
     tools/worker/lvox3_computeall.h
