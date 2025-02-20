@@ -3,7 +3,6 @@ set(LVOX_HEADERS
     # NOTE: We need to explicitly add this header in order
     # for Qt to AUTOMOC it...
     ${ctlibplugin_SOURCE_DIR}/pluginentryinterface.h
-    # tools/traversal/woo/lvox3_grid3dwootraversalalgorithm.h
     lvox_pluginentry.h
     lvox_steppluginmanager.h
     qtwidgets/multiselectcombobox.h
@@ -43,8 +42,6 @@ set(LVOX_HEADERS
     tools/traversal/woo/lvox3_traversaldefs.h
     tools/traversal/woo/visitor/lvox3_countvisitor.h
     tools/traversal/woo/visitor/lvox3_distancevisitor.h
-    tools/traversal/woo/visitor/lvox3_grid3dvoxelwoovisitor.h
-    tools/traversal/woo/visitor/lvox3_grid3dvoxelwoovisitorcontext.h
     tools/worker/lvox3_computeall.h
     tools/worker/lvox3_computebefore.h
     tools/worker/lvox3_computedensity.h
