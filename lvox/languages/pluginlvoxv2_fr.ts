@@ -592,7 +592,7 @@
     </message>
 </context>
 <context>
-    <name>LVOX3_Grid3DExporter</name>
+    <name>PB_Grid3DExporter</name>
     <message>
         <location filename="../tools/exporter/lvox3_grid3dexporter.cpp" line="13"/>
         <source>LVOX 3D grid file format (ASCII)</source>
@@ -2289,8 +2289,8 @@
     </message>
     <message>
         <location filename="../view/loadfileconfiguration.ui" line="152"/>
-        <source>- Add a file path by clicking on the Add button. 
-- Edit a file path by selecting the line and pressing the Edit button 
+        <source>- Add a file path by clicking on the Add button.
+- Edit a file path by selecting the line and pressing the Edit button
 - Delete a file path by selecting the line and pressing the Delete button</source>
         <translation>- Ajouter un chemin de fichier en cliquant sur le bouton Ajouter.
 - Modifier un chemin de fichier en sélectionnant la ligne et en cliquant sur le bouton Modifier.
@@ -2662,90 +2662,6 @@
         <location filename="../tools/3dgrid/lvox3_grid3d.h" line="574"/>
         <source>Max Value</source>
         <translation>Valeur maximale</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="155"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="147"/>
-        <source>Mode filaire</source>
-        <translation>Mode filaire</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="156"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="148"/>
-        <source>Forcer limite basse</source>
-        <translation>Forcer limite basse</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="157"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="149"/>
-        <source>Limite basse (forcée)</source>
-        <translation>Limite basse (forcée)</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="158"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="150"/>
-        <source>Forcer limite haute</source>
-        <translation>Forcer limite haute</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="159"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="151"/>
-        <source>Limite haute (forcée)</source>
-        <translation>Limite haute (forcée)</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="160"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="152"/>
-        <source>Coef. de reduction</source>
-        <translation>Coef. de réduction</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="161"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="153"/>
-        <source>Utiliser couleurs pré-définies</source>
-        <translation>Utiliser des couleurs pré-définies</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="162"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="154"/>
-        <source>Valeur de transparence</source>
-        <translation>Valeur de transparence</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="163"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="155"/>
-        <source>Nb. Plans masqués X-</source>
-        <translation>Nb. Plans masqués X-</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="164"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="156"/>
-        <source>Nb. Plans masqués X+</source>
-        <translation>Nb. Plans masqués X+</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="165"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="157"/>
-        <source>Nb. Plans masqués Y-</source>
-        <translation>Nb. Plans masqués Y-</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="166"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="158"/>
-        <source>Nb. Plans masqués Y+</source>
-        <translation>Nb. Plans masqués Y+</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="167"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="159"/>
-        <source>Nb. Plans masqués Z-</source>
-        <translation>Nb. Plans masqués Z-</translation>
-    </message>
-    <message>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3d_sparsedrawmanager.hpp" line="168"/>
-        <location filename="../tools/drawmanager/lvox3_standardgrid3ddrawmanager.hpp" line="160"/>
-        <source>Nb. Plans masqués Z+</source>
-        <translation>Nb. Plans masqués Z+</translation>
     </message>
     <message>
         <location filename="../tools/lvox3_computelvoxgridspreparator.cpp" line="109"/>

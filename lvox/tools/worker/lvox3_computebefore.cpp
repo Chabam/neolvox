@@ -3,7 +3,7 @@
 
 //Tools/Traversal algorithms
 #include "ct_itemdrawable/tools/gridtools/ct_abstractgrid3dbeamvisitor.h"
-#include "tools/traversal/woo/lvox3_traversaldefs.h"
+#include "ct_itemdrawable/tools/gridtools/ct_grid3dwootraversalalgorithm.h"
 #include "tools/traversal/woo/visitor/lvox3_countvisitor.h"
 #include "tools/traversal/woo/visitor/lvox3_distancevisitor.h"
 
@@ -39,7 +39,7 @@ void LVOX3_ComputeBefore::doTheJob()
     else list.append(&countVisitor);
 
     // Creates traversal algorithm
-    LVOX3_Grid3DWooTraversalAlgorithm algo(m_before, false, list);
+    CT_Grid3DWooTraversalAlgorithm algo(m_before, false, list);
 
     setProgressRange(0, /*(_shotStatsDistance != NULL)*/_computeDistance ? n_points+1 : n_points);
 

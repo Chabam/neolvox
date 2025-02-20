@@ -1,7 +1,7 @@
 #include "lvox3_computetheoriticals.h"
 
 //Tools
-#include "tools/traversal/woo/lvox3_traversaldefs.h"
+#include "ct_itemdrawable/tools/gridtools/ct_grid3dwootraversalalgorithm.h"
 #include "tools/traversal/woo/visitor/lvox3_countvisitor.h"
 #include "tools/traversal/woo/visitor/lvox3_distancevisitor.h"
 #include "tools/lvox3_errorcode.h"
@@ -34,7 +34,7 @@ void LVOX3_ComputeTheoriticals::doTheJob()
     else list.append(&distVisitor);
 
     // Creates traversal algorithm
-    LVOX3_Grid3DWooTraversalAlgorithm algo(m_outputTheoriticalGrid, true, list);
+    CT_Grid3DWooTraversalAlgorithm algo(m_outputTheoriticalGrid, true, list);
 
     const size_t nShot = m_pattern->numberOfShots();
     qDebug() << "Nb shot Theo: " << nShot;
