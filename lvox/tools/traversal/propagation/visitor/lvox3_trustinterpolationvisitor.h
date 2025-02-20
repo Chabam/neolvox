@@ -8,7 +8,6 @@
 
 #include "lvox3_propagationvisitor.h"
 #include "tools/lvox3_gridtype.h"
-#include "lvox_sharedfortest.h"
 
 /**
  * @brief Use this visitor to interpolate a grid with a trust (confiance) factor

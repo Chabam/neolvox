@@ -8,7 +8,6 @@
 
 #include "lvox3_worker.h"
 #include "tools/lvox3_gridtype.h"
-#include "lvox_sharedfortest.h"
 
 /**
  * @brief Interpolate the grid density by using cells values that was in a defined radius

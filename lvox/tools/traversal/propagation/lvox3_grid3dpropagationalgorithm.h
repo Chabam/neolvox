@@ -11,7 +11,6 @@
 #include "tools/lvox3_gridtools.h"
 
 #include "visitor/lvox3_propagationvisitorcontext.h"
-#include "lvox_sharedfortest.h"
 
 class LVOX3_PropagationVisitor;
 

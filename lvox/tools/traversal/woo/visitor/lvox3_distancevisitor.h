@@ -6,7 +6,6 @@
 #ifndef LVOX3_DISTANCEVISITOR_H
 #define LVOX3_DISTANCEVISITOR_H
 
-#include "lvox3_grid3dvoxelwoovisitor.h"
 #include "tools/lvox3_rayboxintersectionmath.h"
 #include "tools/lvox3_gridtools.h"
 #include "tools/lvox3_gridtype.h"

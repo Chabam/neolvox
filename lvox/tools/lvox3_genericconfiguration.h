@@ -10,8 +10,6 @@
 #include <QMetaType>
 #include <QList>
 
-#include "lvox_sharedfortest.h"
-
 namespace lvox {
     /**
      * @brief Configuration for one input grid
