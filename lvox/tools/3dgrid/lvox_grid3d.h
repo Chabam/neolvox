@@ -35,7 +35,29 @@ rights reserved.
 template <typename DataT>
 class LVOX_Grid3D : public CT_Grid3D<DataT> {
 public:
-    using CT_Grid3D<DataT>::CT_Grid3D;
+    LVOX_Grid3D();
+
+    LVOX_Grid3D(double xmin,
+          double ymin,
+          double zmin,
+          int dimx,
+          int dimy,
+          int dimz,
+          double resolution,
+          DataT na,
+          DataT initValue);
+
+    LVOX_Grid3D(double xmin,
+          double ymin,
+          double zmin,
+          double xmax,
+          double ymax,
+          double zmax,
+          double resolution,
+          DataT na,
+          DataT initValue);
+
+    LVOX_Grid3D(const CT_Grid3D<DataT>& other);
 
     static LVOX_Grid3D* createGrid3DFromXYZCoords(double xmin,
                                             double ymin,
@@ -47,7 +69,6 @@ public:
                                             DataT na,
                                             DataT initValue,
                                             bool extends);
-
 
     /*!
     * \brief setLambda1 Set the attenuation coefficient divided by the volume of

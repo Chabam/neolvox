@@ -1,33 +1,109 @@
 #ifndef LVOX_GRID3D_HPP
 #define LVOX_GRID3D_HPP
 
+#include "ct_itemdrawable/abstract/ct_abstractgrid3d.h"
+#include "ct_itemdrawable/ct_grid3d.h"
 #include "lvox_grid3d.h"
 
 template <typename DataT>
-LVOX_Grid3D<DataT>* LVOX_Grid3D<DataT>::createGrid3DFromXYZCoords(double xmin,
-                                            double ymin,
-                                            double zmin,
-                                            double xmax,
-                                            double ymax,
-                                            double zmax,
-                                            double resolution,
-                                            DataT na,
-                                            DataT initValue,
-                                            bool extends)
-    {
-      const CT_Grid3D<DataT>* newGrid = CT_Grid3D<DataT>::createGrid3DFromXYZCoords(xmin, ymin, zmin, xmax, ymax, zmax, resolution, na, initValue, extends);
+LVOX_Grid3D<DataT>::LVOX_Grid3D()
+  : CT_Grid3D<DataT>()
+{
+  const size_t nCells = CT_AbstractGrid3D::nCells();
 
-      return new LVOX_Grid3D<DataT>(
-          xmin,
-          ymin,
-          zmin,
-          newGrid->xdim(),
-          newGrid->ydim(),
-          newGrid->zdim(),
-          resolution,
-          na,
-          initValue);
-  }
+  _sommaDelta.resize(nCells);
+  _sommaFree.resize(nCells);
+  _sommaEffectiveFree.resize(nCells);
+  _sommaEffectiveDelta.resize(nCells);
+  _sommaEffectiveHits.resize(nCells);
+  _sommaDeltaSquare.resize(nCells);
+}
+
+template <typename DataT>
+LVOX_Grid3D<DataT>::LVOX_Grid3D(double xmin,
+          double ymin,
+          double zmin,
+          int dimx,
+          int dimy,
+          int dimz,
+          double resolution,
+          DataT na,
+          DataT initValue)
+{
+  const size_t nCells = CT_AbstractGrid3D::nCells();
+
+  _sommaDelta.resize(nCells);
+  _sommaFree.resize(nCells);
+  _sommaEffectiveFree.resize(nCells);
+  _sommaEffectiveDelta.resize(nCells);
+  _sommaEffectiveHits.resize(nCells);
+  _sommaDeltaSquare.resize(nCells);
+}
+
+template <typename DataT>
+LVOX_Grid3D<DataT>::LVOX_Grid3D(double xmin,
+          double ymin,
+          double zmin,
+          double xmax,
+          double ymax,
+          double zmax,
+          double resolution,
+          DataT na,
+          DataT initValue) : CT_Grid3D<DataT>(xmin, ymin, zmin,
+                                              xmax, ymax, zmax,
+                                              resolution, na, initValue)
+{
+  const size_t nCells = CT_AbstractGrid3D::nCells();
+
+  _sommaDelta.resize(nCells);
+  _sommaFree.resize(nCells);
+  _sommaEffectiveFree.resize(nCells);
+  _sommaEffectiveDelta.resize(nCells);
+  _sommaEffectiveHits.resize(nCells);
+  _sommaDeltaSquare.resize(nCells);
+}
+
+template <typename DataT>
+LVOX_Grid3D<DataT>::LVOX_Grid3D(const CT_Grid3D<DataT>& other) : CT_Grid3D<DataT>(other)
+{
+  const size_t nCells = CT_AbstractGrid3D::nCells();
+
+  _sommaDelta.resize(nCells);
+  _sommaFree.resize(nCells);
+  _sommaEffectiveFree.resize(nCells);
+  _sommaEffectiveDelta.resize(nCells);
+  _sommaEffectiveHits.resize(nCells);
+  _sommaDeltaSquare.resize(nCells);
+}
+
+template <typename DataT>
+LVOX_Grid3D<DataT>* LVOX_Grid3D<DataT>::createGrid3DFromXYZCoords(double xmin,
+                                        double ymin,
+                                        double zmin,
+                                        double xmax,
+                                        double ymax,
+                                        double zmax,
+                                        double resolution,
+                                        DataT na,
+                                        DataT initValue,
+                                        bool extends)
+{
+  CT_Grid3D<DataT>* tmpGrid = CT_Grid3D<DataT>::createGrid3DFromXYZCoords(xmin,
+                                         ymin,
+                                         zmin,
+                                         xmax,
+                                         ymax,
+                                         zmax,
+                                         resolution,
+                                         na,
+                                         initValue,
+                                         extends);
+
+  LVOX_Grid3D<DataT>* newGrid = new LVOX_Grid3D<DataT>(*tmpGrid);
+  delete tmpGrid;
+
+  return newGrid;
+}
 template <typename DataT>
 void LVOX_Grid3D<DataT>::setLambda1(float vegetation)
 {
