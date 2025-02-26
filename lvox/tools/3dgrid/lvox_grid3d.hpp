@@ -28,7 +28,11 @@ LVOX_Grid3D<DataT>::LVOX_Grid3D(double xmin,
           int dimz,
           double resolution,
           DataT na,
-          DataT initValue)
+          DataT initValue) : CT_Grid3D<DataT>(xmin, ymin, zmin,
+                                              dimx, dimy, dimz,
+                                              resolution,
+                                              na,
+                                              initValue)
 {
   const size_t nCells = CT_AbstractGrid3D::nCells();
 
