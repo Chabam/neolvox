@@ -9,7 +9,7 @@
 
 #include "ct_iterator/ct_pointiterator.h"
 
-LVOX3_ComputeBefore::LVOX3_ComputeBefore(CT_ShootingPattern* pattern,
+LVOX3_ComputeBefore::LVOX3_ComputeBefore(const CT_ShootingPattern* pattern,
                                          const CT_AbstractPointCloudIndex* pointCloudIndex,
                                          lvox::Grid3Di* before,
                                          bool computeDistance)

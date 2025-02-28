@@ -21,7 +21,7 @@ class LVOX3_ComputeTheoriticals : public LVOX3_Worker
     Q_OBJECT
 
 public:
-    LVOX3_ComputeTheoriticals(CT_ShootingPattern* pattern,
+    LVOX3_ComputeTheoriticals(const CT_ShootingPattern* pattern,
                               lvox::Grid3Di* theoricals, bool computedistance);
 
     ~LVOX3_ComputeTheoriticals();
@@ -33,9 +33,8 @@ protected:
     void doTheJob();
 
 private:
-    CT_ShootingPattern*         m_pattern;
+    const CT_ShootingPattern*   m_pattern;
     lvox::Grid3Di*              m_outputTheoriticalGrid;
-    //lvox::Grid3Di*              _outputStatsTheoriticalGrid;
     bool _computedistance;
 
     friend class Temp;

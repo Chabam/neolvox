@@ -18,7 +18,6 @@ set(LVOX_HEADERS
     step/lvox3_stepmergegrids.h
     tools/3dgrid/lvox_grid3d.h
     tools/3dgrid/lvox_grid3d.hpp
-    tools/lvox3_computelvoxgridspreparator.h
     tools/lvox3_errorcode.h
     tools/lvox3_factory.hpp
     tools/lvox3_genericconfiguration.h
@@ -28,7 +27,6 @@ set(LVOX_HEADERS
     tools/lvox3_mergegrids.h
     tools/lvox3_rayboxintersectionmath.h
     tools/lvox3_scannerutils.h
-    tools/lvox3_thetaphishootingpattern.h
     tools/lvox3_utils.h
     tools/scanner/lvox_shootingpatternformls.h
     tools/traversal/propagation/expfit.h
@@ -77,7 +75,6 @@ set(LVOX_SOURCES
     step/lvox3_steploadfiles.cpp
     step/lvox3_stepmakeshootingpatternformls.cpp
     step/lvox3_stepmergegrids.cpp
-    tools/lvox3_computelvoxgridspreparator.cpp
     tools/lvox3_mergegrids.cpp
     tools/lvox3_rayboxintersectionmath.cpp
     tools/lvox3_scannerutils.cpp

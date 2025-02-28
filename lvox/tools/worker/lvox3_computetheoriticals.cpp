@@ -8,7 +8,7 @@
 
 #include <QFile>
 
-LVOX3_ComputeTheoriticals::LVOX3_ComputeTheoriticals(CT_ShootingPattern* pattern,
+LVOX3_ComputeTheoriticals::LVOX3_ComputeTheoriticals(const CT_ShootingPattern* pattern,
                                                      lvox::Grid3Di* theoricals,
                                                      bool computedistance) : LVOX3_Worker()
 {
