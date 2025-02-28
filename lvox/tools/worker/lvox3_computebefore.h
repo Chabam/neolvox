@@ -28,7 +28,7 @@ public:
      * @param before : store it the number of hits that was not stopped
      * @param shotDeltaDistance  : store it the distance between the first intersection point (IN) AND the second intersection point (OUT)
      */
-    LVOX3_ComputeBefore(CT_ShootingPattern* pattern,
+    LVOX3_ComputeBefore(const CT_ShootingPattern* pattern,
                         const CT_AbstractPointCloudIndex* pointCloudIndex,
                         lvox::Grid3Di* before, bool computeDistance/*,
                         lvox::Grid3Di* shotStatsDistance = NULL*/);
@@ -40,7 +40,7 @@ protected:
     void doTheJob();
 
 private:
-    CT_ShootingPattern*                 m_pattern;
+    const CT_ShootingPattern*                 m_pattern;
     const CT_AbstractPointCloudIndex*   m_pointCloudIndex;
     lvox::Grid3Di*                      m_before;
     bool                                _computeDistance;

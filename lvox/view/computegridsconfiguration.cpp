@@ -230,9 +230,6 @@ void ComputeGridsConfiguration::referenceMethodHasChanged(const QString s)
     if(_gridModesCollection[GridMode::CenteredOnCoordinatesAndCustomDimensions] == s)
         _currentGridMode = GridMode::CenteredOnCoordinatesAndCustomDimensions;
 
-    if(_gridModesCollection[GridMode::FromGridFileParameters] == s)
-        _currentGridMode = GridMode::FromGridFileParameters;
-
     updateInterface();
 }
 
@@ -267,7 +264,6 @@ void ComputeGridsConfiguration::updateInterface() const
         _ui->coordinatesFrame->show();
         _ui->dimensionFrame->show();
         break;
-    case GridMode::FromGridFileParameters:
     case GridMode::BoundingBoxOfTheScene:
     case GridMode::FromOtherGrid:
         _ui->coordinatesFrame->hide();

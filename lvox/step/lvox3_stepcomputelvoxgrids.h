@@ -58,7 +58,7 @@ private:
     CT_HandleInResultGroupCopy<>                                                        _inResult;
     CT_HandleInStdZeroOrMoreGroup                                                       _inZeroOrMoreRootGroup;
     CT_HandleInStdGroup<>                                                               _inGroup;
-    CT_HandleInSingularItem<CT_AbstractItemDrawableWithPointCloud>                      _inScene;
+    CT_HandleInSingularItem<CT_Scene>                                                   _inScene;
     CT_HandleInSingularItem<CT_Scanner>                                                 _inScan;
     CT_HandleInSingularItem<CT_ShootingPatternD>                                        _inShootingPattern;
 

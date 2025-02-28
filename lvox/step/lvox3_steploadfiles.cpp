@@ -9,7 +9,6 @@
 #include "tools/lvox3_scannerutils.h"
 #include "ct_view/tools/ct_configurablewidgettodialog.h"
 #include "ct_reader/extensions/ct_readerpointsfilteringextension.h"
-#include "tools/lvox3_thetaphishootingpattern.h"
 
 //Models
 #define DEF_outResult                "LVOX3_SLF_result"
@@ -50,27 +49,27 @@ CT_VirtualAbstractStep* LVOX3_StepLoadFiles::createNewInstance() const
 void LVOX3_StepLoadFiles::savePostSettings(SettingsWriterInterface &writer) const
 {
     CT_AbstractStep::savePostSettings(writer);
-    
+
     if (m_reader != nullptr)
     {
         writer.addParameter(this, "ReaderUniqueName", m_reader->uniqueName());
         m_reader->saveSettings(writer);
     }
-    
+
     writer.addParameter(this, "minuseScannerConfigurationValue", m_useUserScannerConfiguration);
     writer.addParameter(this, "filterPointsOrigin", m_filterPointsOrigin);
     writer.addParameter(this, "restrictScene", m_restrictScene);
     writer.addParameter(this, "restrictRadius", m_restrictRadius);
-    
-    
+
+
     int n = m_configuration.size();
     writer.addParameter(this, "nConfigurations", n);
-    
+
     for(int i = 0; i < n ; ++i)
     {
         const LoadFileConfiguration::Configuration& c = m_configuration.at(i);
         const auto scanDef = LVOX3_ScannerUtils::getScannerDefinition(c.scannerId);
-        
+
         writer.addParameterPath(this, "filepath", c.filepath);
         writer.addParameter(this, "scannerType", scanDef.label);
         writer.addParameter(this, "clockWise", c.clockWise);
@@ -87,28 +86,28 @@ void LVOX3_StepLoadFiles::savePostSettings(SettingsWriterInterface &writer) cons
         writer.addParameter(this, "scannerDirectionX", c.scannerDirection.x());
         writer.addParameter(this, "scannerDirectionY", c.scannerDirection.y());
         writer.addParameter(this, "scannerDirectionZ", c.scannerDirection.z());
-    }    
+    }
 }
 
 bool LVOX3_StepLoadFiles::restorePostSettings(SettingsReaderInterface &reader)
 {
     if(!CT_AbstractStep::restorePostSettings(reader))
         return false;
-    
+
     QVariant value;
-    
+
     if(!reader.parameter(this, "ReaderUniqueName", value))
         return false;
 
     QString readerUniqueName = value.toString();
     CT_AbstractReader* fReader = pluginStaticCastT<LVOX_StepPluginManager>()->readerAvailableByUniqueName(readerUniqueName);
-    
+
     if(fReader == nullptr)
         return false;
-    
+
     if (m_reader != nullptr) {delete m_reader;}
     m_reader = fReader->copyFull();
-    
+
     if (!m_reader->restoreSettings(reader)) {return false;}
 
 
@@ -116,7 +115,7 @@ bool LVOX3_StepLoadFiles::restorePostSettings(SettingsReaderInterface &reader)
     reader.parameter(this, "filterPointsOrigin", value); m_filterPointsOrigin = value.toBool();
     reader.parameter(this, "restrictScene", value); m_restrictScene = value.toBool();
     reader.parameter(this, "restrictRadius", value); m_restrictRadius = value.toInt();
-    
+
     reader.parameter(this, "nConfigurations", value);
     int n = value.toInt();
 
@@ -126,7 +125,7 @@ bool LVOX3_StepLoadFiles::restorePostSettings(SettingsReaderInterface &reader)
     {
         LoadFileConfiguration::Configuration c;
         QString scannerType;
-        
+
         reader.parameterPath(this, "filepath", c.filepath);
         reader.parameter(this, "scannerType", value); scannerType = value.toString();
         reader.parameter(this, "clockWise", value); c.clockWise = value.toBool();
@@ -163,7 +162,7 @@ CT_ShootingPattern *LVOX3_StepLoadFiles::makeShootingPattern(
     CT_ShootingPattern *pattern = nullptr;
     double hFov = 0.0;
     double vFov = 0.0;
-    
+
     switch (conf.scannerId) {
     case ScannerSphericPointCloud:
     {
@@ -179,7 +178,7 @@ CT_ShootingPattern *LVOX3_StepLoadFiles::makeShootingPattern(
         // TODO : zVector !
         hFov = conf.scannerThetaRange.y() - conf.scannerThetaRange.x();
         vFov = conf.scannerPhiRange.y() - conf.scannerPhiRange.x();
-        pattern = new LVOX3_ThetaPhiShootingPattern(conf.scannerPosition,
+        pattern = new CT_ThetaPhiShootingPattern(conf.scannerPosition,
                                                     hFov, vFov,
                                                     conf.scannerResolution.x(),
                                                     conf.scannerResolution.y(),
@@ -194,7 +193,7 @@ CT_ShootingPattern *LVOX3_StepLoadFiles::makeShootingPattern(
         // TODO : zVector !
         hFov = conf.scannerThetaRange.y() - conf.scannerThetaRange.x();
         vFov = conf.scannerPhiRange.y() - conf.scannerPhiRange.x();
-        pattern = new LVOX3_ThetaPhiShootingPattern(conf.scannerPosition,
+        pattern = new CT_ThetaPhiShootingPattern(conf.scannerPosition,
                                                     hFov, vFov,
                                                     conf.scannerResolution.x(),
                                                     conf.scannerResolution.y(),
@@ -252,7 +251,7 @@ void LVOX3_StepLoadFiles::declareInputModels(CT_StepInModelStructureManager& man
 }
 
 bool LVOX3_StepLoadFiles::postInputConfigure()
-{    
+{
     QList<CT_AbstractReader*> validReaders;
     QList<CT_AbstractReader*> availableReaders = pluginStaticCastT<LVOX_StepPluginManager>()->readersAvailable();
 
@@ -265,7 +264,7 @@ bool LVOX3_StepLoadFiles::postInputConfigure()
             validReaders.append(reader);
         }
     }
-    
+
     LoadFileConfiguration c;
     c.setReaders(validReaders);
     c.setCurrentReaderByClassName(m_reader != nullptr ? m_reader->uniqueName() : "");
@@ -273,32 +272,32 @@ bool LVOX3_StepLoadFiles::postInputConfigure()
     c.setFilterPointsOrigin(m_filterPointsOrigin);
     c.setRestrictScene(m_restrictScene);
     c.setRestrictRadius(m_restrictRadius);
-    
+
     if(CT_ConfigurableWidgetToDialog::exec(&c) == QDialog::Rejected)
         return false;
-    
+
     QList<LoadFileConfiguration::Configuration> configs = c.getConfiguration();
     CT_AbstractReader* reader = c.getReaderToUse()->copyFull();
-    
+
     if(reader->setFilePath(configs.first().filepath)) {
         reader->setFilePathCanBeModified(false);
         bool ok = reader->configure();
         reader->setFilePathCanBeModified(true);
-        
+
         if(ok) {
             delete m_reader;
             m_reader = reader;
             m_configuration = configs;
             m_useUserScannerConfiguration = false;
-            
+
             foreach(const LoadFileConfiguration::Configuration& config, configs) {
                 if(LVOX3_ScannerUtils::isCustomScannerConfiguration(config.scannerId)) {
-                    
+
                     m_useUserScannerConfiguration = true;
                     break;
                 }
             }
-            
+
             m_filterPointsOrigin = c.isFilterPointsOrigin();
             m_restrictScene = c.isRestrictScene();
             m_restrictRadius = c.getRestrictRadius();
@@ -306,7 +305,7 @@ bool LVOX3_StepLoadFiles::postInputConfigure()
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -315,11 +314,11 @@ void LVOX3_StepLoadFiles::declareOutputModels(CT_StepOutModelStructureManager& m
 {
     if(m_reader == nullptr)
         return;
-    
+
     manager.addResult(m_hOutResult);
     manager.setRootGroup(m_hOutResult, m_hOutRootGroup);
     m_reader->declareOutputModelsInGroupWithHeader(manager, m_hOutRootGroup);
-    
+
     manager.addItem(m_hOutRootGroup, m_outScanner, tr("Scanner LVOX"), tr("Scanner position"));
     manager.addItem(m_hOutRootGroup, m_outShootingPattern, tr("Shooting Pattern"), tr("Shooting Pattern/Position/Direction/Angle forced by user"));
 
@@ -331,7 +330,7 @@ void LVOX3_StepLoadFiles::compute()
     size_t sceneTotalPoints = 0;
     size_t nShiftedPoints = 0;
     int nFilesProgress = 0; //Used to count the number of files and give estimate progress bar
-    
+
     QListIterator<LoadFileConfiguration::Configuration> it(m_configuration);
 
     CT_ReaderPointsFilteringExtension* readerWithFilter = dynamic_cast<CT_ReaderPointsFilteringExtension*>(m_reader);
@@ -349,13 +348,13 @@ void LVOX3_StepLoadFiles::compute()
         it.next();
     }
     it.toFront();//Brings pointer back to front after counting
-    
+
     for (CT_ResultGroup* outRes : m_hOutResult.iterateOutputs())
     {
         // Load all files
         while(it.hasNext() && !isStopped())
         {
-            LoadFileConfiguration::Configuration config = it.next();            
+            LoadFileConfiguration::Configuration config = it.next();
             m_reader->setFilePath(config.filepath);
 
             CT_StandardItemGroup* rootGroup = new CT_StandardItemGroup();
@@ -483,7 +482,7 @@ void LVOX3_StepLoadFiles::compute()
         }
     }
 
-    
+
     //Statistic for scene restriction
     if(m_restrictScene&&m_restrictRadius != 0)
         PS_LOG->addMessage(LogInterface::info, LogInterface::step, QString(tr("Restriction de %1 points.")).arg(nShiftedPoints));
@@ -494,7 +493,7 @@ void LVOX3_StepLoadFiles::compute()
 
 //Test to see if any part of the voxel is inside the radius of the extracted grid (If it is, it is added to the extracted grid)
 bool LVOX3_StepLoadFiles::evaluatePoint(const Eigen::Vector3d scannerCenterCoords, const CT_Point &point, Eigen::Vector3d &newPointCoordinates){
-    
+
     double distance = sqrt(pow(scannerCenterCoords(0)-point(0),2.0)+pow(scannerCenterCoords(1)-point(1),2.0)+pow(scannerCenterCoords(2)-point(2),2.0));
     //Find a point in 3D that is m_restrictRadius meters away from the scanner position in the direction of the point cloud point
     //Too complicated
@@ -503,7 +502,7 @@ bool LVOX3_StepLoadFiles::evaluatePoint(const Eigen::Vector3d scannerCenterCoord
         double  xc = (1-uFactor)*scannerCenterCoords(0)+uFactor*point(0);
         double yc = (1-uFactor)*scannerCenterCoords(1)+uFactor*point(1);
         double  zc = (1-uFactor)*scannerCenterCoords(2)+uFactor*point(2);
-        
+
         newPointCoordinates(0) = xc;
         newPointCoordinates(1) = yc;
         newPointCoordinates(2) = zc;

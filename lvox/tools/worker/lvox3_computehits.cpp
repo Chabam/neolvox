@@ -3,6 +3,7 @@
 
 //Tools
 #include "ct_global/ct_context.h"
+#include "ct_itemdrawable/tools/scanner/ct_shootingpattern.h"
 #include "loginterface.h"
 #include "tools/lvox3_gridtools.h"
 #include "tools/lvox3_rayboxintersectionmath.h"
@@ -13,7 +14,7 @@
 #include "ct_iterator/ct_pointiterator.h"
 
 
-LVOX3_ComputeHits::LVOX3_ComputeHits(CT_ShootingPattern* pattern,
+LVOX3_ComputeHits::LVOX3_ComputeHits(const CT_ShootingPattern* pattern,
                                      const CT_AbstractPointCloudIndex* pointCloudIndex,
                                      lvox::Grid3Di* hits,
                                      bool computedistance) : LVOX3_Worker()
@@ -78,7 +79,7 @@ void LVOX3_ComputeHits::doTheJob()
 
         // we now that the grid is perfectly bounding the scene so we can use this tools that don't do
         // many check to reduce the compute time !
-        // FP 11/2017 NOT TRUE: we should check if the point is in the grid first thanks to the following test        
+        // FP 11/2017 NOT TRUE: we should check if the point is in the grid first thanks to the following test
         if ( point.x() > m_hits->minX() && point.x() < m_hits->maxX() &&
              point.y() > m_hits->minY() && point.y() < m_hits->maxY() &&
              point.z() > m_hits->minZ() && point.z() < m_hits->maxZ())
@@ -102,7 +103,7 @@ void LVOX3_ComputeHits::doTheJob()
                     Eigen::Vector3d shotOrig = shot.origin();
                     Eigen::Vector3d direction = shot.direction();
                     if (LVOX3_RayBoxIntersectionMath::getIntersectionOfRay(bottom, top, shotOrig, direction, in, out))
-                    {                      
+                    {
                         m_hits->doSommation(indice,(in-point).norm() + (out-point).norm(),(in-point).norm());
                         m_hits->addValueAtIndex(indice, 1);
                     }

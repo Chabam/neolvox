@@ -18,7 +18,6 @@ namespace lvox {
         RelativeToCoordinates,
         RelativeToCoordinatesAndCustomDimensions,
         CenteredOnCoordinatesAndCustomDimensions,
-        FromGridFileParameters,
         FromOtherGrid
     };
 
@@ -31,8 +30,6 @@ namespace lvox {
             return QObject::tr("Relative to coordinates and custom dimensions");
         else if(m == CenteredOnCoordinatesAndCustomDimensions)
             return QObject::tr("Centered to coordinates and custom dimensions");
-        else if(m == FromGridFileParameters)
-            return QObject::tr("From .grid file");
         else if(m == FromOtherGrid)
             return QObject::tr("From other grid");
 

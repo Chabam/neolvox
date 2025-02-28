@@ -44,14 +44,14 @@ public:
      * @param index Index of the shot
      * @return CT_Shot at the given index
      */
-    virtual CT_Shot shotAt(const size_t& index) override;
+    virtual CT_Shot shotAt(const size_t& index) const override;
 
     /**
      * @brief Returns the shot for a given point
      * @param pt The point for which the shot is to be determined
      * @return CT_Shot for the given point
      */
-    virtual CT_Shot shotForPoint(const CT_Point& pt) override;
+    virtual CT_Shot shotForPoint(const CT_Point& pt) const override;
 
     /**
      * @brief Copy this pattern
