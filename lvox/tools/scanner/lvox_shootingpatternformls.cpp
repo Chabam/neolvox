@@ -16,7 +16,7 @@ size_t LVOX_ShootingPatternForMLS::numberOfShots() const {
     return m_pcir->abstractCloudIndexT()->size();
 }
 
-CT_Shot LVOX_ShootingPatternForMLS::shotAt(const size_t& index) {
+CT_Shot LVOX_ShootingPatternForMLS::shotAt(const size_t& index) const {
     auto idx = m_pcir->abstractCloudIndexT()->constIndexAt(index);
     const CT_Point& point = m_pAccessor.pointAt(idx);
 
@@ -30,7 +30,7 @@ CT_Shot LVOX_ShootingPatternForMLS::shotAt(const size_t& index) {
     return CT_Shot(scannerPosition, direction);
 }
 
-CT_Shot LVOX_ShootingPatternForMLS::shotForPoint(const CT_Point& pt) {
+CT_Shot LVOX_ShootingPatternForMLS::shotForPoint(const CT_Point& pt) const {
 
     return CT_Shot(m_origin, pt - m_origin);
 }

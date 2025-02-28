@@ -73,7 +73,6 @@ set(LVOX_HEADERS
     tools/traversal/propagation/expfit.h
     tools/worker/lvox3_interpolatekrigingbinomial.h
     tools/worker/lvox3_interpolatekrigingnormal.h
-    tools/lvox3_thetaphishootingpattern.h
 )
 
 set(LVOX_SOURCES
@@ -100,7 +99,6 @@ set(LVOX_SOURCES
     tools/lvox3_mergegrids.cpp
     tools/lvox3_rayboxintersectionmath.cpp
     tools/lvox3_scannerutils.cpp
-    tools/lvox3_thetaphishootingpattern.cpp
     tools/lvox3_utils.cpp
     tools/reader/lvox3_reader_asciigrid3d.cpp
     tools/scanner/lvox_shootingpatternformls.cpp
