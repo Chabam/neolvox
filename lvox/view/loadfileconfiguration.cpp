@@ -395,7 +395,7 @@ void LoadFileConfiguration::modifySelectedFile()
 
         m_filesScannerConfiguration.insert(item, c);
         editItem(item);
-    }  
+    }
 }
 
 bool LoadFileConfiguration::chooseFiles(QStringList& filepath, bool multiple)
@@ -546,7 +546,7 @@ void LoadFileConfiguration::setCurrentScannerType(ScannerTypeEnum scannerId)
 
     switch(scannerId) {
     case ScannerSphericPointCloud:
-        position = false;
+        position = true;
         break;
     case ScannerPlanePointCloud:
         direction = true;
@@ -557,7 +557,7 @@ void LoadFileConfiguration::setCurrentScannerType(ScannerTypeEnum scannerId)
         break;
     case ScannerSphericTheoreticCustom:
         angles = true;
-        break; 
+        break;
     default:
         break;
     }

@@ -175,35 +175,20 @@ CT_ShootingPattern *LVOX3_StepLoadFiles::makeShootingPattern(
                                                             pcir);
         break;
     case ScannerSphericTheoreticScanner:
-        // TODO : zVector !
-        hFov = conf.scannerThetaRange.y() - conf.scannerThetaRange.x();
-        vFov = conf.scannerPhiRange.y() - conf.scannerPhiRange.x();
-        pattern = new CT_ThetaPhiShootingPattern(conf.scannerPosition,
-                                                    hFov, vFov,
-                                                    conf.scannerResolution.x(),
-                                                    conf.scannerResolution.y(),
-                                                    conf.scannerThetaRange.x(),
-                                                    conf.scannerPhiRange.x(),
-                                                    Eigen::Vector3d(0, 0, 1),
-                                                    conf.clockWise,
-                                                    conf.radians);
-        break;
     case ScannerSphericTheoreticCustom:
-    {
         // TODO : zVector !
         hFov = conf.scannerThetaRange.y() - conf.scannerThetaRange.x();
         vFov = conf.scannerPhiRange.y() - conf.scannerPhiRange.x();
         pattern = new CT_ThetaPhiShootingPattern(conf.scannerPosition,
-                                                    hFov, vFov,
-                                                    conf.scannerResolution.x(),
-                                                    conf.scannerResolution.y(),
-                                                    conf.scannerThetaRange.x(),
-                                                    conf.scannerPhiRange.x(),
-                                                    Eigen::Vector3d(0, 0, 1),
-                                                    conf.clockWise,
-                                                    conf.radians);
+                                                 hFov, vFov,
+                                                 conf.scannerResolution.x(),
+                                                 conf.scannerResolution.y(),
+                                                 conf.scannerThetaRange.x(),
+                                                 conf.scannerPhiRange.x(),
+                                                 Eigen::Vector3d(0, 0, 1),
+                                                 conf.clockWise,
+                                                 conf.radians);
         break;
-    }
     default:
         break;
     }
