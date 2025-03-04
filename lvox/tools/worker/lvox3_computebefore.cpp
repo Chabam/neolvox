@@ -2,13 +2,14 @@
 #include "lvox3_computebefore.h"
 
 //Tools/Traversal algorithms
-#include "tools/traversal/woo/lvox3_grid3dwootraversalalgorithm.h"
+#include "ct_itemdrawable/tools/gridtools/ct_abstractgrid3dbeamvisitor.h"
+#include "ct_itemdrawable/tools/gridtools/ct_grid3dwootraversalalgorithm.h"
 #include "tools/traversal/woo/visitor/lvox3_countvisitor.h"
 #include "tools/traversal/woo/visitor/lvox3_distancevisitor.h"
 
 #include "ct_iterator/ct_pointiterator.h"
 
-LVOX3_ComputeBefore::LVOX3_ComputeBefore(CT_ShootingPattern* pattern,
+LVOX3_ComputeBefore::LVOX3_ComputeBefore(const CT_ShootingPattern* pattern,
                                          const CT_AbstractPointCloudIndex* pointCloudIndex,
                                          lvox::Grid3Di* before,
                                          bool computeDistance)
@@ -26,7 +27,7 @@ void LVOX3_ComputeBefore::doTheJob()
     size_t n_points = m_pointCloudIndex->size();
 
     // Creates visitors
-    QVector<LVOX3_Grid3DVoxelWooVisitor*> list;
+    QList<CT_AbstractGrid3DBeamVisitor*> list;
 
     LVOX3_CountVisitor<lvox::Grid3DiType> countVisitor(m_before);
     LVOX3_DistanceVisitor<lvox::Grid3DiType> distVisitor(m_before);
@@ -38,7 +39,7 @@ void LVOX3_ComputeBefore::doTheJob()
     else list.append(&countVisitor);
 
     // Creates traversal algorithm
-    LVOX3_Grid3DWooTraversalAlgorithm<lvox::Grid3DiType> algo(m_before, false, list);
+    CT_Grid3DWooTraversalAlgorithm algo(m_before, false, list);
 
     setProgressRange(0, /*(_shotStatsDistance != NULL)*/_computeDistance ? n_points+1 : n_points);
 
@@ -56,8 +57,8 @@ void LVOX3_ComputeBefore::doTheJob()
         //Eigen::Vector3d direction = m_pattern->getShotForPoint(point).getDirection();
         // algo already check if the beam touch the grid or not so we don't have to do twice !
         //algo.compute(point, point - shotOrigin);
-        auto direction = (point - shotOrigin).normalized();
-        algo.compute(point, direction);
+        CT_Beam beam(point, (point - shotOrigin).normalized());
+        algo.compute(beam);
 
         ++i;
         setProgress(i);

@@ -6,22 +6,22 @@
 #ifndef LVOX3_DISTANCEVISITOR_H
 #define LVOX3_DISTANCEVISITOR_H
 
-#include "lvox3_grid3dvoxelwoovisitor.h"
 #include "tools/lvox3_rayboxintersectionmath.h"
 #include "tools/lvox3_gridtools.h"
 #include "tools/lvox3_gridtype.h"
 #include "tools/lvox3_errorcode.h"
 
-#include "tools/3dgrid/lvox3_grid3d.h"
+#include "tools/3dgrid/lvox_grid3d.h"
+#include "ct_itemdrawable/tools/gridtools/ct_abstractgrid3dbeamvisitor.h"
 
 template<typename T>
-class LVOX3_DistanceVisitor : public LVOX3_Grid3DVoxelWooVisitor
+class LVOX3_DistanceVisitor : public CT_AbstractGrid3DBeamVisitor
 {
 public:
-    LVOX3_DistanceVisitor(const LVOX3_Grid3D<T>* grid,
-                          const lvox::MutexCollection* collection = NULL) {
-        m_grid = (LVOX3_Grid3D<T>*)grid;
-        m_multithreadCollection = (lvox::MutexCollection*)collection;
+    LVOX3_DistanceVisitor(LVOX_Grid3D<T>* grid,
+                          lvox::MutexCollection* collection = nullptr) {
+        m_grid = grid;
+        m_multithreadCollection = collection;
         m_gridTools = NULL;
 
         if(grid != NULL)
@@ -35,38 +35,42 @@ public:
     /**
      * @brief Called when a voxel must be visited
      */
-    void visit(const LVOX3_Grid3DVoxelWooVisitorContext& context) {        
+    void visit(const size_t &index, [[maybe_unused]] const CT_Beam *beam) {
         Eigen::Vector3d bot, top, nearInter, farInter;
-        m_gridTools->computeCellBottomLeftTopRightCornerAtColLinLevel(context.colLinLevel.x(),
-                                                                      context.colLinLevel.y(),
-                                                                      context.colLinLevel.z(),
+        size_t col;
+        size_t lin;
+        size_t level;
+        m_gridTools->computeColLinLevelForIndex(index, col, lin, level);
+        m_gridTools->computeCellBottomLeftTopRightCornerAtColLinLevel(col,
+                                                                      lin,
+                                                                      level,
                                                                       bot,
                                                                       top);
 
-        if (LVOX3_RayBoxIntersectionMath::getIntersectionOfRay(bot, top, context.rayOrigin, context.rayDirection, nearInter, farInter))
+        if (LVOX3_RayBoxIntersectionMath::getIntersectionOfRay(bot, top, beam->origin(), beam->direction(), nearInter, farInter))
         {
             //qDebug()<<context.rayOrigin(0) << context.rayOrigin(1)<< context.rayOrigin(2) << context.rayDirection(0)<< context.rayDirection(1)<< context.rayDirection(2);
 
             const double distance = (nearInter - farInter).norm();
             //qDebug()<<"XXXXXXXXX:"<<nearInter(0) << nearInter(1)<< nearInter(2) << farInter(0)<< farInter(1)<< farInter(2) << distance;
             if(m_multithreadCollection != NULL) {
-                QMutex* mutex = (*m_multithreadCollection)[context.currentVoxelIndex];
-                mutex->lock();                
-                m_grid->doSommation(context.currentVoxelIndex,distance,distance);
-                m_grid->addValueAtIndex(context.currentVoxelIndex, 1);
+                QMutex* mutex = (*m_multithreadCollection)[index];
+                mutex->lock();
+                m_grid->doSommation(index,distance,distance);
+                m_grid->addValueAtIndex(index, 1);
 
                 mutex->unlock();
             } else {
 
-                m_grid->doSommation(context.currentVoxelIndex,distance,distance);
-                m_grid->addValueAtIndex(context.currentVoxelIndex, 1);
+                m_grid->doSommation(index,distance,distance);
+                m_grid->addValueAtIndex(index, 1);
 
             }
         }
     }
 
 private:
-    LVOX3_Grid3D<T>*           m_grid;
+    LVOX_Grid3D<T>*        m_grid;
     LVOX3_GridTools*        m_gridTools;
     lvox::MutexCollection*  m_multithreadCollection;
 };

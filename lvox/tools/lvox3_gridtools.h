@@ -7,17 +7,18 @@
 #define LVOX3_GRIDTOOLS_H
 
 #include "Eigen/Core"
-#include "3dgrid/abstract/lvox3_abstractgrid3d.h"
+#include "3dgrid/lvox_grid3d.h"
 
 class LVOX3_GridTools {
 public:
-    LVOX3_GridTools(const LVOX3_AbstractGrid3D* grid) {
+    LVOX3_GridTools(const CT_AbstractGrid3D* grid) {
         grid->getMinCoordinates(m_gridBBOXMin);
         m_gridDimX = grid->xdim();
         m_gridDimXMultDimY = m_gridDimX * grid->ydim();
-        m_gridResolutionX = grid->xresolution();
-        m_gridResolutionY = grid->yresolution();
-        m_gridResolutionZ = grid->zresolution();
+        // TODO: cleanup (FC)
+        m_gridResolutionX = grid->resolution();
+        m_gridResolutionY = grid->resolution();
+        m_gridResolutionZ = grid->resolution();
         m_gridResolutionXDiv2 = m_gridResolutionX/2.0;;
         m_gridResolutionYDiv2 = m_gridResolutionY/2.0;;
         m_gridResolutionZDiv2 = m_gridResolutionZ/2.0;;

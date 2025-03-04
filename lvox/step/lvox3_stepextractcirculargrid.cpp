@@ -79,7 +79,7 @@ void LVOX3_StepExtractCircularGrid::compute()
     {
         if (isStopped()) {return;}
 
-        const LVOX3_AbstractGrid3D* inGrid = group->singularItem(_inGrid);
+        const CT_AbstractGrid3D* inGrid = group->singularItem(_inGrid);
 
         size_t counterVoxels = 0;
         size_t n_voxels;
@@ -90,17 +90,25 @@ void LVOX3_StepExtractCircularGrid::compute()
         {
             //Number of voxels depending on grid resolution
             n_voxels = (inGrid->xdim()*inGrid->ydim()*inGrid->zdim());
+            const double res = inGrid->resolution();
 
             qDebug()<< "inGrid not null";
             //If grid has dimensions and voxel resolution
             if((inGrid->xdim() > 0)
                     && (inGrid->ydim() > 0)
                     && (inGrid->zdim() > 0)
-                    && (inGrid->xresolution() > 0)
-                    && (inGrid->yresolution() > 0)
-                    && (inGrid->zresolution() > 0)) {
+                    && (res > 0)) {
                 //Declaring output grid to be able to export personalized grid of profile
-                lvox::Grid3Df *outGrid = new lvox::Grid3Df(inGrid->minX(), inGrid->minY(), inGrid->minZ(), inGrid->xdim(), inGrid->ydim(), inGrid->zdim(), inGrid->xresolution(),inGrid->yresolution(),inGrid->zresolution(), lvox::Max_Error_Code, 0);
+                lvox::Grid3Df *outGrid = new lvox::Grid3Df(
+                        inGrid->minX(),
+                        inGrid->minY(),
+                        inGrid->minZ(),
+                        inGrid->xdim(),
+                        inGrid->ydim(),
+                        inGrid->zdim(),
+                        res,
+                        lvox::Max_Error_Code,
+                        0);
 
 
                 group->addSingularItem(_outGrid, outGrid);
@@ -114,7 +122,7 @@ void LVOX3_StepExtractCircularGrid::compute()
                             double value = inGrid->valueAtIndexAsDouble(index);
                             inGrid->getCellCenterCoordinates(index,centerCoordVoxel);
                             //Affects values in the outGrid
-                            if(evaluateVoxel(centerCoordVoxel, inGrid->xresolution(), inGrid->yresolution())){
+                            if(evaluateVoxel(centerCoordVoxel, res, res)){
                                 outGrid->addValueAtIndex(index,value);
                             }else{
                                 //set to sky if voxel is outside of the outGrid
@@ -133,6 +141,7 @@ void LVOX3_StepExtractCircularGrid::compute()
     }
 }
 
+// TODO: remove x/y res (use only one res) (FC)
 //Test to see if any part of the voxel is inside the radius of the extracted grid (If it is, it is added to the extracted grid)
 bool LVOX3_StepExtractCircularGrid::evaluateVoxel(Eigen::Vector3d centerCoords, double gridResolutionX, double gridResolutionY){
 

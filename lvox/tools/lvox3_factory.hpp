@@ -4,6 +4,8 @@
 #include <QMap>
 #include <QString>
 
+// TODO: Check if really needed (FC)
+
 template <typename T>
 class Factory
 {

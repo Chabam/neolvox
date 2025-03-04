@@ -39,7 +39,7 @@ private:
     CT_HandleInResultGroupCopy<>                        _inResult;
     CT_HandleInStdZeroOrMoreGroup                       _inZeroOrMoreRootGroup;
     CT_HandleInStdGroup<>                               _inGroup;
-    CT_HandleInSingularItem<LVOX3_AbstractGrid3D >      _inGrid;
+    CT_HandleInSingularItem<CT_AbstractGrid3D >      _inGrid;
 
     CT_HandleInResultGroup<>                            _inResultDTM;
     CT_HandleInStdZeroOrMoreGroup                       _inZeroOrMoreRootGroupDTM;

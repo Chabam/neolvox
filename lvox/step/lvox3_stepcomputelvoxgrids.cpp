@@ -7,7 +7,6 @@
 #include "tools/worker/lvox3_computeall.h"
 
 //Tools
-#include "tools/lvox3_computelvoxgridspreparator.h"
 #include <math.h>
 
 //Core
@@ -19,9 +18,7 @@
  */
 LVOX3_StepComputeLvoxGrids::LVOX3_StepComputeLvoxGrids() : SuperClass()
 {
-    m_resolution.x() = 0.5;
-    m_resolution.y() = 0.5;
-    m_resolution.z() = 0.5;
+    m_resolution = 0.5;
     m_computeDistances = false;
     //_onlyHits = false;
 
@@ -90,9 +87,9 @@ void LVOX3_StepComputeLvoxGrids::savePostSettings(SettingsWriterInterface& write
 {
     CT_AbstractStep::savePostSettings(writer);
 
-    writer.addParameter(this, "gridResolutionX", m_resolution.x());
-    writer.addParameter(this, "gridResolutionY", m_resolution.y());
-    writer.addParameter(this, "gridResolutionZ", m_resolution.z());
+    writer.addParameter(this, "gridResolutionX", m_resolution);
+    writer.addParameter(this, "gridResolutionY", m_resolution);
+    writer.addParameter(this, "gridResolutionZ", m_resolution);
     writer.addParameter(this, "computeDistances", m_computeDistances);
 
     writer.addParameter(this, "projectedAreaMethod", m_elementProjectedAreaMethod);
@@ -118,13 +115,13 @@ bool LVOX3_StepComputeLvoxGrids::restorePostSettings(SettingsReaderInterface &re
     QVariant value;
 
     reader.parameter(this, "gridResolutionX", value);
-    m_resolution.x() = value.toDouble();
+    m_resolution = value.toDouble();
 
     reader.parameter(this, "gridResolutionY", value);
-    m_resolution.y() = value.toDouble();
+    m_resolution = value.toDouble();
 
     reader.parameter(this, "gridResolutionZ", value);
-    m_resolution.z() = value.toDouble();
+    m_resolution = value.toDouble();
 
     reader.parameter(this, "computeDistances", value);
     m_computeDistances = value.toBool();
@@ -269,70 +266,117 @@ void LVOX3_StepComputeLvoxGrids::declareOutputModels(CT_StepOutModelStructureMan
  */
 void LVOX3_StepComputeLvoxGrids::compute()
 {
-    LVOX3_ComputeLVOXGridsPreparator::Coordinates coo;
-    //Coordinates and dimensions for custom mode grid creation
-    coo.coordinate = m_coordinates;
-    coo.dimension = m_dimensions;
 
-    PS_LOG->addInfoMessage(LogInterface::step, tr("Input coord %1 %2 ; Input dimension %3 %4 %5").arg(coo.coordinate.x())
-                                                                                                   .arg(coo.coordinate.z())
-                                                                                                   .arg(coo.dimension.x())
-                                                                                                   .arg(coo.dimension.y())
-                                                                                                   .arg(coo.dimension.z()));
-    LVOX3_ComputeLVOXGridsPreparator p;
-    LVOX3_ComputeLVOXGridsPreparator::Result pRes = p.prepare(this,
-                                                              _inGroup,
-                                                              _inResult,
-                                                              _inScene,
-                                                              _inScan,
-                                                              _inShootingPattern,
-                                                              m_resolution.x(),
-                                                              m_resolution.y(),
-                                                              m_resolution.z(),
-                                                              m_gridMode,
-                                                              coo,
-                                                              m_gridFilePath.isEmpty() ? "" : m_gridFilePath.first());
+    PS_LOG->addInfoMessage(LogInterface::step, tr("Input coord %1 %2 ; Input dimension %3 %4 %5")
+        .arg(m_coordinates.x())
+        .arg(m_coordinates.z())
+        .arg(m_dimensions.x())
+        .arg(m_dimensions.y())
+        .arg(m_dimensions.z()));
 
-
-    //If the grid had it's dimension fitted according to config
-    if(!pRes.valid)
-        return;
-
-    LVOX3_ComputeAll workersManager; //Worker manager (Thread and progress manager)
-    LVOX3_ComputeLVOXGridsPreparator::Result::ToComputeCollectionIterator it(pRes.elementsToCompute);
-
-    while (it.hasNext() && !isStopped())
+    for (CT_StandardItemGroup* group : _inGroup.iterateOutputs(_inResult))
     {
-        it.next();
-        CT_StandardItemGroup* group = it.key();
-        const LVOX3_ComputeLVOXGridsPreparator::ToCompute& tc = it.value();
+        const CT_Scene* scene = group->singularItem(_inScene);
+        const CT_Scanner* scanner = group->singularItem(_inScan);
+        const CT_ShootingPattern* pattern = scanner->shootingPattern();
 
-        lvox::Grid3Di*   hitGrid = nullptr;
-        lvox::Grid3Di*   theoriticalGrid = nullptr;
-        lvox::Grid3Di*   beforeGrid = nullptr;
+        if (!scene || !scanner)
+            continue;
 
-        LVOX3_ComputeTheoriticals* theoriticalWorker = nullptr;
-        LVOX3_ComputeHits* hitsWorker = nullptr;
-        LVOX3_ComputeBefore* beforeWorker = nullptr;
+        Eigen::AlignedBox3d sceneBBox;
+        Eigen::AlignedBox3d scannerBBox;
+        Eigen::AlignedBox3d voxelsBBox;
 
-        //Used to pass to voxel filtering step more easily
-        QList<LVOX3_AbstractGrid3D*> allGrids;
-        // Declaring the output grids
-        // qDebug() << "Box"<< pRes.minBBox.x() << pRes.minBBox.y() << pRes.minBBox.z() << pRes.maxBBox.x() << pRes.maxBBox.y() << pRes.maxBBox.z();
-        // qDebug() << "coords + dimensions: "<< pRes.minBBox.x() << pRes.minBBox.y() << pRes.minBBox.z() << pRes.maxBBox.x() - pRes.minBBox.x()<< pRes.maxBBox.y() - pRes.minBBox.y() << pRes.maxBBox.z() - pRes.minBBox.z();
-        hitGrid = lvox::Grid3Di::createGrid3DFromXYZCoords(pRes.minBBox.x(), pRes.minBBox.y(), pRes.minBBox.z(),
-                                                           pRes.maxBBox.x(), pRes.maxBBox.y(), pRes.maxBBox.z(),
-                                                           m_resolution.x(),m_resolution.y(),m_resolution.z(), -9, 0);
-        theoriticalGrid = new lvox::Grid3Di(hitGrid->minX(), hitGrid->minY(), hitGrid->minZ(), hitGrid->xdim(),
-                                            hitGrid->ydim(), hitGrid->zdim(), m_resolution.x(),m_resolution.y(),m_resolution.z(),
+        /* Union of all scanners
+         *
+         * FIXME: center coordinate may not be enough to compute the
+         * bounding box of the parallel shooting pattern.
+         */
+        const Eigen::Vector3d& scanPos = pattern->centerCoordinate();
+        scannerBBox.extend(scanPos);
+
+        qDebug() << "ID " << scanner->id() << " Pos : ("  << scanPos.x() << "," << scanPos.y() << "," << scanPos.z() << ")";
+
+        /* Union of all scenes */
+        Eigen::Vector3d sceneBBOXMin, sceneBBOXMax;
+        scene->boundingBox(sceneBBOXMin, sceneBBOXMax);
+        sceneBBox.extend(sceneBBOXMin);
+        sceneBBox.extend(sceneBBOXMax);
+
+        PS_LOG->addInfoMessage(LogInterface::trace, "Mode " + lvox::gridModeToString(m_gridMode));
+
+        //Grid mode, default or custom mode
+        switch(m_gridMode) {
+        case lvox::BoundingBoxOfTheScene:
+            voxelsBBox.extend(sceneBBox);
+            break;
+        case lvox::RelativeToCoordinates:
+            voxelsBBox.extend(m_coordinates);
+            voxelsBBox.extend(sceneBBox.max());
+            break;
+        case lvox::RelativeToCoordinatesAndCustomDimensions:
+        case lvox::FromOtherGrid:
+            // custom bounding box, where useless voxels are removed
+            voxelsBBox.extend(m_coordinates);
+            voxelsBBox.extend(m_coordinates + m_dimensions);
+            voxelsBBox.clamp(sceneBBox);
+            break;
+        case lvox::CenteredOnCoordinatesAndCustomDimensions:
+            voxelsBBox.extend(m_coordinates - m_dimensions);
+            voxelsBBox.extend(m_coordinates + m_dimensions);
+            break;
+        default:
+            break;
+        }
+
+        // extends the bounding box to include the scanner
+        if (!voxelsBBox.contains(scannerBBox)) {
+            PS_LOG->addMessage(LogInterface::warning, LogInterface::step,
+                               QObject::tr("Grid dimensions has been enlarged to include scanner and/or their range"));
+            //TEMPORARY FIX BY FP 11/2017 TO AVOID THAT THE GRID CENTER IS SHIFTED WHEN SCANNER ARE NOT IN THE GRID
+            if (m_gridMode==lvox::CenteredOnCoordinatesAndCustomDimensions) {
+                Eigen::Vector3d v1s = scannerBBox.min().array();
+                Eigen::Vector3d v2s = scannerBBox.max().array();
+                Eigen::Vector3d v1 = voxelsBBox.min().array();
+                Eigen::Vector3d v2 = voxelsBBox.max().array();
+                while(v1(0) > v1s(0)) {v1(0) -= m_resolution;}
+                while(v1(1) > v1s(1)) {v1(1) -= m_resolution;}
+                while(v1(2) > v1s(2)) {v1(2) -= m_resolution;}
+                while(v2(0) < v2s(0)) {v2(0) += m_resolution;}
+                while(v2(1) < v2s(1)) {v2(1) += m_resolution;}
+                while(v2(2) < v2s(2)) {v2(2) += m_resolution;}
+                voxelsBBox.extend(v1);
+                voxelsBBox.extend(v2);
+            } else {
+                voxelsBBox.extend(scannerBBox);
+            }
+        }
+
+        //setting response dimensions
+        const Eigen::Vector3d minBBox = voxelsBBox.min();
+        const Eigen::Vector3d maxBBox = voxelsBBox.max();
+
+        PS_LOG->addMessage(LogInterface::info, LogInterface::step,
+                           QObject::tr("Voxel bounding box: (%1,%2,%3), (%4,%5,%6)")
+                            .arg(minBBox.x(), 5, 'f', 1)
+                            .arg(minBBox.y(), 5, 'f', 1)
+                            .arg(minBBox.z(), 5, 'f', 1)
+                            .arg(maxBBox.x(), 5, 'f', 1)
+                            .arg(maxBBox.y(), 5, 'f', 1)
+                            .arg(maxBBox.z(), 5, 'f', 1)
+                           );
+
+        LVOX3_ComputeAll workersManager; //Worker manager (Thread and progress manager)
+
+        lvox::Grid3Di* hitGrid = lvox::Grid3Di::createGrid3DFromXYZCoords(minBBox.x(), minBBox.y(), minBBox.z(),
+                                                           maxBBox.x(), maxBBox.y(), maxBBox.z(),
+                                                           m_resolution, -9, 0, false);
+        lvox::Grid3Di* theoriticalGrid = new lvox::Grid3Di(hitGrid->minX(), hitGrid->minY(), hitGrid->minZ(), hitGrid->xdim(),
+                                            hitGrid->ydim(), hitGrid->zdim(), m_resolution,
                                             -9, 0);
-        beforeGrid = new lvox::Grid3Di(hitGrid->minX(), hitGrid->minY(), hitGrid->minZ(), hitGrid->xdim(),
-                                       hitGrid->ydim(), hitGrid->zdim(), m_resolution.x(),m_resolution.y(),m_resolution.z(),
+        lvox::Grid3Di* beforeGrid =  new lvox::Grid3Di(hitGrid->minX(), hitGrid->minY(), hitGrid->minZ(), hitGrid->xdim(),
+                                       hitGrid->ydim(), hitGrid->zdim(), m_resolution,
                                        -9, 0);
-
-        allGrids.append(hitGrid);
-        allGrids.append(theoriticalGrid);
-        allGrids.append(beforeGrid);
 
         //Added to the group for UI drawing purposes
         group->addSingularItem(_outHits, hitGrid);
@@ -343,8 +387,7 @@ void LVOX3_StepComputeLvoxGrids::compute()
         if (m_computeDistances)
         {
             //Creating the grids for mean distances
-            double elementProjectedArea = computeElementProjectedArea();
-            // qDebug()<< "##################" << elementProjectedArea;
+            const double elementProjectedArea = computeElementProjectedArea();
             hitGrid->setLambda1(elementProjectedArea);
             theoriticalGrid->setLambda1(elementProjectedArea);
             beforeGrid->setLambda1(elementProjectedArea);
@@ -353,25 +396,24 @@ void LVOX3_StepComputeLvoxGrids::compute()
             PS_LOG->addWarningMessage(LogInterface::step, tr("PAD computation will produce invalid results if called without computing distances"));
         }
 
-        qDebug() << "Shooting pattern : " << tc.scene->id() << " " << pRes.elementsToCompute.size() << " "
-                                          << tc.pattern->numberOfShots();
+        qDebug() << "Shooting pattern : " << scene->id() << " " << pattern->numberOfShots();
 
 
-        hitsWorker = new LVOX3_ComputeHits(tc.pattern, tc.scene->pointCloudIndex(), hitGrid, m_computeDistances);
-        theoriticalWorker = new LVOX3_ComputeTheoriticals(tc.pattern, theoriticalGrid, m_computeDistances);
-        beforeWorker = new LVOX3_ComputeBefore(tc.pattern, tc.scene->pointCloudIndex(), beforeGrid, m_computeDistances);
+        LVOX3_ComputeTheoriticals* theoriticalWorker = new LVOX3_ComputeTheoriticals(pattern, theoriticalGrid, m_computeDistances);
+        LVOX3_ComputeHits* hitsWorker =  new LVOX3_ComputeHits(pattern, scene->pointCloudIndex(), hitGrid, m_computeDistances);
+        LVOX3_ComputeBefore* beforeWorker = new LVOX3_ComputeBefore(pattern, scene->pointCloudIndex(), beforeGrid, m_computeDistances);
 
         //Added to manager for progress bar and mutex multithreading
         workersManager.addWorker(1, beforeWorker);
         workersManager.addWorker(1, hitsWorker);
         workersManager.addWorker(1, theoriticalWorker);
+
+        //Connected to show progress of the workers
+        connect(&workersManager, SIGNAL(progressChanged(int)), this, SLOT(progressChanged(int)), Qt::DirectConnection);
+        connect(this, SIGNAL(stopped()), &workersManager, SLOT(cancel()), Qt::DirectConnection);
+        workersManager.compute();
     }
 
-
-    //Connected to show progress of the workers
-    connect(&workersManager, SIGNAL(progressChanged(int)), this, SLOT(progressChanged(int)), Qt::DirectConnection);
-    connect(this, SIGNAL(stopped()), &workersManager, SLOT(cancel()), Qt::DirectConnection);
-    workersManager.compute();
 }
 
 /**

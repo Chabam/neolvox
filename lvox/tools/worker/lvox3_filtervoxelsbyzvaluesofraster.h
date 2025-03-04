@@ -7,7 +7,7 @@
 #define LVOX3_FILTERVOXELSBELOWZVALUES_H
 
 #include "lvox3_worker.h"
-#include "tools/3dgrid/abstract/lvox3_abstractgrid3d.h"
+#include "tools/3dgrid/lvox_grid3d.h"
 #include "ct_itemdrawable/abstract/ct_abstractimage2d.h"
 
 /**
@@ -23,7 +23,7 @@ public:
         Above
     };
 
-    LVOX3_FilterVoxelsByZValuesOfRaster(const QList<LVOX3_AbstractGrid3D*>& grids,
+    LVOX3_FilterVoxelsByZValuesOfRaster(const QList<CT_AbstractGrid3D*>& grids,
                                         const CT_AbstractImage2D* zValues,
                                         FilterType filter,
                                         double replacementValue);
@@ -35,7 +35,7 @@ protected:
     void doTheJob();
 
 private:
-    QVector<LVOX3_AbstractGrid3D*>     m_grids;
+    QVector<CT_AbstractGrid3D*>     m_grids;
     CT_AbstractImage2D*             m_zValues;
     FilterType                      m_filter;
     double                          m_replacementValue;

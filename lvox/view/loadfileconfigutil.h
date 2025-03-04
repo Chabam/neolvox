@@ -10,8 +10,6 @@
 
 #include "loadfileconfiguration.h"
 
-#include "lvox_sharedfortest.h"
-
 struct LvoxConfigError {
     LvoxConfigError(const QString msg) : m_msg(msg) {}
     QString m_msg;

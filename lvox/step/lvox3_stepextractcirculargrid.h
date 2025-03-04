@@ -3,7 +3,7 @@
 
 #include "ct_step/abstract/ct_abstractstep.h"
 
-#include "tools/3dgrid/abstract/lvox3_abstractgrid3d.h"
+#include "tools/3dgrid/lvox_grid3d.h"
 #include "tools/lvox3_gridtype.h"
 
 //This step extracts a circular(ish) grid for any 3dgrid.
@@ -46,7 +46,7 @@ private:
     CT_HandleInResultGroupCopy<>                        _inResult;
     CT_HandleInStdZeroOrMoreGroup                       _inZeroOrMoreRootGroup;
     CT_HandleInStdGroup<>                               _inGroup;
-    CT_HandleInSingularItem<LVOX3_AbstractGrid3D >      _inGrid;
+    CT_HandleInSingularItem<CT_AbstractGrid3D >      _inGrid;
 
     CT_HandleOutSingularItem<lvox::Grid3Df>             _outGrid;
 

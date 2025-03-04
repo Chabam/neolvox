@@ -4,7 +4,7 @@
 LVOX3_GenericCompute::LVOX3_GenericCompute(const QList<Input>& inputs,
                                            const QList<lvox::CheckConfiguration> &checksFormula,
                                            const std::string &finalFormula,
-                                           LVOX3_AbstractGrid3D *output)
+                                           CT_AbstractGrid3D *output)
 {
     m_inputs.reserve(inputs.size());
 

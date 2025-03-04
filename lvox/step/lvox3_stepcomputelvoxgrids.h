@@ -58,7 +58,7 @@ private:
     CT_HandleInResultGroupCopy<>                                                        _inResult;
     CT_HandleInStdZeroOrMoreGroup                                                       _inZeroOrMoreRootGroup;
     CT_HandleInStdGroup<>                                                               _inGroup;
-    CT_HandleInSingularItem<CT_AbstractItemDrawableWithPointCloud>                      _inScene;
+    CT_HandleInSingularItem<CT_Scene>                                                   _inScene;
     CT_HandleInSingularItem<CT_Scanner>                                                 _inScan;
     CT_HandleInSingularItem<CT_ShootingPatternD>                                        _inShootingPattern;
 
@@ -83,7 +83,7 @@ private:
 
     GridMode        m_gridMode;
     VegetationType  m_elementProjectedAreaMethod;
-    Eigen::Vector3d m_resolution;               /*!< voxel size on the x,y and z axis */
+    double m_resolution;               /*!< voxel size on the x,y and z axis */
     Eigen::Vector3d m_coordinates;              /*!< coordinates if gridMode == ...Coordinates... */
     Eigen::Vector3d m_dimensions;               /*!< dimensions if gridMode == ...CustomDimensions */
     QStringList     m_gridFilePath;             /*!< Name of .grid L-Architect reference 3D grid */

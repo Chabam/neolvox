@@ -147,7 +147,7 @@ bool LVOX3_StepMergeGrids::postInputConfigure()
 
 
 void LVOX3_StepMergeGrids::declareOutputModels(CT_StepOutModelStructureManager& manager)
-{    
+{
     manager.addResult(_outResult, tr("Merged grids"));
     manager.setRootGroup(_outResult, _outRootGroup);
     manager.addItem(_outRootGroup, _outGrid_ni, "Hits (merged)");
@@ -198,10 +198,10 @@ void LVOX3_StepMergeGrids::compute()
         LVOXGridSet merged;
 
 
-        merged.ni = new lvox::Grid3Di(a->ni->minX(), a->ni->minY(), a->ni->minZ(), a->ni->xdim(), a->ni->ydim(), a->ni->zdim(), a->ni->xresolution(), a->ni->yresolution(), a->ni->zresolution(), a->ni->NA(), a->ni->NA());
-        merged.nt = new lvox::Grid3Di(a->nt->minX(), a->nt->minY(), a->nt->minZ(), a->nt->xdim(), a->nt->ydim(), a->nt->zdim(), a->nt->xresolution(), a->nt->yresolution(), a->nt->zresolution(), a->nt->NA(), a->nt->NA());
-        merged.nb = new lvox::Grid3Di(a->nb->minX(), a->nb->minY(), a->nb->minZ(), a->nb->xdim(), a->nb->ydim(), a->nb->zdim(), a->nb->xresolution(), a->nb->yresolution(), a->nb->zresolution(), a->nb->NA(), a->nb->NA());
-        merged.rd = new lvox::Grid3Df(a->rd->minX(), a->rd->minY(), a->rd->minZ(), a->rd->xdim(), a->rd->ydim(), a->rd->zdim(), a->rd->xresolution(), a->rd->yresolution(), a->rd->zresolution(), a->rd->NA(), a->rd->NA());
+        merged.ni = new lvox::Grid3Di(a->ni->minX(), a->ni->minY(), a->ni->minZ(), a->ni->xdim(), a->ni->ydim(), a->ni->zdim(), a->ni->resolution(), a->ni->NA(), a->ni->NA());
+        merged.nt = new lvox::Grid3Di(a->nt->minX(), a->nt->minY(), a->nt->minZ(), a->nt->xdim(), a->nt->ydim(), a->nt->zdim(), a->nt->resolution(), a->nt->NA(), a->nt->NA());
+        merged.nb = new lvox::Grid3Di(a->nb->minX(), a->nb->minY(), a->nb->minZ(), a->nb->xdim(), a->nb->ydim(), a->nb->zdim(), a->nb->resolution(), a->nb->NA(), a->nb->NA());
+        merged.rd = new lvox::Grid3Df(a->rd->minX(), a->rd->minY(), a->rd->minZ(), a->rd->xdim(), a->rd->ydim(), a->rd->zdim(), a->rd->resolution(), a->rd->NA(), a->rd->NA());
 
         //Connecting workers and progress bar
         LVOX3_MergeGridsWorker worker(&merged, &gs, reducer.get());

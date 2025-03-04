@@ -28,6 +28,8 @@
 
 #include "lvox_steppluginmanager.h"
 
+#include "exporters/grid3d/pb_grid3dexporter.h"
+#include "readers/ct_reader_asciigrid3d.h"
 #include "tools/ct_readerstools.h"
 
 #include "ct_exporter/ct_standardexporterseparator.h"
@@ -43,8 +45,6 @@
 #include "step/lvox3_stepgridnormalisation.h"
 #include "step/lvox3_stepgridnormalisationraster.h"
 #include "step/lvox3_stepcomputenormalizedprofiles.h"
-#include "tools/exporter/lvox3_grid3dexporter.h"
-#include "tools/reader/lvox3_reader_asciigrid3d.h"
 
 
 #include "step/lvox3_stepmakeshootingpatternformls.h"
@@ -148,7 +148,7 @@ bool LVOX_StepPluginManager::loadExporters()
     //Re-implementation of GRID3D export into GRID3DLVOX for grids with three resolutions
     CT_StandardExporterSeparator *sep = addNewSeparator(new CT_StandardExporterSeparator("Exporters LVOX"));
 
-    sep->addExporter(new LVOX3_Grid3DExporter(CT_StepsMenu::LP_Voxels));
+    sep->addExporter(new PB_Grid3DExporter(CT_StepsMenu::LP_Voxels));
     return true;
 }
 
@@ -156,7 +156,7 @@ bool LVOX_StepPluginManager::loadReaders()
 {
     //Re-implementation of GRID3D loader into GRID3DLVOX for grids with three resolutions
     CT_StandardReaderSeparator *sep = addNewSeparator(new CT_StandardReaderSeparator("Readers LVOX"));
-    sep->addReader(new LVOX3_Reader_AsciiGrid3D(CT_StepsMenu::LP_Voxels));
+    sep->addReader(new CT_Reader_AsciiGrid3D(CT_StepsMenu::LP_Voxels));
     return true;
 }
 

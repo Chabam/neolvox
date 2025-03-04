@@ -8,7 +8,7 @@
 
 #include "ct_step/abstract/ct_abstractstep.h"
 
-#include "tools/3dgrid/abstract/lvox3_abstractgrid3d.h"
+#include "tools/3dgrid/lvox_grid3d.h"
 #include "ct_itemdrawable/ct_profile.h"
 #include "ct_itemdrawable/ct_standarditemgroup.h"
 #include "tools/lvox3_gridtype.h"
@@ -56,7 +56,7 @@ private:
     CT_HandleInResultGroupCopy<>                        _inResult;
     CT_HandleInStdZeroOrMoreGroup                       _inZeroOrMoreRootGroup;
     CT_HandleInStdGroup<>                               _inGroup;
-    CT_HandleInSingularItem<LVOX3_AbstractGrid3D >      _inGrid;
+    CT_HandleInSingularItem<CT_AbstractGrid3D >      _inGrid;
 
     CT_HandleOutStdGroup                                _outGroup;
     CT_HandleOutSingularItem<CT_Profile<double> >       _outProfile;
@@ -67,7 +67,7 @@ private:
     /**
      * @brief Create a new profile and return it
      */
-    CT_Profile<double>* createProfile(const LVOX3_AbstractGrid3D* grid,
+    CT_Profile<double>* createProfile(const CT_AbstractGrid3D* grid,
                                       const size_t& currentIndex,
                                       const Eigen::Vector3i& axeNormal,
                                       const Eigen::Vector3i& axeOrdonnee,
@@ -91,7 +91,7 @@ private:
     /**
      * @brief Changes the values entered to compute the profile (meters to voxels)
      */
-    QList<double> changeToVoxel(const LVOX3_AbstractGrid3D* inGrid);
+    QList<double> changeToVoxel(const CT_AbstractGrid3D* inGrid);
 };
 
 #endif // LVOX3_STEPCOMPUTEPROFILES_H

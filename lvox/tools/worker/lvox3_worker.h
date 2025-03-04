@@ -7,7 +7,6 @@
 #define LVOX3_WORKER_H
 
 #include <QObject>
-#include "lvox_sharedfortest.h"
 
 /*!
  * @brief Do a job

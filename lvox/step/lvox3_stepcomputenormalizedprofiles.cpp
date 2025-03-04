@@ -102,7 +102,7 @@ void LVOX3_StepComputeNormalizedProfiles::compute()
 
     for (CT_StandardItemGroup* group : _inGroup.iterateOutputs(_inResult))
     {
-        for (const LVOX3_AbstractGrid3D* inGrid : group->singularItems(_inGrid))
+        for (const CT_AbstractGrid3D* inGrid : group->singularItems(_inGrid))
         {
             if (isStopped()) {return;}
 
@@ -116,7 +116,7 @@ void LVOX3_StepComputeNormalizedProfiles::compute()
 
             for (size_t c = 0 ; c < inGrid->nCells() ; c++)
             {
-                if (!inGrid->isNA(c))
+                if (inGrid->valueAtIndexAsString(c) != inGrid->NAAsString())
                 {
                     Eigen::Vector3d centerCell;
                     inGrid->getCellCenterCoordinates(c, centerCell);

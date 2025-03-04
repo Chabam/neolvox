@@ -6,12 +6,11 @@
 #ifndef LVOX3_GRID3DPROPAGATIONALGORITHM_H
 #define LVOX3_GRID3DPROPAGATIONALGORITHM_H
 
-#include "tools/3dgrid/abstract/lvox3_abstractgrid3d.h"
+#include "tools/3dgrid/lvox_grid3d.h"
 
 #include "tools/lvox3_gridtools.h"
 
 #include "visitor/lvox3_propagationvisitorcontext.h"
-#include "lvox_sharedfortest.h"
 
 class LVOX3_PropagationVisitor;
 
@@ -31,7 +30,7 @@ public:
      * @param radius : maximum radius to search cells
      * @param startCellIndex : (optionnal) index of the cell to start, if you want to use the method "startCompute"
      */
-    LVOX3_Grid3DPropagationAlgorithm(const LVOX3_AbstractGrid3D* grid,
+    LVOX3_Grid3DPropagationAlgorithm(const CT_AbstractGrid3D* grid,
                                      const VisitorCollection& list,
                                      const double& radius,
                                      const size_t& startCellIndex = 0);
@@ -68,7 +67,7 @@ private:
     };
 
     LVOX3_GridTools*            m_gridTools;
-    LVOX3_AbstractGrid3D*       m_grid;
+    CT_AbstractGrid3D*       m_grid;
     const VisitorCollection&    m_visitors;
     double                      m_radius;
     size_t                      m_startCellIndex;

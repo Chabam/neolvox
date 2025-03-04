@@ -5,7 +5,6 @@
 #include <QVector>
 #include "tools/lvox3_utils.h"
 #include "tools/lvox3_factory.hpp"
-#include "lvox_sharedfortest.h"
 
 #define LVOX_REDUCER_RDI "MaxRDI"
 #define LVOX_REDUCER_TRUST "MaxTrust"

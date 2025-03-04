@@ -101,11 +101,12 @@ void ComputeGridsConfiguration::setComputeDistances(bool value)
     _ui->doComputeDistances->setChecked(value);
 }
 
-void ComputeGridsConfiguration::setResolution(Eigen::Vector3d resolution)
+void ComputeGridsConfiguration::setResolution(double resolution)
 {
-    _ui->gridResX->setValue(resolution.x());
-    _ui->gridResY->setValue(resolution.y());
-    _ui->gridResZ->setValue(resolution.z());
+    // TODO: make it one dimmension (FC)
+    _ui->gridResX->setValue(resolution);
+    _ui->gridResY->setValue(resolution);
+    _ui->gridResZ->setValue(resolution);
 }
 
 void ComputeGridsConfiguration::setFlatArea(double area)
@@ -126,13 +127,10 @@ void ComputeGridsConfiguration::setWidthOrExtension2(double value)
 }
 
 
-Eigen::Vector3d ComputeGridsConfiguration::getResolution() const
+double ComputeGridsConfiguration::getResolution() const
 {
-    return Eigen::Vector3d {
-        _ui->gridResX->value(),
-        _ui->gridResY->value(),
-        _ui->gridResZ->value()
-    };
+    // TODO: make it one dimmension (FC)
+    return _ui->gridResX->value();
 }
 
 Eigen::Vector3d ComputeGridsConfiguration::getCoordinates() const
@@ -232,9 +230,6 @@ void ComputeGridsConfiguration::referenceMethodHasChanged(const QString s)
     if(_gridModesCollection[GridMode::CenteredOnCoordinatesAndCustomDimensions] == s)
         _currentGridMode = GridMode::CenteredOnCoordinatesAndCustomDimensions;
 
-    if(_gridModesCollection[GridMode::FromGridFileParameters] == s)
-        _currentGridMode = GridMode::FromGridFileParameters;
-
     updateInterface();
 }
 
@@ -269,7 +264,6 @@ void ComputeGridsConfiguration::updateInterface() const
         _ui->coordinatesFrame->show();
         _ui->dimensionFrame->show();
         break;
-    case GridMode::FromGridFileParameters:
     case GridMode::BoundingBoxOfTheScene:
     case GridMode::FromOtherGrid:
         _ui->coordinatesFrame->hide();
