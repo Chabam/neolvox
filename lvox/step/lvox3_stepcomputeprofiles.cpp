@@ -10,6 +10,8 @@
 #include "tools/lvox3_gridtype.h"
 #include "tools/lvox3_errorcode.h"
 
+#include <Eigen/Geometry>
+
 //ChangeToVoxel method
 #define MINProfile(a, b) ((a < b) ? b : a)
 #define MAXProfile(a, b) ((a > b) ? b : a)

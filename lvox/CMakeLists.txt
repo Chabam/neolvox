@@ -140,7 +140,11 @@ target_include_directories(plug_neolvox PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/
 )
 
-target_compile_definitions(plug_neolvox PRIVATE USE_OPENCV)
+target_compile_definitions(plug_neolvox PRIVATE
+    USE_OPENCV
+    $<$<BOOL:${WIN32}>:_USE_MATH_DEFINES>
+)
+
 target_link_libraries(plug_neolvox
     ctlibcommon
     ctlibplugin
@@ -157,6 +161,7 @@ target_link_libraries(plug_neolvox
     ctlibmath
     ctliblas
     muparser::muparser
+    Eigen3::Eigen
     Qt5::Core
     Qt5::Gui
     Qt5::Widgets
