@@ -177,3 +177,9 @@ add_custom_command(TARGET plug_neolvox POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:plug_neolvox> $<TARGET_RUNTIME_DLLS:plug_neolvox>
   COMMAND_EXPAND_LISTS
 )
+
+install(TARGETS plug_neolvox
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
