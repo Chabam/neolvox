@@ -45,6 +45,7 @@
 #include "step/lvox3_stepgridnormalisation.h"
 #include "step/lvox3_stepgridnormalisationraster.h"
 #include "step/lvox3_stepcomputenormalizedprofiles.h"
+#include "step/lvox3_stepconfigurescanner.h"
 
 
 #include "step/lvox3_stepmakeshootingpatternformls.h"
@@ -100,6 +101,7 @@ QString LVOX_StepPluginManager::getPluginRISCitation() const
 bool LVOX_StepPluginManager::loadGenericsStep()
 {
     addNewVoxelsStep<LVOX3_StepLoadFiles>("LVOX3");
+    addNewVoxelsStep<LVOX3_StepConfigureScanner>("LVOX3");
     addNewVoxelsStep<LVOX3_StepMakeShootingPatternForMLS>("LVOX3");
     addNewVoxelsStep<LVOX3_StepComputeLvoxGrids>("LVOX3");
     addNewVoxelsStep<LVOX3_StepComputePAD>("LVOX3");

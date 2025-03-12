@@ -10,6 +10,7 @@ set(LVOX_HEADERS
     step/lvox3_stepcomputenormalizedprofiles.h
     step/lvox3_stepcomputepad.h
     step/lvox3_stepcomputeprofiles.h
+    step/lvox3_stepconfigurescanner.h
     step/lvox3_stepextractcirculargrid.h
     step/lvox3_stepgridnormalisationraster.h
     step/lvox3_stepinterpolatedistance.h
@@ -69,6 +70,7 @@ set(LVOX_SOURCES
     step/lvox3_stepcomputenormalizedprofiles.cpp
     step/lvox3_stepcomputepad.cpp
     step/lvox3_stepcomputeprofiles.cpp
+    step/lvox3_stepconfigurescanner.cpp
     step/lvox3_stepextractcirculargrid.cpp
     step/lvox3_stepgridnormalisationraster.cpp
     step/lvox3_stepinterpolatedistance.cpp
@@ -171,11 +173,6 @@ set_target_properties(plug_neolvox
     PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-)
-
-add_custom_command(TARGET plug_neolvox POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:plug_neolvox> $<TARGET_RUNTIME_DLLS:plug_neolvox>
-  COMMAND_EXPAND_LISTS
 )
 
 install(TARGETS plug_neolvox
