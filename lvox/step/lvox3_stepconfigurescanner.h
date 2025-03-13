@@ -40,6 +40,7 @@ protected:
     void compute() final;
 
 private:
+    bool                                                                                _isMLS;
 
     CT_HandleInResultGroupCopy<>                                                        _inResult;
     CT_HandleInStdZeroOrMoreGroup                                                       _inZeroOrMoreRootGroup;

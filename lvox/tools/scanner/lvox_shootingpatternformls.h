@@ -25,7 +25,7 @@ public:
      * @param scanPath Trajectory of the mobile lidar
      * @param attributeGPS GPS time attributes of the point cloud
      */
-    LVOX_ShootingPatternForMLS(CT_PCIR pcir,const CT_ScanPath& scanPath, CT_AbstractPointAttributesScalar* attributeGPS);
+    LVOX_ShootingPatternForMLS(CT_PCIR pcir, const CT_ScanPath& scanPath, CT_AbstractPointAttributesScalar* attributeGPS);
 
     /**
      * @brief Returns the center coordinate of this shooting pattern

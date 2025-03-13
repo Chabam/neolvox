@@ -7,6 +7,7 @@
 
 LVOX3_StepConfigureScanner::LVOX3_StepConfigureScanner() : SuperClass()
 {
+    _isMLS = false;
     // Initialize member variables if needed
 }
 
@@ -59,6 +60,7 @@ void LVOX3_StepConfigureScanner::declareInputModels(CT_StepInModelStructureManag
 
 void LVOX3_StepConfigureScanner::fillPostInputConfigurationDialog(CT_StepConfigurableDialog* postInputConfigDialog)
 {
+    postInputConfigDialog->addBool("", "", "Is MLS?", _isMLS);
 }
 
 void LVOX3_StepConfigureScanner::declareOutputModels(CT_StepOutModelStructureManager& manager)
