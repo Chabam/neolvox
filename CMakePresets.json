@@ -1,0 +1,57 @@
+{
+    "version": 9,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 23,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "binaryDir": "${sourceDir}/build",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "linux",
+            "inherits": [
+                "base"
+            ],
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            },
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "-fdiagnostics-color=always",
+                "CMAKE_C_FLAGS": "-fdiagnostics-color=always"
+            }
+        },
+        {
+            "name": "windows-vcpkg",
+            "inherits": [
+                "base"
+            ],
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "CMAKE_INSTALL_PREFIX": "$env{QT_INSTALL_DIR}",
+                "X_VCPKG_APPLOCAL_DEPS_INSTALL": "ON"
+            }
+        },
+        {
+            "name": "linux-standalone",
+            "inherits": [ "linux" ],
+            "cacheVariables": {
+                "LVOX_COMPUTREE_BINDINGS": "OFF",
+                "LVOX_STANDALONE": "ON"
+            }
+        }
+    ]
+}
