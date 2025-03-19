@@ -5,4 +5,11 @@ target_sources(lvox
     main.cpp
 )
 
-target_link_libraries(lvox ${PDAL_LIBS})
+target_link_libraries(lvox PRIVATE pdalcpp)
+
+set_target_properties(lvox
+    PROPERTIES
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED ON
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
