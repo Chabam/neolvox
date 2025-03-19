@@ -1,3 +1,6 @@
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 add_executable(lvox)
 
 target_sources(lvox
@@ -6,10 +9,13 @@ target_sources(lvox
 )
 
 target_link_libraries(lvox PRIVATE pdalcpp)
+target_include_directories(lvox PUBLIC ${neolvox_SOURCE_DIR}/include)
 
 set_target_properties(lvox
     PROPERTIES
-        CXX_STANDARD 20
-        CXX_STANDARD_REQUIRED ON
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

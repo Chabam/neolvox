@@ -11,7 +11,6 @@
 #include <pdal/io/BufferReader.hpp>
 #include <pdal/StageFactory.hpp>
 #include <pdal/io/LasReader.hpp>
-#include <stdexcept>
 
 auto print_usage() -> void
 {

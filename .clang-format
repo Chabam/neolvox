@@ -1,0 +1,13 @@
+BasedOnStyle: Microsoft
+Standard: c++20
+BinPackParameters: OnePerLine
+BreakConstructorInitializers: BeforeComma
+BreakTemplateDeclarations: Yes
+PointerAlignment: Left
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:           '^<lvox/'
+    Priority:        2
+    SortPriority:    2
+    CaseSensitive:   true
+AllowShortFunctionsOnASingleLine: InlineOnly

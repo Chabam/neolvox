@@ -23,5 +23,4 @@ endif()
 
 if (LVOX_STANDALONE)
     find_package(PDAL 2.7.2 REQUIRED CONFIG)
-    find_package(GTest 1.14.0)
 endif()
