@@ -4,7 +4,12 @@ project(neolvox VERSION 0.0.0 LANGUAGES CXX)
 
 option("LVOX_COMPUTREE_BINDINGS" "Enables binding with the Computree's platform" ON)
 option("LVOX_STANDALONE" "Enables building LVOX as a standalone executable" OFF)
+option("BUILD_TESTING" "Enables the unit tests" OFF)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/external/dependencies.cmake)
+
+if (BUILD_TESTING)
+    enable_testing()
+endif()
 
 add_subdirectory(src)
