@@ -1,6 +1,7 @@
 BasedOnStyle: Microsoft
 Standard: c++20
 BinPackParameters: OnePerLine
+BinPackArguments: false
 BreakConstructorInitializers: BeforeComma
 BreakTemplateDeclarations: Yes
 PointerAlignment: Left
