@@ -18,20 +18,19 @@ class Grid
     using cell_ref = T&;
 
     Grid(const pdal::BOX3D& box3d, double cell_size)
-        : Grid(cell_size,
-               std::ceil((box3d.maxx - box3d.minx) / cell_size),
-               std::ceil((box3d.maxy - box3d.miny) / cell_size),
-               std::ceil((box3d.maxz - box3d.minz) / cell_size))
-    {
-    }
-
-    Grid(double cell_size, size_t dim_x, size_t dim_y, size_t dim_z)
         : m_cell_size{cell_size}
-        , m_dim_x{dim_x}
-        , m_dim_y{dim_y}
-        , m_dim_z{dim_z}
-        , m_cells{dim_x * dim_y * dim_z, std::allocator<T>{}}
+        , m_dim_x{Grid::adjust_dim_to_grid(box3d.maxx - box3d.minx, cell_size)}
+        , m_dim_y{Grid::adjust_dim_to_grid(box3d.maxy - box3d.miny, cell_size)}
+        , m_dim_z{Grid::adjust_dim_to_grid(box3d.maxz - box3d.minz, cell_size)}
+        , m_cells{m_dim_x * m_dim_y * m_dim_z, std::allocator<T>{}}
+        , m_bounds{box3d}
     {
+        const auto adjust_bounds_to_grid = [cell_size](size_t dim, double min) {
+            return min + dim * cell_size;
+        };
+        m_bounds.grow(adjust_bounds_to_grid(m_dim_x, box3d.minx),
+                      adjust_bounds_to_grid(m_dim_y, box3d.miny),
+                      adjust_bounds_to_grid(m_dim_z, box3d.minz));
     }
 
     Grid(Grid&& other)
@@ -40,6 +39,7 @@ class Grid
         , m_dim_y{std::move(other.m_dim_y)}
         , m_dim_z{std::move(other.m_dim_z)}
         , m_cells{std::move(other.m_cells)}
+        , m_bounds{std::move(other.m_bounds)}
     {
     }
 
@@ -49,6 +49,7 @@ class Grid
         , m_dim_y{other.m_dim_y}
         , m_dim_z{other.m_dim_z}
         , m_cells{other.m_cells}
+        , m_bounds{other.m_bounds}
     {
     }
 
@@ -59,6 +60,7 @@ class Grid
         m_dim_y = std::move(other.m_dim_y);
         m_dim_z = std::move(other.m_dim_z);
         m_cells = std::move(other.m_cells);
+        m_bounds = std::move(other.m_bounds);
 
         return *this;
     }
@@ -70,6 +72,7 @@ class Grid
         m_dim_y = other.m_dim_y;
         m_dim_z = other.m_dim_z;
         m_cells = other.m_cells;
+        m_bounds = other.m_bounds;
 
         return *this;
     }
@@ -91,6 +94,7 @@ class Grid
     auto dim_x() const -> size_t { return m_dim_x; }
     auto dim_y() const -> size_t { return m_dim_y; }
     auto dim_z() const -> size_t { return m_dim_z; }
+    auto bounds() const -> const pdal::BOX3D& { return m_bounds; }
 
   private:
     double m_cell_size;
@@ -98,6 +102,12 @@ class Grid
     size_t m_dim_y;
     size_t m_dim_z;
     std::vector<cell_type> m_cells;
+    pdal::BOX3D m_bounds;
+
+    static auto adjust_dim_to_grid(double distance, double cell_size) -> size_t
+    {
+        return static_cast<size_t>(std::ceil(distance / cell_size));
+    }
 };
 
 using GridU32i = Grid<std::uint32_t>;
