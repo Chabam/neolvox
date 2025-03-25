@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <pdal/util/Bounds.hpp>
 
+/// Creates a bound from -(dim/2) to (dim/2)
 auto create_bounds(double dim_x, double dim_y, double dim_z) -> pdal::BOX3D
 {
     pdal::BOX3D bounds;
@@ -44,10 +45,12 @@ TEST(voxel_grid, at)
     {
         for (size_t y = 0; y < dim_y; y++)
         {
-            for (size_t z = 0; z < dim_y; z++)
+            for (size_t z = 0; z < dim_z; z++)
             {
                 const size_t value_of_cell = x + y + z;
-                auto at_assign = [&]() mutable { grid.at(x, y, z) = value_of_cell; };
+                auto at_assign = [&]() mutable {
+                    grid.at(x, y, z) = value_of_cell;
+                };
                 ASSERT_NO_THROW(std::invoke(at_assign));
                 ASSERT_EQ(value_of_cell, grid.at(x, y, z));
             }
@@ -119,5 +122,49 @@ TEST(voxel_grid, creation_from_box3d)
         EXPECT_EQ(-30., grid_bounds.minz);
         // -30 + 4 * 15 = 30
         EXPECT_EQ(30., grid_bounds.maxz);
+    }
+}
+
+TEST(voxel_grid, voxel_bounds)
+{
+    const double dim_x = 10;
+    const double dim_y = 20;
+    const double dim_z = 30;
+
+    pdal::BOX3D bounds = create_bounds(dim_x, dim_y, dim_z);
+
+    const double cell_size = 1.;
+    lvox::voxel::GridU32i grid{bounds, cell_size};
+    const pdal::BOX3D grid_bounds = grid.bounds();
+
+    {
+        const pdal::BOX3D bound = grid.voxel_bounds(0, 0, 0);
+        EXPECT_EQ(-5., bound.minx);
+        EXPECT_EQ(-5. + cell_size, bound.maxx);
+        EXPECT_EQ(-10., bound.miny);
+        EXPECT_EQ(-10. + cell_size, bound.maxy);
+        EXPECT_EQ(-15., bound.minz);
+        EXPECT_EQ(-15. + cell_size, bound.maxz);
+    }
+
+    {
+        const pdal::BOX3D bound = grid.voxel_bounds(dim_x / 2., dim_y / 2., dim_z / 2.);
+        EXPECT_EQ(0., bound.minx);
+        EXPECT_EQ(0. + cell_size, bound.maxx);
+        EXPECT_EQ(0., bound.miny);
+        EXPECT_EQ(0. + cell_size, bound.maxy);
+        EXPECT_EQ(0., bound.minz);
+        EXPECT_EQ(0. + cell_size, bound.maxz);
+    }
+
+    for (size_t x = 0; x < dim_x; x++)
+    {
+        for (size_t y = 0; y < dim_y; y++)
+        {
+            for (size_t z = 0; z < dim_z; z++)
+            {
+                ASSERT_TRUE(grid_bounds.contains(grid.voxel_bounds(x, y, z)));
+            }
+        }
     }
 }
