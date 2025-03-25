@@ -1,5 +1,6 @@
 BasedOnStyle: Microsoft
 Standard: c++20
+AllowShortLambdasOnASingleLine: Empty
 BinPackParameters: OnePerLine
 BinPackArguments: false
 BreakConstructorInitializers: BeforeComma
