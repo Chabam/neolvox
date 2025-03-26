@@ -5,15 +5,21 @@ add_executable(lvox)
 
 target_sources(lvox
     PRIVATE
-    main.cpp
+    src/main.cpp
+    src/scanner/beam.cpp
 )
 
-target_link_libraries(lvox PRIVATE pdalcpp)
+target_link_libraries(lvox
+    PRIVATE
+    pdalcpp
+    Eigen3::Eigen
+)
+
 target_include_directories(lvox PUBLIC ${neolvox_SOURCE_DIR}/include)
 
 set_target_properties(lvox
     PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
 if (BUILD_TESTING)
