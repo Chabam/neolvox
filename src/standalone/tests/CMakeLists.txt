@@ -4,13 +4,13 @@ add_executable(lvox_tests)
 
 target_sources(lvox_tests
     PRIVATE
-        voxel/grid_test.cpp
-        utils/utils.cpp
+    voxel/grid_test.cpp
+    utils/utils.cpp
 )
 
 target_include_directories(lvox_tests
     PRIVATE
-	${CMAKE_CURRENT_SOURCE_DIR})
+    ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(lvox_tests
     GTest::GTest

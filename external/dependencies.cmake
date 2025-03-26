@@ -23,4 +23,5 @@ endif()
 
 if (LVOX_STANDALONE)
     find_package(PDAL 2.7.2 REQUIRED CONFIG)
+    find_package(Eigen3 3.4.0 REQUIRED CONFIG)
 endif()
