@@ -87,6 +87,7 @@ class Grid
         return m_cells.at(idx_x + (idx_y * m_dim_x) + (idx_z * m_dim_x * m_dim_y));
     }
 
+    // NOTE: no bounds check!
     auto voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> pdal::BOX3D
     {
         const double min_x = m_bounds.minx + idx_x * m_cell_size;
