@@ -1,21 +1,13 @@
 #include <lvox/voxel/grid.hpp>
 
 #include <gtest/gtest.h>
+#include <pdal/Dimension.hpp>
+#include <pdal/PointTable.hpp>
+#include <pdal/PointView.hpp>
+#include <pdal/QuickInfo.hpp>
 #include <pdal/util/Bounds.hpp>
 
-/// Creates a bound from -(dim/2) to (dim/2)
-auto create_bounds(double dim_x, double dim_y, double dim_z) -> pdal::BOX3D
-{
-    pdal::BOX3D bounds;
-    const double half_dim_x = dim_x / 2.0;
-    const double half_dim_y = dim_y / 2.0;
-    const double half_dim_z = dim_z / 2.0;
-
-    bounds.grow(half_dim_x, half_dim_y, half_dim_z);
-    bounds.grow(-half_dim_x, -half_dim_y, -half_dim_z);
-
-    return bounds;
-}
+#include <utils/utils.hpp>
 
 TEST(voxel_grid, cell_count)
 {
@@ -122,6 +114,25 @@ TEST(voxel_grid, creation_from_box3d)
         EXPECT_EQ(-30., grid_bounds.minz);
         // -30 + 4 * 15 = 30
         EXPECT_EQ(30., grid_bounds.maxz);
+    }
+}
+
+TEST(voxel_grid, create_from_point_cloud)
+{
+    pdal::PointTable table;
+    const auto view = fill_table_with_points(table);
+
+    pdal::BOX3D point_cloud_bounds;
+    const double cell_size = 0.5;
+    view->calculateBounds(point_cloud_bounds);
+    lvox::voxel::GridU32i grid{point_cloud_bounds, cell_size};
+
+    for (const auto pt : *view)
+    {
+        const double x = pt.getFieldAs<double>(pdal::Dimension::Id::X);
+        const double y = pt.getFieldAs<double>(pdal::Dimension::Id::Y);
+        const double z = pt.getFieldAs<double>(pdal::Dimension::Id::Z);
+        ASSERT_TRUE(grid.bounds().contains(x, y, z));
     }
 }
 
