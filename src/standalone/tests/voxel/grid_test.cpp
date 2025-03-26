@@ -1,20 +1,21 @@
-#include <lvox/voxel/grid.hpp>
-
 #include <gtest/gtest.h>
+#include <limits>
+#include <utils/utils.hpp>
+
 #include <pdal/Dimension.hpp>
 #include <pdal/PointTable.hpp>
 #include <pdal/PointView.hpp>
 #include <pdal/QuickInfo.hpp>
 #include <pdal/util/Bounds.hpp>
 
-#include <utils/utils.hpp>
+#include <lvox/voxel/grid.hpp>
 
 TEST(voxel_grid, cell_count)
 {
     const double cell_size = 1.;
-    const double dim_x = 10;
-    const double dim_y = 20;
-    const double dim_z = 30;
+    const double dim_x     = 10;
+    const double dim_y     = 20;
+    const double dim_z     = 30;
 
     pdal::BOX3D bounds = create_bounds(dim_x, dim_y, dim_z);
 
@@ -25,9 +26,9 @@ TEST(voxel_grid, cell_count)
 TEST(voxel_grid, at)
 {
     const double cell_size = 1.;
-    const size_t dim_x = 10;
-    const size_t dim_y = 20;
-    const size_t dim_z = 30;
+    const size_t dim_x     = 10;
+    const size_t dim_y     = 20;
+    const size_t dim_z     = 30;
 
     pdal::BOX3D bounds = create_bounds(dim_x, dim_y, dim_z);
 
@@ -40,6 +41,7 @@ TEST(voxel_grid, at)
             for (size_t z = 0; z < dim_z; z++)
             {
                 const size_t value_of_cell = x + y + z;
+
                 auto at_assign = [&]() mutable {
                     grid.at(x, y, z) = value_of_cell;
                 };
@@ -59,7 +61,7 @@ TEST(voxel_grid, creation_from_box3d)
     pdal::BOX3D bounds = create_bounds(dim_x, dim_y, dim_z);
 
     {
-        const double cell_size = 1.;
+        const double                cell_size = 1.;
         const lvox::voxel::GridU32i grid{bounds, cell_size};
         EXPECT_EQ(dim_x, grid.dim_x());
         EXPECT_EQ(dim_y, grid.dim_y());
@@ -77,7 +79,7 @@ TEST(voxel_grid, creation_from_box3d)
 
     {
 
-        const double cell_size = .5;
+        const double                cell_size = .5;
         const lvox::voxel::GridU32i grid{bounds, cell_size};
         EXPECT_EQ(dim_x * 2, grid.dim_x());
         EXPECT_EQ(dim_y * 2, grid.dim_y());
@@ -94,7 +96,7 @@ TEST(voxel_grid, creation_from_box3d)
     }
 
     {
-        const double cell_size = 15.;
+        const double                cell_size = 15.;
         const lvox::voxel::GridU32i grid{bounds, cell_size};
         // 20 / 15 = 1.33333 => 2
         EXPECT_EQ(2, grid.dim_x());
@@ -109,7 +111,7 @@ TEST(voxel_grid, creation_from_box3d)
         // -10 + 2 * 15 = 20
         EXPECT_EQ(20., grid_bounds.maxx);
         EXPECT_EQ(-20., grid_bounds.miny);
-        // -20 + 3 * 15 = 20
+        // -20 + 3 * 15 = 25
         EXPECT_EQ(25., grid_bounds.maxy);
         EXPECT_EQ(-30., grid_bounds.minz);
         // -30 + 4 * 15 = 30
@@ -120,9 +122,9 @@ TEST(voxel_grid, creation_from_box3d)
 TEST(voxel_grid, create_from_point_cloud)
 {
     pdal::PointTable table;
-    const auto view = fill_table_with_points(table);
+    const auto       view = generate_cubic_point_cloud(table);
 
-    pdal::BOX3D point_cloud_bounds;
+    pdal::BOX3D  point_cloud_bounds;
     const double cell_size = 0.5;
     view->calculateBounds(point_cloud_bounds);
     lvox::voxel::GridU32i grid{point_cloud_bounds, cell_size};
@@ -136,6 +138,42 @@ TEST(voxel_grid, create_from_point_cloud)
     }
 }
 
+TEST(voxel_grid, index_of_point)
+{
+    pdal::PointTable table;
+    const double     dim_x = 4;
+    const double     dim_y = 4;
+    const double     dim_z = 4;
+
+    const auto view = generate_cubic_point_cloud(table);
+
+    pdal::BOX3D  point_cloud_bounds;
+    const double cell_size = .5;
+    view->calculateBounds(point_cloud_bounds);
+    lvox::voxel::GridU32i grid{point_cloud_bounds, cell_size};
+
+    std::set<std::tuple<size_t, size_t, size_t>> seen_idxs;
+    for (size_t x = 0; x < dim_x; x++)
+    {
+        for (size_t y = 0; y < dim_y; y++)
+        {
+            for (size_t z = 0; z < dim_z; z++)
+            {
+                const auto idxs = grid.index_of_point(
+                    //
+                    -0.5 + x * cell_size,
+                    -0.5 + y * cell_size,
+                    -0.5 + z * cell_size
+                );
+                ASSERT_TRUE(!seen_idxs.contains(idxs));
+            }
+        }
+    }
+
+    constexpr double invalid_coord = std::numeric_limits<double>::max();
+    ASSERT_ANY_THROW(grid.index_of_point(invalid_coord, invalid_coord, invalid_coord));
+}
+
 TEST(voxel_grid, voxel_bounds)
 {
     const double dim_x = 10;
@@ -144,9 +182,9 @@ TEST(voxel_grid, voxel_bounds)
 
     pdal::BOX3D bounds = create_bounds(dim_x, dim_y, dim_z);
 
-    const double cell_size = 1.;
+    const double          cell_size = 1.;
     lvox::voxel::GridU32i grid{bounds, cell_size};
-    const pdal::BOX3D grid_bounds = grid.bounds();
+    const pdal::BOX3D     grid_bounds = grid.bounds();
 
     {
         const pdal::BOX3D bound = grid.voxel_bounds(0, 0, 0);
@@ -178,4 +216,20 @@ TEST(voxel_grid, voxel_bounds)
             }
         }
     }
+}
+
+TEST(voxel_grid, voxel_bounds_from_point)
+{
+    // Very concious choice of an odd number
+    const double dim = 9;
+
+    pdal::BOX3D bounds = create_bounds(dim, dim, dim);
+
+    const double          cell_size = 1.;
+    lvox::voxel::GridU32i grid{bounds, cell_size};
+    const double          middle_idx              = dim / 2.;
+    const pdal::BOX3D     middle_voxel_from_dim   = grid.voxel_bounds(middle_idx, middle_idx, middle_idx);
+    const pdal::BOX3D     middle_voxel_from_point = grid.voxel_bounds_from_point(0., 0., 0.);
+
+    EXPECT_EQ(middle_voxel_from_dim, middle_voxel_from_point);
 }

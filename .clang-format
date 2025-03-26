@@ -1,6 +1,10 @@
 BasedOnStyle: Microsoft
 Standard: c++20
 AllowShortLambdasOnASingleLine: Empty
+AllowAllArgumentsOnNextLine: true
+AlignAfterOpenBracket: BlockIndent
+AlignConsecutiveDeclarations: AcrossComments
+AlignConsecutiveAssignments: AcrossComments
 BinPackParameters: OnePerLine
 BinPackArguments: false
 BreakConstructorInitializers: BeforeComma
@@ -11,5 +15,13 @@ IncludeCategories:
   - Regex:           '^<lvox/'
     Priority:        2
     SortPriority:    2
+    CaseSensitive:   true
+  - Regex:           '^<pdal/'
+    Priority:        1
+    SortPriority:    1
+    CaseSensitive:   true
+  - Regex:           '^<'
+    Priority:        0
+    SortPriority:    0
     CaseSensitive:   true
 AllowShortFunctionsOnASingleLine: InlineOnly

@@ -50,7 +50,8 @@
             "inherits": [ "linux" ],
             "cacheVariables": {
                 "LVOX_COMPUTREE_BINDINGS": "OFF",
-                "LVOX_STANDALONE": "ON"
+                "LVOX_STANDALONE": "ON",
+                "BUILD_TESTING": "ON"
             }
         }
     ]
