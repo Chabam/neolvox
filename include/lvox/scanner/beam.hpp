@@ -5,8 +5,9 @@
 
 #include <pdal/Dimension.hpp>
 
-namespace lvox::scanner
+namespace lvox
 {
+
 class Beam
 {
   public:
@@ -16,14 +17,14 @@ class Beam
 
     Beam(Beam&&);
     Beam(const Beam&);
-    Beam& operator=(Beam&&);
-    Beam& operator=(const Beam&);
+    auto operator=(Beam&&) -> Beam&;
+    auto operator=(const Beam&) -> Beam&;
 
   private:
     Eigen::Vector3d m_origin;
     Eigen::Vector3d m_direction;
 };
 
-} // namespace lvox::scanner
+} // namespace lvox
 
 #endif // !LVOX_SCANNER_BEAM_HPP

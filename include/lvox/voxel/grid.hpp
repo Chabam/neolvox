@@ -9,21 +9,22 @@
 
 #include <pdal/util/Bounds.hpp>
 
-namespace lvox::voxel
+namespace lvox
 {
 
 template <class T>
 class Grid
 {
   public:
-    using cell_type      = T;
+    using cell_t         = T;
     using const_cell_ref = const T&;
     using cell_ref       = T&;
+    using bounds_t       = pdal::BOX3D;
 
     Grid()  = default;
     ~Grid() = default;
 
-    Grid(const pdal::BOX3D& box3d, double cell_size)
+    Grid(const bounds_t& box3d, double cell_size)
         : m_cell_size{cell_size}
         , m_dim_x{Grid::adjust_dim_to_grid(box3d.maxx - box3d.minx, cell_size)}
         , m_dim_y{Grid::adjust_dim_to_grid(box3d.maxy - box3d.miny, cell_size)}
@@ -96,12 +97,12 @@ class Grid
     }
 
     // NOTE: no bounds check!
-    auto voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> pdal::BOX3D
+    auto voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> bounds_t
     {
         const double min_x = m_bounds.minx + idx_x * m_cell_size;
         const double min_y = m_bounds.miny + idx_y * m_cell_size;
         const double min_z = m_bounds.minz + idx_z * m_cell_size;
-        return pdal::BOX3D{
+        return bounds_t{
             //
             min_x,
             min_y,
@@ -112,14 +113,14 @@ class Grid
         };
     }
 
-    auto voxel_bounds_from_point(const Eigen::Vector3d& point) -> pdal::BOX3D
+    auto voxel_bounds_from_point(const Eigen::Vector3d& point) -> bounds_t
     {
         const auto [idx_x, idx_y, idx_z] = index_of_point(point);
         return voxel_bounds(idx_x, idx_y, idx_z);
     }
 
     // Return an index tuple of this layout (x, y, z)
-    auto index_of_point(const Eigen::Vector3d& point) const -> std::tuple<size_t, size_t, size_t>
+    auto index_of_point(const Eigen::Vector3d& point) const -> std::array<size_t, 3>
     {
         const double x = point.x();
         const double y = point.y();
@@ -146,15 +147,15 @@ class Grid
     auto dim_x() const -> size_t { return m_dim_x; }
     auto dim_y() const -> size_t { return m_dim_y; }
     auto dim_z() const -> size_t { return m_dim_z; }
-    auto bounds() const -> const pdal::BOX3D& { return m_bounds; }
+    auto bounds() const -> const bounds_t& { return m_bounds; }
 
   private:
-    double                 m_cell_size;
-    size_t                 m_dim_x;
-    size_t                 m_dim_y;
-    size_t                 m_dim_z;
-    std::vector<cell_type> m_cells;
-    pdal::BOX3D            m_bounds;
+    double              m_cell_size;
+    size_t              m_dim_x;
+    size_t              m_dim_y;
+    size_t              m_dim_z;
+    std::vector<cell_t> m_cells;
+    bounds_t         m_bounds;
 
     static auto adjust_dim_to_grid(double distance, double cell_size) -> size_t
     {
