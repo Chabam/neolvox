@@ -1,3 +1,5 @@
+#include <Eigen/Eigen>
+#include <Eigen/src/Core/Matrix.h>
 #include <gtest/gtest.h>
 #include <limits>
 #include <utils/utils.hpp>
@@ -153,25 +155,22 @@ TEST(voxel_grid, index_of_point)
     lvox::voxel::GridU32i grid{point_cloud_bounds, cell_size};
 
     std::set<std::tuple<size_t, size_t, size_t>> seen_idxs;
+    const Eigen::Vector3d                        vec = Eigen::Vector3d::Constant(-0.5);
     for (size_t x = 0; x < dim_x; x++)
     {
         for (size_t y = 0; y < dim_y; y++)
         {
             for (size_t z = 0; z < dim_z; z++)
             {
-                const auto idxs = grid.index_of_point(
-                    //
-                    -0.5 + x * cell_size,
-                    -0.5 + y * cell_size,
-                    -0.5 + z * cell_size
-                );
+                Eigen::Vector3d offset{x * cell_size, y * cell_size, z * cell_size};
+                const auto      idxs = grid.index_of_point(vec + offset);
                 ASSERT_TRUE(!seen_idxs.contains(idxs));
             }
         }
     }
 
     constexpr double invalid_coord = std::numeric_limits<double>::max();
-    ASSERT_ANY_THROW(grid.index_of_point(invalid_coord, invalid_coord, invalid_coord));
+    ASSERT_ANY_THROW(grid.index_of_point(Eigen::Vector3d::Constant(invalid_coord)));
 }
 
 TEST(voxel_grid, voxel_bounds)
@@ -229,7 +228,7 @@ TEST(voxel_grid, voxel_bounds_from_point)
     lvox::voxel::GridU32i grid{bounds, cell_size};
     const double          middle_idx              = dim / 2.;
     const pdal::BOX3D     middle_voxel_from_dim   = grid.voxel_bounds(middle_idx, middle_idx, middle_idx);
-    const pdal::BOX3D     middle_voxel_from_point = grid.voxel_bounds_from_point(0., 0., 0.);
+    const pdal::BOX3D     middle_voxel_from_point = grid.voxel_bounds_from_point(Eigen::Vector3d::Constant(0.));
 
     EXPECT_EQ(middle_voxel_from_dim, middle_voxel_from_point);
 }
