@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <eigen3/Eigen/Eigen>
 #include <format>
 #include <vector>
 
@@ -111,15 +112,19 @@ class Grid
         };
     }
 
-    auto voxel_bounds_from_point(double x, double y, double z) -> pdal::BOX3D
+    auto voxel_bounds_from_point(const Eigen::Vector3d& point) -> pdal::BOX3D
     {
-        const auto [idx_x, idx_y, idx_z] = index_of_point(x, y, z);
+        const auto [idx_x, idx_y, idx_z] = index_of_point(point);
         return voxel_bounds(idx_x, idx_y, idx_z);
     }
 
     // Return an index tuple of this layout (x, y, z)
-    auto index_of_point(double x, double y, double z) const -> std::tuple<size_t, size_t, size_t>
+    auto index_of_point(const Eigen::Vector3d& point) const -> std::tuple<size_t, size_t, size_t>
     {
+        const double x = point.x();
+        const double y = point.y();
+        const double z = point.z();
+
         if (!m_bounds.contains(x, y, z))
         {
             throw std::runtime_error{std::format("Provided coords are not in the grid: ({}, {}, {})", x, y, z)};
