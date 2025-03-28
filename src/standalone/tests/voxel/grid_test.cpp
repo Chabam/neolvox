@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <limits>
 #include <utils/utils.hpp>
+#include <voxel/grid_test_fixtures.hpp>
 
 #include <pdal/Dimension.hpp>
 #include <pdal/PointTable.hpp>
@@ -10,8 +11,25 @@
 
 #include <lvox/voxel/concrete_grid.hpp>
 
-TEST(voxel_grid, cell_count)
+using GridTypes = testing::Types<lvox::DenseGridU32i, lvox::SparseGridU32i>;
+
+struct GridTypeNameGenerator
 {
+    template <typename T>
+    static std::string GetName(int)
+    {
+        if constexpr (std::is_same<T, lvox::DenseGridU32i>::value)
+            return "Dense Grid uint32";
+        if constexpr (std::is_same<T, lvox::SparseGridU32i>::value)
+            return "Sparse Grid uint32";
+    }
+};
+
+TYPED_TEST_SUITE(VoxelGridTests, GridTypes, GridTypeNameGenerator);
+
+TYPED_TEST(VoxelGridTests, cell_count)
+{
+    using grid_t = TestFixture::grid_t;
     const double cell_size = 1.;
     const double dim_x     = 10;
     const double dim_y     = 20;
@@ -19,11 +37,11 @@ TEST(voxel_grid, cell_count)
 
     lvox::Grid::bounds_t bounds = create_bounds(dim_x, dim_y, dim_z);
 
-    lvox::DenseGridU32i grid{bounds, cell_size};
+    typename TestFixture::grid_t grid{bounds, cell_size};
     ASSERT_EQ(dim_x * dim_y * dim_z, grid.cell_count());
 }
 
-TEST(voxel_grid, at)
+TYPED_TEST(VoxelGridTests, at)
 {
     const double cell_size = 1.;
     const size_t dim_x     = 10;
@@ -52,7 +70,7 @@ TEST(voxel_grid, at)
     }
 }
 
-TEST(voxel_grid, creation_from_box3d)
+TYPED_TEST(VoxelGridTests, creation_from_box3d)
 {
     const double dim_x = 20;
     const double dim_y = 40;
@@ -61,8 +79,8 @@ TEST(voxel_grid, creation_from_box3d)
     lvox::Grid::bounds_t bounds = create_bounds(dim_x, dim_y, dim_z);
 
     {
-        const double         cell_size = 1.;
-        const lvox::DenseGridU32i grid{bounds, cell_size};
+        const double                       cell_size = 1.;
+        const typename TestFixture::grid_t grid{bounds, cell_size};
         EXPECT_EQ(dim_x, grid.dim_x());
         EXPECT_EQ(dim_y, grid.dim_y());
         EXPECT_EQ(dim_z, grid.dim_z());
@@ -79,8 +97,8 @@ TEST(voxel_grid, creation_from_box3d)
 
     {
 
-        const double         cell_size = .5;
-        const lvox::DenseGridU32i grid{bounds, cell_size};
+        const double                       cell_size = .5;
+        const typename TestFixture::grid_t grid{bounds, cell_size};
         EXPECT_EQ(dim_x * 2, grid.dim_x());
         EXPECT_EQ(dim_y * 2, grid.dim_y());
         EXPECT_EQ(dim_z * 2, grid.dim_z());
@@ -96,8 +114,8 @@ TEST(voxel_grid, creation_from_box3d)
     }
 
     {
-        const double         cell_size = 15.;
-        const lvox::DenseGridU32i grid{bounds, cell_size};
+        const double                       cell_size = 15.;
+        const typename TestFixture::grid_t grid{bounds, cell_size};
         // 20 / 15 = 1.33333 => 2
         EXPECT_EQ(2, grid.dim_x());
         // 40 / 15 = 1.33333 => 3
@@ -119,15 +137,15 @@ TEST(voxel_grid, creation_from_box3d)
     }
 }
 
-TEST(voxel_grid, create_from_point_cloud)
+TYPED_TEST(VoxelGridTests, create_from_point_cloud)
 {
     pdal::PointTable table;
     const auto       view = generate_cubic_point_cloud(table);
 
     lvox::Grid::bounds_t point_cloud_bounds;
-    const double             cell_size = 0.5;
+    const double         cell_size = 0.5;
     view->calculateBounds(point_cloud_bounds);
-    lvox::DenseGridU32i grid{point_cloud_bounds, cell_size};
+    typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};
 
     for (const auto pt : *view)
     {
@@ -138,7 +156,7 @@ TEST(voxel_grid, create_from_point_cloud)
     }
 }
 
-TEST(voxel_grid, index_of_point)
+TYPED_TEST(VoxelGridTests, index_of_point)
 {
     pdal::PointTable table;
     const double     dim_x = 4;
@@ -148,9 +166,9 @@ TEST(voxel_grid, index_of_point)
     const auto view = generate_cubic_point_cloud(table);
 
     lvox::Grid::bounds_t point_cloud_bounds;
-    const double             cell_size = .5;
+    const double         cell_size = .5;
     view->calculateBounds(point_cloud_bounds);
-    lvox::DenseGridU32i grid{point_cloud_bounds, cell_size};
+    typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};
 
     std::set<std::array<size_t, 3>> seen_idxs;
     const Eigen::Vector3d           vec = Eigen::Vector3d::Constant(-0.5);
@@ -171,7 +189,7 @@ TEST(voxel_grid, index_of_point)
     ASSERT_ANY_THROW(grid.index_of_point(Eigen::Vector3d::Constant(invalid_coord)));
 }
 
-TEST(voxel_grid, voxel_bounds)
+TYPED_TEST(VoxelGridTests, voxel_bounds)
 {
     const double dim_x = 10;
     const double dim_y = 20;
@@ -179,9 +197,9 @@ TEST(voxel_grid, voxel_bounds)
 
     lvox::Grid::bounds_t bounds = create_bounds(dim_x, dim_y, dim_z);
 
-    const double                   cell_size = 1.;
-    lvox::DenseGridU32i                 grid{bounds, cell_size};
-    const lvox::Grid::bounds_t grid_bounds = grid.bounds();
+    const double                 cell_size = 1.;
+    typename TestFixture::grid_t grid{bounds, cell_size};
+    const lvox::Grid::bounds_t   grid_bounds = grid.bounds();
 
     {
         const lvox::Grid::bounds_t bound = grid.voxel_bounds(0, 0, 0);
@@ -215,19 +233,18 @@ TEST(voxel_grid, voxel_bounds)
     }
 }
 
-TEST(voxel_grid, voxel_bounds_from_point)
+TYPED_TEST(VoxelGridTests, voxel_bounds_from_point)
 {
     // Very concious choice of an odd number
     const double dim = 9;
 
     lvox::Grid::bounds_t bounds = create_bounds(dim, dim, dim);
 
-    const double                   cell_size = 1.;
-    lvox::DenseGridU32i                 grid{bounds, cell_size};
-    const double                   middle_idx            = dim / 2.;
-    const lvox::Grid::bounds_t middle_voxel_from_dim = grid.voxel_bounds(middle_idx, middle_idx, middle_idx);
-    const lvox::Grid::bounds_t middle_voxel_from_point =
-        grid.voxel_bounds_from_point(Eigen::Vector3d::Constant(0.));
+    const double                 cell_size = 1.;
+    typename TestFixture::grid_t grid{bounds, cell_size};
+    const double                 middle_idx              = dim / 2.;
+    const lvox::Grid::bounds_t   middle_voxel_from_dim   = grid.voxel_bounds(middle_idx, middle_idx, middle_idx);
+    const lvox::Grid::bounds_t   middle_voxel_from_point = grid.voxel_bounds_from_point(Eigen::Vector3d::Constant(0.));
 
     EXPECT_EQ(middle_voxel_from_dim, middle_voxel_from_point);
 }

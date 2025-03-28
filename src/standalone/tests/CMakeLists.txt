@@ -18,7 +18,13 @@ target_link_libraries(lvox_tests
     pdalcpp
     Eigen3::Eigen
 )
+
 target_include_directories(lvox_tests PUBLIC ${neolvox_SOURCE_DIR}/include)
+
+set_target_properties(lvox_tests
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
 
 include(GoogleTest)
 gtest_discover_tests(lvox_tests)
