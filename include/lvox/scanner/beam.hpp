@@ -11,8 +11,15 @@ namespace lvox
 class Beam
 {
   public:
+    using vector_t = Eigen::Vector3d;
+
     Beam() = default;
-    Beam(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction);
+    Beam(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction)
+        : m_origin{origin}
+        , m_direction{direction.normalized()}
+    {
+    }
+
     ~Beam() = default;
 
     Beam(Beam&&);
@@ -20,9 +27,12 @@ class Beam
     auto operator=(Beam&&) -> Beam&;
     auto operator=(const Beam&) -> Beam&;
 
+    auto origin() const -> vector_t { return m_origin; };
+    auto direction() const -> vector_t { return m_direction; };
+
   private:
-    Eigen::Vector3d m_origin;
-    Eigen::Vector3d m_direction;
+    vector_t m_origin;
+    vector_t m_direction;
 };
 
 } // namespace lvox
