@@ -1,24 +1,23 @@
 #ifndef LVOX_VOXEL_CONCRETE_GRID_HPP
 #define LVOX_VOXEL_CONCRETE_GRID_HPP
 
-#include <cstddef>
-#include <eigen3/Eigen/Eigen>
 #include <format>
-
-#include <pdal/util/Bounds.hpp>
+#include <map>
+#include <vector>
 
 #include <lvox/voxel/grid.hpp>
 
 namespace lvox
 {
 
-template <class T, class ContainerT>
+template <typename T, typename ContainerT>
 class ConcreteGrid : public Grid
 {
   public:
     using cell_t         = T;
     using const_cell_ref = const T&;
     using cell_ref       = T&;
+    using container_t    = ContainerT;
 
     ConcreteGrid()  = default;
     ~ConcreteGrid() = default;
@@ -28,9 +27,14 @@ class ConcreteGrid : public Grid
         , m_dim_x{ConcreteGrid::adjust_dim_to_grid(box3d.maxx - box3d.minx, cell_size)}
         , m_dim_y{ConcreteGrid::adjust_dim_to_grid(box3d.maxy - box3d.miny, cell_size)}
         , m_dim_z{ConcreteGrid::adjust_dim_to_grid(box3d.maxz - box3d.minz, cell_size)}
-        , m_cells{m_dim_x * m_dim_y * m_dim_z, std::allocator<T>{}}
+        , m_cells{}
         , m_bounds{box3d}
     {
+        if constexpr (std::is_same<container_t, std::vector<cell_t>>::value)
+        {
+            m_cells.resize(m_dim_x * m_dim_y * m_dim_z);
+        }
+
         const auto adjust_bounds_to_grid = [cell_size](size_t dim, double min) {
             return min + dim * cell_size;
         };
@@ -142,19 +146,19 @@ class ConcreteGrid : public Grid
         };
     }
 
-    auto cell_count() const -> size_t final { return m_cells.size(); }
+    auto cell_count() const -> size_t final { return dim_x() * dim_y() * dim_z(); }
     auto dim_x() const -> size_t final { return m_dim_x; }
     auto dim_y() const -> size_t final { return m_dim_y; }
     auto dim_z() const -> size_t final { return m_dim_z; }
     auto bounds() const -> const bounds_t& final { return m_bounds; }
 
   private:
-    double     m_cell_size;
-    size_t     m_dim_x;
-    size_t     m_dim_y;
-    size_t     m_dim_z;
-    ContainerT m_cells;
-    bounds_t   m_bounds;
+    double      m_cell_size;
+    size_t      m_dim_x;
+    size_t      m_dim_y;
+    size_t      m_dim_z;
+    container_t m_cells;
+    bounds_t    m_bounds;
 
     static auto adjust_dim_to_grid(double distance, double cell_size) -> size_t
     {
@@ -162,10 +166,10 @@ class ConcreteGrid : public Grid
     }
 };
 
-template <class T>
+template <typename T>
 using DenseGrid = ConcreteGrid<T, std::vector<T>>;
 
-template <class T>
+template <typename T>
 using SparseGrid = ConcreteGrid<T, std::map<size_t, T>>;
 
 using DenseGridU32i  = DenseGrid<std::uint32_t>;
@@ -173,4 +177,4 @@ using SparseGridU32i = SparseGrid<std::uint32_t>;
 
 } // namespace lvox
 
-#endif // !LVOX_VOXEL_CONCRETE_GRID_HPP
+#endif // LVOX_VOXEL_CONCRETE_GRID_HPP
