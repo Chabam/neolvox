@@ -172,10 +172,6 @@ set_target_properties(plug_neolvox
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-set_target_properties(plug_neolvox
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-)
 
 if (WIN32)
     install(FILES
