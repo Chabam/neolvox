@@ -116,14 +116,14 @@ class ConcreteGrid : public Grid
         };
     }
 
-    auto voxel_bounds_from_point(const Eigen::Vector3d& point) -> bounds_t final
+    auto voxel_bounds_from_point(const Grid::point_t& point) -> bounds_t final
     {
         const auto [idx_x, idx_y, idx_z] = index_of_point(point);
         return voxel_bounds(idx_x, idx_y, idx_z);
     }
 
     // Return an index tuple of this layout (x, y, z)
-    auto index_of_point(const Eigen::Vector3d& point) const -> std::array<size_t, 3> final
+    auto index_of_point(const Grid::point_t& point) const -> idxs_t final
     {
         const double x = point.x();
         const double y = point.y();
@@ -146,6 +146,7 @@ class ConcreteGrid : public Grid
         };
     }
 
+    auto cell_size() const -> double final { return m_cell_size; }
     auto cell_count() const -> size_t final { return dim_x() * dim_y() * dim_z(); }
     auto dim_x() const -> size_t final { return m_dim_x; }
     auto dim_y() const -> size_t final { return m_dim_y; }
