@@ -44,7 +44,7 @@ def compute_delta(dir, cell_size):
     return cell_size / dir * step
 
 
-# assume a cubic grid
+# TODO: implement "0" dir
 cell_size = 1
 min_bounds = np.array([1, 0])
 max_bounds = np.array([10, 5])
