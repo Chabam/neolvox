@@ -14,11 +14,7 @@ class Beam
     using vector_t = Eigen::Vector3d;
 
     Beam() = default;
-    Beam(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction)
-        : m_origin{origin}
-        , m_direction{direction.normalized()}
-    {
-    }
+    Beam(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction);
 
     ~Beam() = default;
 
