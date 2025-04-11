@@ -89,33 +89,31 @@ class ConcreteGrid : public Grid
         return *this;
     }
 
+    [[nodiscard]]
     auto at(size_t idx_x, size_t idx_y, size_t idx_z) const -> const_cell_ref
     {
         return m_cells.at(idx_x + (idx_y * m_dim_x) + (idx_z * m_dim_x * m_dim_y));
     }
 
+    [[nodiscard]]
     auto at(size_t idx_x, size_t idx_y, size_t idx_z) -> cell_ref
     {
         return m_cells.at(idx_x + (idx_y * m_dim_x) + (idx_z * m_dim_x * m_dim_y));
     }
 
     // NOTE: no bounds check!
+    [[nodiscard]]
     auto voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> bounds_t final
     {
         const double min_x = m_bounds.minx + idx_x * m_cell_size;
         const double min_y = m_bounds.miny + idx_y * m_cell_size;
         const double min_z = m_bounds.minz + idx_z * m_cell_size;
         return bounds_t{
-            //
-            min_x,
-            min_y,
-            min_z,
-            min_x + m_cell_size,
-            min_y + m_cell_size,
-            min_z + m_cell_size
+            min_x, min_y, min_z, min_x + m_cell_size, min_y + m_cell_size, min_z + m_cell_size
         };
     }
 
+    [[nodiscard]]
     auto voxel_bounds_from_point(const Grid::point_t& point) -> bounds_t final
     {
         const auto [idx_x, idx_y, idx_z] = index_of_point(point);
@@ -123,6 +121,7 @@ class ConcreteGrid : public Grid
     }
 
     // Return an index tuple of this layout (x, y, z)
+    [[nodiscard]]
     auto index_of_point(const Grid::point_t& point) const -> idxs_t final
     {
         const double x = point.x();
@@ -131,27 +130,57 @@ class ConcreteGrid : public Grid
 
         if (!m_bounds.contains(x, y, z))
         {
-            throw std::runtime_error{std::format("Provided coords are not in the grid: ({}, {}, {})", x, y, z)};
+            throw std::runtime_error{
+                std::format("Provided coords are not in the grid: ({}, {}, {})", x, y, z)
+            };
         }
 
         const auto coords_to_index = [cell_size = m_cell_size](double min, double coord) -> size_t {
-            return std::round((coord - min) / cell_size) - 1;
+            return std::round((coord - min) / cell_size);
         };
 
-        return {
-            //
-            coords_to_index(m_bounds.minx, x),
-            coords_to_index(m_bounds.miny, y),
-            coords_to_index(m_bounds.minz, z)
+        return {//
+                coords_to_index(m_bounds.minx, x),
+                coords_to_index(m_bounds.miny, y),
+                coords_to_index(m_bounds.minz, z)
         };
     }
 
-    auto cell_size() const -> double final { return m_cell_size; }
-    auto cell_count() const -> size_t final { return dim_x() * dim_y() * dim_z(); }
-    auto dim_x() const -> size_t final { return m_dim_x; }
-    auto dim_y() const -> size_t final { return m_dim_y; }
-    auto dim_z() const -> size_t final { return m_dim_z; }
-    auto bounds() const -> const bounds_t& final { return m_bounds; }
+    [[nodiscard]]
+    auto cell_size() const -> double final
+    {
+        return m_cell_size;
+    }
+
+    [[nodiscard]]
+    auto cell_count() const -> size_t final
+    {
+        return dim_x() * dim_y() * dim_z();
+    }
+
+    [[nodiscard]]
+    auto dim_x() const -> size_t final
+    {
+        return m_dim_x;
+    }
+
+    [[nodiscard]]
+    auto dim_y() const -> size_t final
+    {
+        return m_dim_y;
+    }
+
+    [[nodiscard]]
+    auto dim_z() const -> size_t final
+    {
+        return m_dim_z;
+    }
+
+    [[nodiscard]]
+    auto bounds() const -> const bounds_t& final
+    {
+        return m_bounds;
+    }
 
   private:
     double      m_cell_size;

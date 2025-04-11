@@ -13,23 +13,11 @@
 
 using GridTypes = testing::Types<lvox::DenseGridU32i, lvox::SparseGridU32i>;
 
-struct GridTypeNameGenerator
-{
-    template <typename T>
-    static std::string GetName(int)
-    {
-        if constexpr (std::is_same<T, lvox::DenseGridU32i>::value)
-            return "Dense Grid uint32";
-        if constexpr (std::is_same<T, lvox::SparseGridU32i>::value)
-            return "Sparse Grid uint32";
-    }
-};
-
-TYPED_TEST_SUITE(VoxelGridTests, GridTypes, GridTypeNameGenerator);
+TYPED_TEST_SUITE(VoxelGridTests, GridTypes);
 
 TYPED_TEST(VoxelGridTests, cell_count)
 {
-    using grid_t = TestFixture::grid_t;
+    using grid_t           = TestFixture::grid_t;
     const double cell_size = 1.;
     const double dim_x     = 10;
     const double dim_y     = 20;
@@ -186,7 +174,7 @@ TYPED_TEST(VoxelGridTests, index_of_point)
     }
 
     constexpr double invalid_coord = std::numeric_limits<double>::max();
-    ASSERT_ANY_THROW(grid.index_of_point(Eigen::Vector3d::Constant(invalid_coord)));
+    ASSERT_ANY_THROW((void)grid.index_of_point(Eigen::Vector3d::Constant(invalid_coord)));
 }
 
 TYPED_TEST(VoxelGridTests, voxel_bounds)
@@ -242,9 +230,47 @@ TYPED_TEST(VoxelGridTests, voxel_bounds_from_point)
 
     const double                 cell_size = 1.;
     typename TestFixture::grid_t grid{bounds, cell_size};
-    const double                 middle_idx              = dim / 2.;
-    const lvox::Grid::bounds_t   middle_voxel_from_dim   = grid.voxel_bounds(middle_idx, middle_idx, middle_idx);
-    const lvox::Grid::bounds_t   middle_voxel_from_point = grid.voxel_bounds_from_point(Eigen::Vector3d::Constant(0.));
+
+    const double               middle_point = (dim / 2.) + 1;
+    const lvox::Grid::bounds_t middle_voxel_from_dim =
+        grid.voxel_bounds(middle_point, middle_point, middle_point);
+    const lvox::Grid::bounds_t middle_voxel_from_point =
+        grid.voxel_bounds_from_point(Eigen::Vector3d::Constant(0.));
 
     EXPECT_EQ(middle_voxel_from_dim, middle_voxel_from_point);
+}
+
+TYPED_TEST(VoxelGridTests, grid_traversal)
+{
+
+    const double dim_x = 10;
+    const double dim_y = 20;
+    const double dim_z = 30;
+
+    pdal::PointTable table;
+    auto             view = generate_cubic_point_cloud(table, dim_x, dim_y, dim_z);
+
+    const double         cell_size = 1.;
+    lvox::Grid::bounds_t point_cloud_bounds;
+    view->calculateBounds(point_cloud_bounds);
+    typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};
+
+    {
+        lvox::Beam::vector_t pos{
+            point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz
+        };
+        lvox::Beam::vector_t dir{1., 0., 0.};
+        lvox::Beam           beam{pos, dir};
+
+        const auto visited_voxel_idxs = lvox::Grid::traversal(grid, beam);
+        ASSERT_EQ(dim_x, visited_voxel_idxs.size());
+        for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
+        {
+            auto [x, y, z] = visited_voxel_idxs[i];
+            std::cout << std::format("{} {} {}", x, y, z) << std::endl;
+            ASSERT_EQ(i, x);
+            ASSERT_EQ(0, y);
+            ASSERT_EQ(0, z);
+        }
+    }
 }

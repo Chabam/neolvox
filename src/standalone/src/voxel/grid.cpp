@@ -1,11 +1,13 @@
-#include <array>
 #include <format>
 #include <stdexcept>
 
 #include <lvox/voxel/grid.hpp>
 
-auto lvox::Grid::traversal(Grid& grid, const Beam& beam) -> void
+auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<idxs_t>
 {
+    using GridIndex = Eigen::Vector<size_t, 3>;
+    using Step      = Eigen::Vector<signed char, 3>;
+
     const Beam::vector_t beam_origin = beam.origin();
     const Grid::bounds_t grid_bounds = grid.bounds();
 
@@ -33,91 +35,85 @@ auto lvox::Grid::traversal(Grid& grid, const Beam& beam) -> void
     // Y = idx_y
     // Z = idx_z
     // stepY, stepX, stepZ = step
-    const auto [idx_x, idx_y, idx_z]              = grid.index_of_point(beam.origin());
-    const double                        cell_size = grid.cell_size();
-    const Eigen::Vector<signed char, 3> step      = {
+    const auto [idx_x, idx_y, idx_z] = grid.index_of_point(beam.origin());
+    const double cell_size           = grid.cell_size();
+
+    const Step step = {
         get_axis_dir(beam_direction.x()),
         get_axis_dir(beam_direction.y()),
         get_axis_dir(beam_direction.z())
     };
 
-    const auto [starting_x, starting_y, starting_z] = grid.index_of_point(beam_origin);
-#ifdef GRID_TRAVERSAL_USING_VECTOR
-    auto start_index =
-        Eigen::Vector<size_t, 3>{starting_x, starting_y, starting_z}.array().max(1UL);
+    const idxs_t current_voxel = grid.index_of_point(beam_origin);
 
-    const Eigen::Vector3d min_bounds{grid_bounds.minx, grid_bounds.minx, grid_bounds.minz};
-    const Eigen::Vector3d grid_aligned_start{start_index.cast<double>() * cell_size};
+    // NOTE: replacing zeros the minimal double value to avoid dividing by zero.
+    // This way, when we'll compute the delta and tmax, we'll get a very high value instead of an
+    // error. This **should** work out just fine for the algorithm.
+    const Beam::vector_t corrected_dir =
+        beam_direction.array().max(std::numeric_limits<double>::min());
 
-    Eigen::Vector3d t_max =
-        (min_bounds + grid_aligned_start - beam_origin).array() / beam_direction.array();
-    Eigen::Vector3d t_delta = cell_size / (beam_direction.array() * step.array().cast<double>());
-#else
-    double t_max_x;
-    double t_delta_x;
-    if (step.x() > 0.0)
+    // NOTE: In the case of negative direction, the next voxel boundary is not "above" but below. In
+    // that case we must correct the boundary accordingly. See:
+    // https://github.com/francisengelmann/fast_voxel_traversal/issues/7#issue-374675911
+    const Beam::vector_t negative_correction = step.unaryExpr([cell_size](signed char val) {
+        return val < 0. ? cell_size : 0.;
+    });
+
+    auto [current_voxel_x, current_voxel_y, current_voxel_z] = current_voxel;
+    const Beam::vector_t next_bound =
+        GridIndex{current_voxel_x, current_voxel_y, current_voxel_z}.array().cast<double>() +
+        step.array().cast<double>() * cell_size + negative_correction.array();
+
+    Beam::vector_t       t_max = (next_bound - beam_origin).array() / beam_direction.array();
+    const Beam::vector_t delta = cell_size / beam_direction.array() * step.array().cast<double>();
+
+    std::vector<idxs_t> visited_voxels;
+    visited_voxels.reserve((Beam::vector_t{grid_bounds.minx, grid_bounds.miny, grid_bounds.minz} -
+                            Beam::vector_t{grid_bounds.maxx, grid_bounds.maxy, grid_bounds.maxz})
+                               .norm());
+
+    const size_t dim_x = grid.dim_x();
+    const size_t dim_y = grid.dim_y();
+    const size_t dim_z = grid.dim_z();
+
+    while (true)
     {
-        t_max_x =
-            (grid_bounds.minx + std::max(starting_x, 1UL) * grid.cell_size() - beam_origin.x()) /
-            beam_direction.x();
-        t_delta_x = cell_size / beam_direction.x();
-    }
-    else if (step.x() < 0.0)
-    {
-        t_max_x = (grid_bounds.minx + (std::max(starting_x, 1UL) - 1) * grid.cell_size() -
-                   beam_origin.x()) /
-                  beam_direction.x();
-        t_delta_x = cell_size / -beam_direction.x();
-    }
-    else
-    {
-        t_delta_x = 0;
+        if (t_max.x() < t_max.y())
+        {
+            if (t_max.x() < t_max.z())
+            {
+                t_max.x() += delta.x();
+                current_voxel_x += step.x();
+            }
+            else
+            {
+                t_max.z() += delta.z();
+                current_voxel_z += step.z();
+            }
+        }
+        else
+        {
+            if (t_max.y() < t_max.z())
+            {
+                t_max.y() += delta.y();
+                current_voxel_y += step.y();
+            }
+            else
+            {
+                t_max.z() += delta.z();
+                current_voxel_z += step.z();
+            }
+        }
+
+        // Going out of bounds
+        if (current_voxel_x < 0 || current_voxel_y < 0 || current_voxel_z < 0 ||
+            current_voxel_x > dim_x || current_voxel_y > dim_y || current_voxel_z > dim_z)
+        {
+            break;
+        }
+
+        visited_voxels.push_back({current_voxel_x, current_voxel_y, current_voxel_z});
     }
 
-
-    double t_max_y;
-    double t_delta_y;
-    if (step.y() > 0.0)
-    {
-        t_max_y =
-            (grid_bounds.miny + std::max(starting_y, 1UL) * grid.cell_size() - beam_origin.y()) /
-            beam_direction.y();
-        t_delta_y = cell_size / beam_direction.y();
-    }
-    else if (step.y() < 0.0)
-    {
-        t_max_y = (grid_bounds.miny + (std::max(starting_y, 1UL) - 1) * grid.cell_size() -
-                   beam_origin.y()) /
-                  beam_direction.y();
-        t_delta_y = cell_size / -beam_direction.y();
-    }
-    else
-    {
-        t_delta_y = 0;
-    }
-
-
-    double t_max_z;
-    double t_delta_z;
-    if (step.z() > 0.0)
-    {
-        t_max_z =
-            (grid_bounds.minx + std::max(starting_z, 1UL) * grid.cell_size() - beam_origin.z()) /
-            beam_direction.z();
-        t_delta_z = cell_size / beam_direction.z();
-    }
-    else if (step.z() < 0.0)
-    {
-        t_max_z = (grid_bounds.minx + (std::max(starting_z, 1UL) - 1) * grid.cell_size() -
-                   beam_origin.z()) /
-                  beam_direction.z();
-        t_delta_z = cell_size / -beam_direction.z();
-    }
-    else
-    {
-        t_delta_z = 0;
-    }
-#endif
-
-    /*Beam::vector_t t_max =*/
+    return visited_voxels;
 }

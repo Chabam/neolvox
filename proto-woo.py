@@ -1,4 +1,5 @@
 import math
+import sys
 
 import numpy as np
 
@@ -51,7 +52,7 @@ max_bounds = np.array([10, 5])
 dim_x = max_bounds[0] - min_bounds[0]
 dim_y = max_bounds[1] - min_bounds[1]
 pos = np.array([1.5, 4.5])
-dir = normal(np.array([-2, -0.1]))
+dir = np.array(list(map(lambda v: sys.float_info.min if v == 0 else v, normal(np.array([2, 0])))))
 step = compute_step(dir)
 tmax = compute_tmax(pos, dir, cell_size, min_bounds)
 delta = compute_delta(dir, cell_size)

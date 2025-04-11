@@ -14,7 +14,6 @@
           # Tooling
           gcc
           cmake
-          ninja
 
           # Dependencies
           eigen
