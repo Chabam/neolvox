@@ -22,10 +22,6 @@
                 "type": "equals",
                 "lhs": "${hostSystemName}",
                 "rhs": "Linux"
-            },
-            "cacheVariables": {
-                "CMAKE_CXX_FLAGS": "-fdiagnostics-color=always",
-                "CMAKE_C_FLAGS": "-fdiagnostics-color=always"
             }
         },
         {
