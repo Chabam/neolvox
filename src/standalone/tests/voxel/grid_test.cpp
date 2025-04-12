@@ -244,8 +244,8 @@ TYPED_TEST(VoxelGridTests, grid_traversal)
 {
 
     const double dim_x = 10;
-    const double dim_y = 10;
-    const double dim_z = 10;
+    const double dim_y = 20;
+    const double dim_z = 30;
 
     pdal::PointTable table;
     auto             view = generate_cubic_point_cloud(table, dim_x, dim_y, dim_z);
@@ -307,11 +307,14 @@ TYPED_TEST(VoxelGridTests, grid_traversal)
         }
     }
     {
-        lvox::Beam::vector_t pos{
+        lvox::Beam::vector_t min{
             point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz
         };
-        lvox::Beam::vector_t dir{1., 1., 1.};
-        lvox::Beam           beam{pos, dir};
+        lvox::Beam::vector_t max{
+            point_cloud_bounds.maxx, point_cloud_bounds.maxy, point_cloud_bounds.maxz
+        };
+        lvox::Beam::vector_t dir{max - min};
+        lvox::Beam           beam{min, dir};
 
         const auto visited_voxel_idxs = lvox::Grid::traversal(grid, beam);
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)

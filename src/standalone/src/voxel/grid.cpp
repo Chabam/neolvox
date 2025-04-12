@@ -76,20 +76,8 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
     const size_t dim_y = grid.dim_y();
     const size_t dim_z = grid.dim_z();
 
-    std::cout << std::format(
-                     "tmax ({},{},{}) delta ({},{},{})",
-                     t_max.x(),
-                     t_max.y(),
-                     t_max.z(),
-                     delta.x(),
-                     delta.y(),
-                     delta.z()
-                 )
-              << std::endl;
-
     while (true)
     {
-
         visited_voxels.push_back({current_voxel_x, current_voxel_y, current_voxel_z});
         if (t_max.x() < t_max.y())
         {
