@@ -1,0 +1,46 @@
+#include <voxel/test_grid_fixtures.hpp>
+
+
+TYPED_TEST(VoxelGridTests, voxel_bounds)
+{
+    const double dim_x = 10;
+    const double dim_y = 20;
+    const double dim_z = 30;
+
+    lvox::Grid::bounds_t bounds = create_bounds(dim_x, dim_y, dim_z);
+
+    const double                 cell_size = 1.;
+    typename TestFixture::grid_t grid{bounds, cell_size};
+    const lvox::Grid::bounds_t   grid_bounds = grid.bounds();
+
+    {
+        const lvox::Grid::bounds_t bound = grid.voxel_bounds(0, 0, 0);
+        EXPECT_EQ(-5., bound.minx);
+        EXPECT_EQ(-5. + cell_size, bound.maxx);
+        EXPECT_EQ(-10., bound.miny);
+        EXPECT_EQ(-10. + cell_size, bound.maxy);
+        EXPECT_EQ(-15., bound.minz);
+        EXPECT_EQ(-15. + cell_size, bound.maxz);
+    }
+
+    {
+        const lvox::Grid::bounds_t bound = grid.voxel_bounds(dim_x / 2., dim_y / 2., dim_z / 2.);
+        EXPECT_EQ(0., bound.minx);
+        EXPECT_EQ(0. + cell_size, bound.maxx);
+        EXPECT_EQ(0., bound.miny);
+        EXPECT_EQ(0. + cell_size, bound.maxy);
+        EXPECT_EQ(0., bound.minz);
+        EXPECT_EQ(0. + cell_size, bound.maxz);
+    }
+
+    for (size_t x = 0; x < dim_x; x++)
+    {
+        for (size_t y = 0; y < dim_y; y++)
+        {
+            for (size_t z = 0; z < dim_z; z++)
+            {
+                ASSERT_TRUE(grid_bounds.contains(grid.voxel_bounds(x, y, z)));
+            }
+        }
+    }
+}

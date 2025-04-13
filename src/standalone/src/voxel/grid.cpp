@@ -64,8 +64,8 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
         GridIndex{current_voxel_x, current_voxel_y, current_voxel_z}.array().cast<double>() +
         step.array().cast<double>() * cell_size + negative_correction.array();
 
-    Beam::vector_t       t_max = (next_bound - beam_origin).array() / beam_direction.array();
-    const Beam::vector_t delta = cell_size / beam_direction.array() * step.array().cast<double>();
+    Beam::vector_t       t_max = (next_bound - beam_origin).array() / corrected_dir.array();
+    const Beam::vector_t delta = cell_size / corrected_dir.array() * step.array().cast<double>();
 
     std::vector<idxs_t> visited_voxels;
     visited_voxels.reserve((Beam::vector_t{grid_bounds.minx, grid_bounds.miny, grid_bounds.minz} -
@@ -78,6 +78,7 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
 
     while (true)
     {
+
         visited_voxels.push_back({current_voxel_x, current_voxel_y, current_voxel_z});
         if (t_max.x() < t_max.y())
         {

@@ -4,8 +4,16 @@ add_executable(lvox_tests)
 
 target_sources(lvox_tests
     PRIVATE
-    voxel/grid_test.cpp
     utils/utils.cpp
+    voxel/test_grid_at.cpp
+    voxel/test_grid_cell_count.cpp
+    voxel/test_grid_create_from_point_cloud.cpp
+    voxel/test_grid_creation_from_box3d.cpp
+    voxel/test_grid_fixtures.hpp
+    voxel/test_grid_index_of_point.cpp
+    voxel/test_grid_traversal.cpp
+    voxel/test_grid_voxel_bounds.cpp
+    voxel/test_grid_voxel_bounds_from_point.cpp
 )
 
 target_include_directories(lvox_tests
