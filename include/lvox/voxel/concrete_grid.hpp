@@ -108,8 +108,13 @@ class ConcreteGrid : public Grid
         const double min_x = m_bounds.minx + idx_x * m_cell_size;
         const double min_y = m_bounds.miny + idx_y * m_cell_size;
         const double min_z = m_bounds.minz + idx_z * m_cell_size;
-        return bounds_t{
-            min_x, min_y, min_z, min_x + m_cell_size, min_y + m_cell_size, min_z + m_cell_size
+        return bounds_t{//
+                        min_x,
+                        min_y,
+                        min_z,
+                        min_x + m_cell_size,
+                        min_y + m_cell_size,
+                        min_z + m_cell_size
         };
     }
 
@@ -139,10 +144,10 @@ class ConcreteGrid : public Grid
             return std::round((coord - min) / cell_size);
         };
 
-        return {//
-                coords_to_index(m_bounds.minx, x),
-                coords_to_index(m_bounds.miny, y),
-                coords_to_index(m_bounds.minz, z)
+        return {
+            coords_to_index(m_bounds.minx, x),
+            coords_to_index(m_bounds.miny, y),
+            coords_to_index(m_bounds.minz, z)
         };
     }
 

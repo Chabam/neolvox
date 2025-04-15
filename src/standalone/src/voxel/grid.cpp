@@ -8,8 +8,10 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
     using GridIndex = Eigen::Vector<size_t, 3>;
     using Step      = Eigen::Vector<signed char, 3>;
 
-    const Beam::vector_t beam_origin = beam.origin();
-    const Grid::bounds_t grid_bounds = grid.bounds();
+    const Beam::vector_t beam_origin    = beam.origin();
+    const Grid::bounds_t grid_bounds    = grid.bounds();
+    const double         cell_size      = grid.cell_size();
+    const Beam::vector_t beam_direction = beam.direction();
 
     [[unlikely]]
     if (!grid_bounds.contains(beam_origin.x(), beam_origin.y(), beam_origin.z()))
@@ -22,29 +24,13 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
         )};
     }
 
-    const Beam::vector_t beam_direction = beam.direction();
-
     // Source: https://stackoverflow.com/a/4609795
+    // Returns -1 if the slope is negative, 1 if positive and 0 if there's no slope.
     const auto get_axis_dir = [](double val) -> signed char {
         return (0. < val) - (val < 0.);
     };
 
-    // Woo and Amanatides's fast traversal algorithm
-    // Variables references:
-    // X = idx_x
-    // Y = idx_y
-    // Z = idx_z
-    // stepY, stepX, stepZ = step
-    const auto [idx_x, idx_y, idx_z] = grid.index_of_point(beam.origin());
-    const double cell_size           = grid.cell_size();
-
-    const Step step = {
-        get_axis_dir(beam_direction.x()),
-        get_axis_dir(beam_direction.y()),
-        get_axis_dir(beam_direction.z())
-    };
-
-    const idxs_t current_voxel = grid.index_of_point(beam_origin);
+    const Step step = beam_direction.unaryExpr(get_axis_dir);
 
     // NOTE: replacing zeros the minimal double value to avoid dividing by zero.
     // This way, when we'll compute the delta and tmax, we'll get a very high value instead of an
@@ -63,7 +49,7 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
         return val < 0. ? cell_size : 0.;
     });
 
-    auto [current_voxel_x, current_voxel_y, current_voxel_z] = current_voxel;
+    auto [current_voxel_x, current_voxel_y, current_voxel_z] = grid.index_of_point(beam_origin);
     const Beam::vector_t next_bound =
         GridIndex{current_voxel_x, current_voxel_y, current_voxel_z}.array().cast<double>() +
         step.array().cast<double>() * cell_size + negative_correction.array();
@@ -71,16 +57,16 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
     Beam::vector_t       t_max = (next_bound - beam_origin).array() / beam_direction.array();
     const Beam::vector_t delta = cell_size / beam_direction.array() * step.array().cast<double>();
 
-    std::vector<idxs_t> visited_voxels;
-    visited_voxels.reserve((Beam::vector_t{grid_bounds.minx, grid_bounds.miny, grid_bounds.minz} -
-                            Beam::vector_t{grid_bounds.maxx, grid_bounds.maxy, grid_bounds.maxz})
-                               .norm());
+    std::vector<idxs_t>  visited_voxels;
+    const Beam::vector_t min_pts{grid_bounds.minx, grid_bounds.miny, grid_bounds.minz};
+    const Beam::vector_t max_pts{grid_bounds.maxx, grid_bounds.maxy, grid_bounds.maxz};
+    visited_voxels.reserve((max_pts - min_pts).norm());
 
     const size_t dim_x = grid.dim_x();
     const size_t dim_y = grid.dim_y();
     const size_t dim_z = grid.dim_z();
 
-    while (true)
+    do
     {
         visited_voxels.push_back({current_voxel_x, current_voxel_y, current_voxel_z});
         if (t_max.x() < t_max.y())
@@ -110,13 +96,8 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
             }
         }
 
-        // Going out of bounds
-        if (current_voxel_x < 0 || current_voxel_y < 0 || current_voxel_z < 0 ||
-            current_voxel_x > dim_x || current_voxel_y > dim_y || current_voxel_z > dim_z)
-        {
-            break;
-        }
-    }
+    } while (current_voxel_x >= 0 && current_voxel_y >= 0 && current_voxel_z >= 0 &&
+             current_voxel_x <= dim_x && current_voxel_y <= dim_y && current_voxel_z <= dim_z);
 
     return visited_voxels;
 }

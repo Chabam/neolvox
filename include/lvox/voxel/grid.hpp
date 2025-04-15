@@ -41,6 +41,7 @@ class Grid
     [[nodiscard]]
     virtual auto bounds() const -> const bounds_t& = 0;
 
+    // Woo and Amanatides' fast traversal algorithm
     [[nodiscard]]
     static auto traversal(const Grid& grid, const Beam& beam) -> std::vector<idxs_t>;
 };
