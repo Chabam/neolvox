@@ -8,13 +8,17 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
     using GridIndex = Eigen::Vector<size_t, 3>;
     using Step      = Eigen::Vector<signed char, 3>;
 
+    const Grid::bounds_t bounds    = grid.bounds();
+    const size_t         dim_x     = grid.dim_x();
+    const size_t         dim_y     = grid.dim_y();
+    const size_t         dim_z     = grid.dim_z();
+    const double         cell_size = grid.cell_size();
+
     const Beam::vector_t beam_origin    = beam.origin();
-    const Grid::bounds_t grid_bounds    = grid.bounds();
-    const double         cell_size      = grid.cell_size();
     const Beam::vector_t beam_direction = beam.direction();
 
     [[unlikely]]
-    if (!grid_bounds.contains(beam_origin.x(), beam_origin.y(), beam_origin.z()))
+    if (!bounds.contains(beam_origin.x(), beam_origin.y(), beam_origin.z()))
     {
         throw std::runtime_error{std::format(
             "Beam of origin ({},{},{}) is outside the grid",
@@ -57,14 +61,13 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
     Beam::vector_t       t_max = (next_bound - beam_origin).array() / beam_direction.array();
     const Beam::vector_t delta = cell_size / beam_direction.array() * step.array().cast<double>();
 
-    std::vector<idxs_t>  visited_voxels;
-    const Beam::vector_t min_pts{grid_bounds.minx, grid_bounds.miny, grid_bounds.minz};
-    const Beam::vector_t max_pts{grid_bounds.maxx, grid_bounds.maxy, grid_bounds.maxz};
-    visited_voxels.reserve((max_pts - min_pts).norm());
+    std::vector<idxs_t> visited_voxels;
 
-    const size_t dim_x = grid.dim_x();
-    const size_t dim_y = grid.dim_y();
-    const size_t dim_z = grid.dim_z();
+    // Reserve two times the longest line in the grid bounds. This estimate should be a best effort
+    // to reduce the memory allocation time.
+    const Beam::vector_t min_pts{bounds.minx, bounds.miny, bounds.minz};
+    const Beam::vector_t max_pts{bounds.maxx, bounds.maxy, bounds.maxz};
+    visited_voxels.reserve(((max_pts - min_pts).norm() / cell_size) * 2);
 
     do
     {
@@ -98,6 +101,8 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
 
     } while (current_voxel_x >= 0 && current_voxel_y >= 0 && current_voxel_z >= 0 &&
              current_voxel_x <= dim_x && current_voxel_y <= dim_y && current_voxel_z <= dim_z);
+
+    visited_voxels.shrink_to_fit();
 
     return visited_voxels;
 }
