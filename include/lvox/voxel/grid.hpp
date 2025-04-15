@@ -5,6 +5,8 @@
 
 #include <pdal/util/Bounds.hpp>
 
+#include <lvox/scanner/beam.hpp>
+
 namespace lvox
 {
 
@@ -13,23 +15,35 @@ class Grid
   public:
     using bounds_t = pdal::BOX3D;
     using point_t  = Eigen::Vector3d;
+    using idxs_t   = std::array<size_t, 3>;
 
     Grid()          = default;
     virtual ~Grid() = default;
 
     // NOTE: no bounds check!
+    [[nodiscard]]
     virtual auto voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> bounds_t = 0;
-
+    [[nodiscard]]
     virtual auto voxel_bounds_from_point(const point_t& point) -> bounds_t = 0;
-
     // Return an index tuple of this layout (x, y, z)
-    virtual auto index_of_point(const point_t& point) const -> std::array<size_t, 3> = 0;
-
-    virtual auto cell_count() const -> size_t      = 0;
-    virtual auto dim_x() const -> size_t           = 0;
-    virtual auto dim_y() const -> size_t           = 0;
-    virtual auto dim_z() const -> size_t           = 0;
+    [[nodiscard]]
+    virtual auto index_of_point(const point_t& point) const -> idxs_t = 0;
+    [[nodiscard]]
+    virtual auto cell_size() const -> double = 0;
+    [[nodiscard]]
+    virtual auto cell_count() const -> size_t = 0;
+    [[nodiscard]]
+    virtual auto dim_x() const -> size_t = 0;
+    [[nodiscard]]
+    virtual auto dim_y() const -> size_t = 0;
+    [[nodiscard]]
+    virtual auto dim_z() const -> size_t = 0;
+    [[nodiscard]]
     virtual auto bounds() const -> const bounds_t& = 0;
+
+    // Woo and Amanatides' fast traversal algorithm
+    [[nodiscard]]
+    static auto traversal(const Grid& grid, const Beam& beam) -> std::vector<idxs_t>;
 };
 
 } // namespace lvox
