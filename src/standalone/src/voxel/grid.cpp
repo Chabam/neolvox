@@ -49,8 +49,12 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
     // NOTE: replacing zeros the minimal double value to avoid dividing by zero.
     // This way, when we'll compute the delta and tmax, we'll get a very high value instead of an
     // error. This **should** work out just fine for the algorithm.
-    const Beam::vector_t corrected_dir =
-        beam_direction.array().max(std::numeric_limits<double>::min());
+    // TODO: It doesn't seem to be working correctly. The direction can sometimes be
+    // very big and sometimes VERY small. Making some case VERY long to compute. Disabling it for
+    // now, might investigate later.
+    //
+    // const Beam::vector_t corrected_dir =
+    //     beam_direction.array().max(std::numeric_limits<double>::min());
 
     // NOTE: In the case of negative direction, the next voxel boundary is not "above" but below. In
     // that case we must correct the boundary accordingly. See:
@@ -64,8 +68,8 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
         GridIndex{current_voxel_x, current_voxel_y, current_voxel_z}.array().cast<double>() +
         step.array().cast<double>() * cell_size + negative_correction.array();
 
-    Beam::vector_t       t_max = (next_bound - beam_origin).array() / corrected_dir.array();
-    const Beam::vector_t delta = cell_size / corrected_dir.array() * step.array().cast<double>();
+    Beam::vector_t       t_max = (next_bound - beam_origin).array() / beam_direction.array();
+    const Beam::vector_t delta = cell_size / beam_direction.array() * step.array().cast<double>();
 
     std::vector<idxs_t> visited_voxels;
     visited_voxels.reserve((Beam::vector_t{grid_bounds.minx, grid_bounds.miny, grid_bounds.minz} -
@@ -78,7 +82,6 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
 
     while (true)
     {
-
         visited_voxels.push_back({current_voxel_x, current_voxel_y, current_voxel_z});
         if (t_max.x() < t_max.y())
         {
