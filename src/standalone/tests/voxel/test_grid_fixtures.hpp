@@ -5,6 +5,7 @@
 #include <utils/utils.hpp>
 
 #include <lvox/voxel/grid.hpp>
+#include "lvox/voxel/concrete_grid.hpp"
 
 template <class GridT, size_t x, size_t y, size_t z, double cell_size>
 struct VoxelGridTestParam
@@ -25,5 +26,9 @@ class VoxelGridTests : public testing::Test
   protected:
       using grid_t = GridT;
 };
+
+using GridTypes = testing::Types<lvox::DenseGridU32i, lvox::SparseGridU32i>;
+
+TYPED_TEST_SUITE(VoxelGridTests, GridTypes);
 
 #endif // LVOX_GRID_TEST_FIXTURES_HPP
