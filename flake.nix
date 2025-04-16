@@ -23,10 +23,6 @@
           pdal
           gtest
         ];
-        shellHook = ''
-          export SHELL=/run/current-system/sw/bin/bash
-          source ~/.bashrc
-        '';
       };
     };
 }
