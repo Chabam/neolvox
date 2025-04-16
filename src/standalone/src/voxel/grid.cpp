@@ -1,10 +1,24 @@
 #include <format>
 #include <stdexcept>
 
+#include <lvox/logger/logger.hpp>
 #include <lvox/voxel/grid.hpp>
 
-auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<idxs_t>
+namespace lvox
 {
+
+constexpr auto g_grid_traversal_info = R"(
+Beam
+    origin    ({}, {}, {})
+    direction ({}, {}, {})
+TMax ({}, {}, {})
+Delta ({}, {}, {})
+)";
+
+auto Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<idxs_t>
+{
+    Logger logger{"Grid traversal"};
+
     using GridIndex = Eigen::Vector<size_t, 3>;
     using Step      = Eigen::Vector<signed char, 3>;
 
@@ -69,6 +83,22 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
     const Beam::vector_t max_pts{bounds.maxx, bounds.maxy, bounds.maxz};
     visited_voxels.reserve(((max_pts - min_pts).norm() / cell_size) * 2);
 
+    logger.debug(
+        g_grid_traversal_info,
+        beam_origin.x(),
+        beam_origin.y(),
+        beam_origin.z(),
+        beam_direction.x(),
+        beam_direction.y(),
+        beam_direction.z(),
+        t_max.x(),
+        t_max.y(),
+        t_max.z(),
+        delta.x(),
+        delta.y(),
+        delta.z()
+    );
+
     do
     {
         visited_voxels.push_back({current_voxel_x, current_voxel_y, current_voxel_z});
@@ -106,3 +136,5 @@ auto lvox::Grid::traversal(const Grid& grid, const Beam& beam) -> std::vector<id
 
     return visited_voxels;
 }
+
+} // namespace lvox

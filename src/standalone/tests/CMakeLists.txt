@@ -25,7 +25,7 @@ target_link_libraries(lvox_tests
     GTest::gtest_main
     pdalcpp
     Eigen3::Eigen
-    liblvox
+    lvox_common
 )
 
 target_include_directories(lvox_tests PUBLIC ${neolvox_SOURCE_DIR}/include)
