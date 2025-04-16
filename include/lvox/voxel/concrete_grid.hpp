@@ -7,6 +7,8 @@
 
 #include <lvox/voxel/grid.hpp>
 
+#include "lvox/logger/logger.hpp"
+
 namespace lvox
 {
 
@@ -30,14 +32,32 @@ class ConcreteGrid : public Grid
         , m_cells{}
         , m_bounds{box3d}
     {
+
+        Logger logger{"ConcreteGrid"};
+
         if constexpr (std::is_same<container_t, std::vector<cell_t>>::value)
         {
             m_cells.resize(m_dim_x * m_dim_y * m_dim_z);
         }
 
-        const auto adjust_bounds_to_grid = [cell_size](size_t dim, double min) {
+        logger.debug(
+            g_grid_loginfo,
+            m_dim_x,
+            m_dim_y,
+            m_dim_z,
+            m_cell_size,
+            m_bounds.minx,
+            m_bounds.maxx,
+            m_bounds.miny,
+            m_bounds.maxy,
+            m_bounds.minz,
+            m_bounds.maxz
+        );
+
+        const auto adjust_bounds_to_grid = [cell_size](size_t dim, double min) -> double {
             return min + dim * cell_size;
         };
+
         m_bounds.grow(
             adjust_bounds_to_grid(m_dim_x, box3d.minx),
             adjust_bounds_to_grid(m_dim_y, box3d.miny),
@@ -199,6 +219,15 @@ class ConcreteGrid : public Grid
     {
         return static_cast<size_t>(std::ceil(distance / cell_size));
     }
+
+    static constexpr auto g_grid_loginfo = R"(
+Creating grid of dimension: {}x{}x{}
+Voxel size: {}
+Bounds:
+    x: {}, {}
+    y: {}, {}
+    z: {}, {}
+)";
 };
 
 template <typename T>
