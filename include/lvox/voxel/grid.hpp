@@ -43,7 +43,7 @@ class Grid
 
     // Woo and Amanatides' fast traversal algorithm
     [[nodiscard]]
-    static auto traversal(const Grid& grid, const Beam& beam) -> std::vector<idxs_t>;
+    static auto traversal(const Grid& grid, const Beam& beam, const double max_distance = std::numeric_limits<double>::max()) -> std::vector<idxs_t>;
 };
 
 } // namespace lvox
