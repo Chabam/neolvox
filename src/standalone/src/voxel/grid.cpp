@@ -89,7 +89,7 @@ auto Grid::traversal(const Grid& grid, const Beam& beam, const double max_distan
             beam_direction.z(), beam_origin.z(), voxel_bounds.minz, voxel_bounds.maxz, inv_dir.z()
         )
     };
-    const vector_t delta = (cell_size * step.cast<double>().unaryExpr([](const double val) {
+    const vector_t delta = (cell_size * step.unaryExpr([](const double val) -> double {
                          return val == 0. ? inf : val;
                      })).array() *
                      inv_dir.array();
