@@ -53,12 +53,12 @@ TEST(SphericalScannerTests, verify_angle_resolution)
     const vector_t origin{0., 1., 0.};
     const double   h_fov        = 360.;
     const double   v_fov        = 300.;
-    const double   res          = .36;
+    const double   res          = 1.;
     const size_t   nb_vert_rays = std::ceil(v_fov / res);
     const size_t   nb_hor_rays  = std::ceil(h_fov / res);
     const double   angle_vert   = v_fov / nb_vert_rays;
     const double   angle_hor    = h_fov / nb_hor_rays;
-    const double   epsilon = 0.001;
+    const double   epsilon = 0.000001;
 
     const lvox::SphericalScanner scanner{origin, h_fov, v_fov, res};
     // Less or equal beacause of rounding
@@ -83,8 +83,8 @@ TEST(SphericalScannerTests, verify_angle_resolution)
         );
     }
 
-    // Check for horizontal resolution
-    for (size_t i = nb_vert_rays; i < nb_hor_rays; i += nb_vert_rays)
+    // Check for horizontal resolution (+60 beams to end up flat on the x/y axis)
+    for (size_t i = nb_vert_rays + 60; i < scanner.get_beams().size(); i += nb_vert_rays)
     {
         const lvox::Beam cur_beam  = beams[i];
         const lvox::Beam prev_beam = beams[i - nb_vert_rays];
