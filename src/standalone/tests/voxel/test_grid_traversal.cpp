@@ -25,7 +25,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_x_axis)
         lvox::Beam           beam{pos, dir};
 
         const auto visited_voxel_idxs = lvox::Grid::traversal(grid, beam);
-        ASSERT_EQ(dim_x + 1, visited_voxel_idxs.size());
+        ASSERT_EQ(grid.dim_x() + 1, visited_voxel_idxs.size());
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
@@ -42,11 +42,11 @@ TYPED_TEST(VoxelGridTests, grid_traversal_x_axis)
         lvox::Beam           beam{pos, dir};
 
         const auto visited_voxel_idxs = lvox::Grid::traversal(grid, beam);
-        ASSERT_EQ(dim_x + 1, visited_voxel_idxs.size());
+        ASSERT_EQ(grid.dim_x() + 1, visited_voxel_idxs.size());
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
-            ASSERT_EQ(dim_x - i, x);
+            ASSERT_EQ(grid.dim_x() - i, x);
             ASSERT_EQ(0, y);
             ASSERT_EQ(0, z);
         }
@@ -76,7 +76,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_y_axis)
         lvox::Beam           beam{pos, dir};
 
         const auto visited_voxel_idxs = lvox::Grid::traversal(grid, beam);
-        ASSERT_EQ(dim_y + 1, visited_voxel_idxs.size());
+        ASSERT_EQ(grid.dim_y() + 1, visited_voxel_idxs.size());
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
@@ -93,12 +93,12 @@ TYPED_TEST(VoxelGridTests, grid_traversal_y_axis)
         lvox::Beam           beam{pos, dir};
 
         const auto visited_voxel_idxs = lvox::Grid::traversal(grid, beam);
-        ASSERT_EQ(dim_y + 1, visited_voxel_idxs.size());
+        ASSERT_EQ(grid.dim_y() + 1, visited_voxel_idxs.size());
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
             ASSERT_EQ(0, x);
-            ASSERT_EQ(dim_y - i, y);
+            ASSERT_EQ(grid.dim_y() - i, y);
             ASSERT_EQ(0, z);
         }
     }
@@ -126,7 +126,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_z_axis)
         lvox::Beam           beam{pos, dir};
 
         const auto visited_voxel_idxs = lvox::Grid::traversal(grid, beam);
-        ASSERT_EQ(dim_z + 1, visited_voxel_idxs.size());
+        ASSERT_EQ(grid.dim_z() + 1, visited_voxel_idxs.size());
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
@@ -143,13 +143,13 @@ TYPED_TEST(VoxelGridTests, grid_traversal_z_axis)
         lvox::Beam           beam{pos, dir};
 
         const auto visited_voxel_idxs = lvox::Grid::traversal(grid, beam);
-        ASSERT_EQ(dim_z + 1, visited_voxel_idxs.size());
+        ASSERT_EQ(grid.dim_z() + 1, visited_voxel_idxs.size());
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
             ASSERT_EQ(0, x);
             ASSERT_EQ(0, y);
-            ASSERT_EQ(dim_z - i, z);
+            ASSERT_EQ(grid.dim_z() - i, z);
         }
     }
 }
