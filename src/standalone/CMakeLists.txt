@@ -1,4 +1,4 @@
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(lvox_common)
@@ -7,6 +7,7 @@ target_sources(lvox_common
   PUBLIC
   src/logger/logger.cpp
   src/scanner/beam.cpp
+  src/scanner/spherical_scanner.cpp
   src/voxel/grid.cpp
 )
 
