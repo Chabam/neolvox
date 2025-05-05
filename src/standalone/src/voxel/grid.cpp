@@ -55,23 +55,6 @@ auto Grid::traversal(const Grid& grid, const Beam& beam, const double max_distan
 
     const Step step = beam_direction.unaryExpr(get_axis_dir);
 
-    // NOTE: replacing zeros the minimal double value to avoid dividing by zero.
-    // This way, when we'll compute the delta and t_max, we'll get a very high value instead of an
-    // error. This **should** work out just fine for the algorithm.
-    // TODO: It doesn't seem to be working correctly. The direction can sometimes be
-    // very big and sometimes VERY small. Making some case VERY long to compute. Disabling it for
-    // now, might investigate later.
-    //
-    // const vector_t corrected_dir =
-    //     beam_direction.array().max(std::numeric_limits<double>::min());
-
-    // NOTE: In the case of negative direction, the next voxel boundary is not "above" but below. In
-    // that case we must correct the boundary accordingly. See:
-    // https://github.com/francisengelmann/fast_voxel_traversal/issues/7#issue-374675911
-    const vector_t negative_correction = step.unaryExpr([cell_size](signed char val) {
-        return val < 0. ? cell_size : 0.;
-    });
-
     auto [current_voxel_x, current_voxel_y, current_voxel_z] = grid.index_of_point(beam_origin);
 
     const bounds_t voxel_bounds =
@@ -79,66 +62,47 @@ auto Grid::traversal(const Grid& grid, const Beam& beam, const double max_distan
 
     const vector_t inv_dir = 1. / beam_direction.array();
 
-    vector_t t_max;
-    vector_t delta;
-    // X()
-    if (beam_direction.x() > 0)
-    {
-        t_max.x() = (voxel_bounds.maxx - beam_origin.x()) * inv_dir.x();
-        delta.x() = cell_size * inv_dir.x();
-    }
-    else if (beam_direction.x() < 0)
-    {
-        t_max.x() = (voxel_bounds.minx - beam_origin.x()) * inv_dir.x();
-        delta.x() = -cell_size * inv_dir.x();
-    }
-    else
-    {
-        t_max.x() = inf;
-        delta.x() = inf;
-    }
+    const auto compute_t_max_component = //
+        [inf](
+            double dir_component,
+            double origin_component,
+            double min_bound,
+            double max_bound,
+            double inv_dir_component
+        ) {
+            if (dir_component > 0.)
+                return (max_bound - origin_component) * inv_dir_component;
+            else if (dir_component < 0.)
+                return (min_bound - origin_component) * inv_dir_component;
+            else
+                return inf;
+        };
 
-    // Y
-    if (beam_direction.y() > 0)
-    {
-        t_max.y() = (voxel_bounds.maxy - beam_origin.y()) * inv_dir.y();
-        delta.y() = cell_size * inv_dir.y();
-    }
-    else if (beam_direction.y() < 0)
-    {
-        t_max.y() = (voxel_bounds.miny - beam_origin.y()) * inv_dir.y();
-        delta.y() = -cell_size * inv_dir.y();
-    }
-    else
-    {
-        t_max.y() = inf;
-        delta.y() = inf;
-    }
-
-    // Z
-    if (beam_direction.z() > 0)
-    {
-        t_max.z() = (voxel_bounds.maxz - beam_origin.z()) * inv_dir.z();
-        delta.z() = cell_size * inv_dir.z();
-    }
-    else if (beam_direction.z() < 0)
-    {
-        t_max.z() = (voxel_bounds.minz - beam_origin.z()) * inv_dir.z();
-        delta.z() = -cell_size * inv_dir.z();
-    }
-    else
-    {
-        t_max.z() = inf;
-        delta.z() = inf;
-    }
+    vector_t t_max{
+        compute_t_max_component(
+            beam_direction.x(), beam_origin.x(), voxel_bounds.minx, voxel_bounds.maxx, inv_dir.x()
+        ),
+        compute_t_max_component(
+            beam_direction.y(), beam_origin.y(), voxel_bounds.miny, voxel_bounds.maxy, inv_dir.y()
+        ),
+        compute_t_max_component(
+            beam_direction.z(), beam_origin.z(), voxel_bounds.minz, voxel_bounds.maxz, inv_dir.z()
+        )
+    };
+    const vector_t delta = (cell_size * step.cast<double>().unaryExpr([](const double val) {
+                         return val == 0. ? inf : val;
+                     })).array() *
+                     inv_dir.array();
 
     std::vector<idxs_t> visited_voxels;
 
-    // Reserve two times the longest line in the grid bounds. This estimate should be a best effort
-    // to reduce the memory allocation time.
-    const vector_t min_pts{bounds.minx, bounds.miny, bounds.minz};
-    const vector_t max_pts{bounds.maxx, bounds.maxy, bounds.maxz};
-    visited_voxels.reserve(((max_pts - min_pts).norm() / cell_size) * 2);
+    // Reserve two times the longest line in the grid bounds. This estimate should be a best
+    // effort to reduce the memory allocation time.
+    {
+        const vector_t min_pts{bounds.minx, bounds.miny, bounds.minz};
+        const vector_t max_pts{bounds.maxx, bounds.maxy, bounds.maxz};
+        visited_voxels.reserve(((max_pts - min_pts).norm() / cell_size) * 2);
+    }
 
     logger.debug(
         g_grid_traversal_info,
