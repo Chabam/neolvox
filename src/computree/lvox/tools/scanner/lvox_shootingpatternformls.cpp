@@ -16,12 +16,12 @@ const Eigen::Vector3d& LVOX_ShootingPatternForMLS::centerCoordinate() const {
     return m_origin;
 }
 
-size_t LVOX_ShootingPatternForMLS::numberOfShots() const {
+Index LVOX_ShootingPatternForMLS::numberOfShots() const {
     return m_pcir->abstractCloudIndexT()->size();
 }
 
-CT_Shot LVOX_ShootingPatternForMLS::shotAt(const size_t& index) const {
-    const size_t idx = m_pcir->abstractCloudIndexT()->constIndexAt(index);
+CT_Shot LVOX_ShootingPatternForMLS::shotAt(const Index& index) const {
+    const Index idx = m_pcir->abstractCloudIndexT()->constIndexAt(index);
     const CT_Point point = m_pAccessor.pointAt(idx);
 
     const double gpsTime = m_attributeGPS->scalarAsDoubleAt(idx);

@@ -2,6 +2,7 @@
 #include <stdexcept>
 
 #include <lvox/logger/logger.hpp>
+#include <lvox/scanner/beam.hpp>
 #include <lvox/voxel/grid.hpp>
 
 namespace lvox
@@ -15,26 +16,28 @@ t_max ({}, {}, {})
 Delta ({}, {}, {})
 )";
 
-auto Grid::traversal(const Grid& grid, const Beam& beam, const double max_distance)
-    -> std::vector<idxs_t>
+auto Grid::traversal(
+    const Grid&                                        grid,
+    const Beam&                                        beam,
+    const std::function<void(const Index3D&, double)>& callback,
+    const double                                       max_distance
+) -> void
 {
 
     Logger logger{"Grid traversal"};
 
-    using GridIndex      = Eigen::Vector<size_t, 3>;
+    using GridIndex      = Eigen::Vector<Index, 3>;
     using Step           = Eigen::Vector<signed char, 3>;
-    using vector_t       = Beam::vector_t;
-    using bounds_t       = Grid::bounds_t;
     constexpr double inf = std::numeric_limits<double>::infinity();
 
-    const bounds_t bounds    = grid.bounds();
-    const size_t   dim_x     = grid.dim_x();
-    const size_t   dim_y     = grid.dim_y();
-    const size_t   dim_z     = grid.dim_z();
-    const double   cell_size = grid.cell_size();
+    const Bounds bounds    = grid.bounds();
+    const Index dim_x     = grid.dim_x();
+    const Index dim_y     = grid.dim_y();
+    const Index dim_z     = grid.dim_z();
+    const double cell_size = grid.cell_size();
 
-    const vector_t beam_origin    = beam.origin();
-    const vector_t beam_direction = beam.direction();
+    const Point  beam_origin    = beam.origin();
+    const Vector beam_direction = beam.direction();
 
     [[unlikely]]
     if (!bounds.contains(beam_origin.x(), beam_origin.y(), beam_origin.z()))
@@ -57,10 +60,10 @@ auto Grid::traversal(const Grid& grid, const Beam& beam, const double max_distan
 
     auto [current_voxel_x, current_voxel_y, current_voxel_z] = grid.index_of_point(beam_origin);
 
-    const bounds_t voxel_bounds =
+    const Bounds voxel_bounds =
         grid.voxel_bounds(current_voxel_x, current_voxel_y, current_voxel_z);
 
-    const vector_t inv_dir = 1. / beam_direction.array();
+    const Vector inv_dir = 1. / beam_direction.array();
 
     const auto compute_t_max_component = //
         [inf](
@@ -78,7 +81,7 @@ auto Grid::traversal(const Grid& grid, const Beam& beam, const double max_distan
                 return inf;
         };
 
-    vector_t t_max{
+    Vector t_max{
         compute_t_max_component(
             beam_direction.x(), beam_origin.x(), voxel_bounds.minx, voxel_bounds.maxx, inv_dir.x()
         ),
@@ -89,22 +92,12 @@ auto Grid::traversal(const Grid& grid, const Beam& beam, const double max_distan
             beam_direction.z(), beam_origin.z(), voxel_bounds.minz, voxel_bounds.maxz, inv_dir.z()
         )
     };
-    const vector_t delta = (cell_size * step.unaryExpr([](const double val) -> double {
-                         return val == 0. ? inf : val;
-                     })).array() *
-                     inv_dir.array();
+    const Vector delta = (cell_size * step.unaryExpr([](const double val) -> double {
+                             return val == 0. ? inf : val;
+                         })).array() *
+                         inv_dir.array();
 
-    std::vector<idxs_t> visited_voxels;
-
-    // Reserve two times the longest line in the grid bounds. This estimate should be a best
-    // effort to reduce the memory allocation time.
-    {
-        const vector_t min_pts{bounds.minx, bounds.miny, bounds.minz};
-        const vector_t max_pts{bounds.maxx, bounds.maxy, bounds.maxz};
-        visited_voxels.reserve(((max_pts - min_pts).norm() / cell_size) * 2);
-    }
-
-    logger.debug(
+    logger.verbose(
         g_grid_traversal_info,
         beam_origin.x(),
         beam_origin.y(),
@@ -123,7 +116,7 @@ auto Grid::traversal(const Grid& grid, const Beam& beam, const double max_distan
     double distance = 0.;
     do
     {
-        visited_voxels.push_back({current_voxel_x, current_voxel_y, current_voxel_z});
+        callback({current_voxel_x, current_voxel_y, current_voxel_z}, distance);
         if (t_max.x() < t_max.y())
         {
             if (t_max.x() < t_max.z())
@@ -155,12 +148,8 @@ auto Grid::traversal(const Grid& grid, const Beam& beam, const double max_distan
             }
         }
     } while (current_voxel_x >= 0 && current_voxel_y >= 0 && current_voxel_z >= 0 &&
-             current_voxel_x <= dim_x && current_voxel_y <= dim_y && current_voxel_z <= dim_z &&
+             current_voxel_x < dim_x && current_voxel_y < dim_y && current_voxel_z < dim_z &&
              distance <= max_distance);
-
-    visited_voxels.shrink_to_fit();
-
-    return visited_voxels;
 }
 
 } // namespace lvox

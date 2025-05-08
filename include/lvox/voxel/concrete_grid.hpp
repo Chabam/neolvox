@@ -1,44 +1,61 @@
 #ifndef LVOX_VOXEL_CONCRETE_GRID_HPP
 #define LVOX_VOXEL_CONCRETE_GRID_HPP
 
+#include <atomic>
+#include <cmath>
 #include <format>
 #include <map>
 #include <vector>
 
+#include <lvox/logger/logger.hpp>
+#include <lvox/lvox_types.hpp>
 #include <lvox/voxel/grid.hpp>
-
-#include "lvox/logger/logger.hpp"
 
 namespace lvox
 {
 
-template <typename T, typename ContainerT>
+template <std::ranges::range ContainerT, typename T>
+struct is_dense_container : std::is_same<ContainerT, std::vector<T>>
+{
+};
+
+template <typename T>
+struct contained_type
+{
+    using type = T;
+};
+
+template <typename T>
+struct contained_type<std::atomic<T>>
+{
+    using type = T;
+};
+
+template <typename T>
+using contained_type_t = contained_type<T>::type;
+
+template <typename T, std::ranges::range ContainerT>
 class ConcreteGrid : public Grid
 {
   public:
     using cell_t         = T;
-    using const_cell_ref = const T&;
-    using cell_ref       = T&;
+    using const_cell_ref = const cell_t&;
+    using cell_ref       = cell_t&;
     using container_t    = ContainerT;
 
     ConcreteGrid()  = default;
     ~ConcreteGrid() = default;
 
-    ConcreteGrid(const bounds_t& box3d, double cell_size)
+    ConcreteGrid(const Bounds& box3d, double cell_size)
         : m_cell_size{cell_size}
         , m_dim_x{ConcreteGrid::adjust_dim_to_grid(box3d.maxx - box3d.minx, cell_size)}
         , m_dim_y{ConcreteGrid::adjust_dim_to_grid(box3d.maxy - box3d.miny, cell_size)}
         , m_dim_z{ConcreteGrid::adjust_dim_to_grid(box3d.maxz - box3d.minz, cell_size)}
-        , m_cells{}
+        , m_cells{ConcreteGrid::intialize_container(m_dim_x * m_dim_y * m_dim_z)}
         , m_bounds{box3d}
     {
 
         Logger logger{"ConcreteGrid"};
-
-        if constexpr (std::is_same<container_t, std::vector<cell_t>>::value)
-        {
-            m_cells.resize(m_dim_x * m_dim_y * m_dim_z);
-        }
 
         logger.debug(
             g_grid_loginfo,
@@ -54,7 +71,7 @@ class ConcreteGrid : public Grid
             m_bounds.maxz
         );
 
-        const auto adjust_bounds_to_grid = [cell_size](size_t dim, double min) -> double {
+        const auto adjust_bounds_to_grid = [cell_size](Index dim, double min) -> double {
             return min + dim * cell_size;
         };
 
@@ -110,36 +127,59 @@ class ConcreteGrid : public Grid
     }
 
     [[nodiscard]]
-    auto at(size_t idx_x, size_t idx_y, size_t idx_z) const -> const_cell_ref
+    auto at(Index index) const -> const_cell_ref
     {
-        return m_cells.at(idx_x + (idx_y * m_dim_x) + (idx_z * m_dim_x * m_dim_y));
+        return m_cells.at(index);
     }
 
     [[nodiscard]]
-    auto at(size_t idx_x, size_t idx_y, size_t idx_z) -> cell_ref
+    auto at(Index index) -> cell_ref
     {
-        return m_cells.at(idx_x + (idx_y * m_dim_x) + (idx_z * m_dim_x * m_dim_y));
+        if constexpr (is_dense_container<container_t, cell_t>::value)
+        {
+            return m_cells.at(index);
+        }
+        else
+        {
+            if (const auto& it = m_cells.find(index); it != m_cells.end())
+            {
+                return it->second;
+            }
+            return m_cells.try_emplace(index, contained_type_t<cell_t>{}).first->second;
+        }
+    }
+
+    [[nodiscard]]
+    auto at(Index idx_x, Index idx_y, Index idx_z) const -> const_cell_ref
+    {
+        return at(idx_x + (idx_y * m_dim_x) + (idx_z * m_dim_x * m_dim_y));
+    }
+
+    [[nodiscard]]
+    auto at(Index idx_x, Index idx_y, Index idx_z) -> cell_ref
+    {
+        return at(idx_x + (idx_y * m_dim_x) + (idx_z * m_dim_x * m_dim_y));
     }
 
     // NOTE: no bounds check!
     [[nodiscard]]
-    auto voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> bounds_t final
+    auto voxel_bounds(Index idx_x, Index idx_y, Index idx_z) const -> Bounds final
     {
         const double min_x = m_bounds.minx + idx_x * m_cell_size;
         const double min_y = m_bounds.miny + idx_y * m_cell_size;
         const double min_z = m_bounds.minz + idx_z * m_cell_size;
-        return bounds_t{//
-                        min_x,
-                        min_y,
-                        min_z,
-                        min_x + m_cell_size,
-                        min_y + m_cell_size,
-                        min_z + m_cell_size
+        return Bounds{//
+                      min_x,
+                      min_y,
+                      min_z,
+                      min_x + m_cell_size,
+                      min_y + m_cell_size,
+                      min_z + m_cell_size
         };
     }
 
     [[nodiscard]]
-    auto voxel_bounds_from_point(const Grid::point_t& point) -> bounds_t final
+    auto voxel_bounds_from_point(const Point& point) -> Bounds final
     {
         const auto [idx_x, idx_y, idx_z] = index_of_point(point);
         return voxel_bounds(idx_x, idx_y, idx_z);
@@ -147,7 +187,7 @@ class ConcreteGrid : public Grid
 
     // Return an index tuple of this layout (x, y, z)
     [[nodiscard]]
-    auto index_of_point(const Grid::point_t& point) const -> idxs_t final
+    auto index_of_point(const Point& point) const -> Index3D final
     {
         const double x = point.x();
         const double y = point.y();
@@ -160,14 +200,18 @@ class ConcreteGrid : public Grid
             };
         }
 
-        const auto coords_to_index = [cell_size = m_cell_size](double min, double coord) -> size_t {
-            return std::round((coord - min) / cell_size);
+        const auto coords_to_index =
+            [cell_size = m_cell_size](double min, double max, double coord) -> Index {
+            const double result = std::floor((coord - min) / cell_size);
+            if (coord == max)
+                return result - 1;
+            return result;
         };
 
         return {
-            coords_to_index(m_bounds.minx, x),
-            coords_to_index(m_bounds.miny, y),
-            coords_to_index(m_bounds.minz, z)
+            coords_to_index(m_bounds.minx, m_bounds.maxx, x),
+            coords_to_index(m_bounds.miny, m_bounds.maxy, y),
+            coords_to_index(m_bounds.minz, m_bounds.maxz, z)
         };
     }
 
@@ -178,46 +222,58 @@ class ConcreteGrid : public Grid
     }
 
     [[nodiscard]]
-    auto cell_count() const -> size_t final
+    auto cell_count() const -> Index final
     {
         return dim_x() * dim_y() * dim_z();
     }
 
     [[nodiscard]]
-    auto dim_x() const -> size_t final
+    auto dim_x() const -> Index final
     {
         return m_dim_x;
     }
 
     [[nodiscard]]
-    auto dim_y() const -> size_t final
+    auto dim_y() const -> Index final
     {
         return m_dim_y;
     }
 
     [[nodiscard]]
-    auto dim_z() const -> size_t final
+    auto dim_z() const -> Index final
     {
         return m_dim_z;
     }
 
     [[nodiscard]]
-    auto bounds() const -> const bounds_t& final
+    auto bounds() const -> const Bounds& final
     {
         return m_bounds;
     }
 
   private:
     double      m_cell_size;
-    size_t      m_dim_x;
-    size_t      m_dim_y;
-    size_t      m_dim_z;
+    Index       m_dim_x;
+    Index       m_dim_y;
+    Index       m_dim_z;
     container_t m_cells;
-    bounds_t    m_bounds;
+    Bounds      m_bounds;
 
-    static auto adjust_dim_to_grid(double distance, double cell_size) -> size_t
+    static auto adjust_dim_to_grid(double distance, double cell_size) -> Index
     {
-        return static_cast<size_t>(std::ceil(distance / cell_size));
+        return static_cast<Index>(std::ceil(distance / cell_size));
+    }
+
+    static constexpr auto intialize_container(Index size) -> container_t
+    {
+        if constexpr (is_dense_container<container_t, cell_t>::value)
+        {
+            return container_t{size, std::allocator<cell_t>{}};
+        }
+        else
+        {
+            return container_t{};
+        }
     }
 
     static constexpr auto g_grid_loginfo = R"(
@@ -234,10 +290,13 @@ template <typename T>
 using DenseGrid = ConcreteGrid<T, std::vector<T>>;
 
 template <typename T>
-using SparseGrid = ConcreteGrid<T, std::map<size_t, T>>;
+using SparseGrid = ConcreteGrid<T, std::map<Index, T>>;
 
 using DenseGridU32i  = DenseGrid<std::uint32_t>;
 using SparseGridU32i = SparseGrid<std::uint32_t>;
+
+using ThreadSafeDenseGridU32i  = DenseGrid<std::atomic_uint32_t>;
+using ThreadSafeSparseGridU32i = SparseGrid<std::atomic_uint32_t>;
 
 } // namespace lvox
 

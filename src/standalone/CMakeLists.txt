@@ -6,8 +6,10 @@ add_library(lvox_common)
 target_sources(lvox_common
   PUBLIC
   src/logger/logger.cpp
+  src/lvox.cpp
   src/scanner/beam.cpp
   src/scanner/spherical_scanner.cpp
+  src/scanner/tls_scan.cpp
   src/voxel/grid.cpp
 )
 
@@ -21,6 +23,8 @@ target_include_directories(lvox_common
   PUBLIC
   ${neolvox_SOURCE_DIR}/include
 )
+
+target_compile_definitions(lvox_common PUBLIC $<$<CONFIG:Debug>:LVOX_DEBUG>)
 
 add_executable(lvox)
 

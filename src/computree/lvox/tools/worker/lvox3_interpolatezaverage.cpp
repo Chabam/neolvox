@@ -47,24 +47,24 @@ LVOX3_InterpolateZAverage::LVOX3_InterpolateZAverage(const lvox::Grid3Df *origin
 
 void LVOX3_InterpolateZAverage::doTheJob()
 {
-    for (size_t zz = 0 ;  zz < m_originalDensityGrid->zdim() ; zz += m_numZCalculatedOn)//change increment for zHeight
+    for (Index zz = 0 ;  zz < m_originalDensityGrid->zdim() ; zz += m_numZCalculatedOn)//change increment for zHeight
     {
 
         float meanDensity = 0;
-        size_t ncells = 0;
+        Index ncells = 0;
         // Compute mean value for the level z// Loop num of zHeight
         for (int zIncrement = 0; zIncrement < m_numZCalculatedOn; zIncrement ++)
         {
-            for (size_t yy = 0 ;  yy < m_originalDensityGrid->ydim() ; yy++)
+            for (Index yy = 0 ;  yy < m_originalDensityGrid->ydim() ; yy++)
             {
-                for (size_t xx = 0 ;  xx < m_originalDensityGrid->xdim() ; xx++)
+                for (Index xx = 0 ;  xx < m_originalDensityGrid->xdim() ; xx++)
                 {
                     float value = m_originalDensityGrid->value(xx, yy, zz + zIncrement);
                     if (value >= 0) // empty cells don't count for the mean density
                     {
                         meanDensity += value;
                         ncells++;
-                    }                    
+                    }
                 }
             }
         }
@@ -74,9 +74,9 @@ void LVOX3_InterpolateZAverage::doTheJob()
         // set mean value for all NA cells
         for (int zIncrement = 0; zIncrement < m_numZCalculatedOn; zIncrement ++)
         {
-            for (size_t yy = 0 ;  yy < m_originalDensityGrid->ydim() ; yy++)
+            for (Index yy = 0 ;  yy < m_originalDensityGrid->ydim() ; yy++)
             {
-                for (size_t xx = 0 ;  xx < m_originalDensityGrid->xdim() ; xx++)
+                for (Index xx = 0 ;  xx < m_originalDensityGrid->xdim() ; xx++)
                 {
                     float originalValue = m_originalDensityGrid->value(xx, yy, zz + zIncrement);
                     float interpolatedValue = originalValue;

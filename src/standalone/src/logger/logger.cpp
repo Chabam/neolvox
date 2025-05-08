@@ -1,14 +1,14 @@
 #include <ostream>
-#include <lvox/logger/logger.hpp>
 #include <stdexcept>
 #include <string>
+
+#include <lvox/logger/logger.hpp>
 
 namespace lvox
 {
 
-Logger::Logger(const std::string& category, Level lowest_enabled_level, std::ostream& ostream)
+Logger::Logger(const std::string& category, std::ostream& ostream)
     : m_category{category}
-    , m_lowest_enabled_level{lowest_enabled_level}
     , m_stream{ostream}
 {
 }
@@ -17,6 +17,9 @@ auto Logger::level_to_text(Level level) -> const char*
 {
     switch (level)
     {
+    case Level::Verbose:
+        return "VERBOSE";
+        break;
     case Level::Debug:
         return "DEBUG";
         break;
@@ -57,4 +60,4 @@ auto Logger::level_to_color(Level level) -> const char*
     }
 }
 
-} // namespace rt
+} // namespace lvox

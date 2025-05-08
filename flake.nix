@@ -16,7 +16,9 @@
         nativeBuildInputs = with pkgs; [
           # Tooling
           gcc
+          gdb
           cmake
+          valgrind
 
           # Dependencies
           eigen

@@ -33,7 +33,7 @@ public:
     LVOX3_Grid3DPropagationAlgorithm(const CT_AbstractGrid3D* grid,
                                      const VisitorCollection& list,
                                      const double& radius,
-                                     const size_t& startCellIndex = 0);
+                                     const Index& startCellIndex = 0);
     ~LVOX3_Grid3DPropagationAlgorithm();
 
     /**
@@ -44,7 +44,7 @@ public:
     /**
      * @brief Use this method to start from a cell defined here
      */
-    void startFromCell(const size_t &index);
+    void startFromCell(const Index &index);
 
 private:
     struct StackVar {
@@ -52,27 +52,27 @@ private:
             col(0),
             lin(0),
             level(0){}
-        StackVar(const size_t& cellI,
-                 const size_t& c,
-                 const size_t& li,
-                 const size_t& le) : cellIndex(cellI),
+        StackVar(const Index& cellI,
+                 const Index& c,
+                 const Index& li,
+                 const Index& le) : cellIndex(cellI),
                                      col(c),
                                      lin(li),
                                      level(le) {}
 
-        size_t cellIndex;
-        size_t col;
-        size_t lin;
-        size_t level;
+        Index cellIndex;
+        Index col;
+        Index lin;
+        Index level;
     };
 
     LVOX3_GridTools*            m_gridTools;
     CT_AbstractGrid3D*       m_grid;
     const VisitorCollection&    m_visitors;
     double                      m_radius;
-    size_t                      m_startCellIndex;
+    Index                      m_startCellIndex;
 
-    QSet<size_t>                m_visited;
+    QSet<Index>                m_visited;
 
     /**
      * @brief Recursively check if the cell was already visited and if not go to next cells if it was not
@@ -83,16 +83,16 @@ private:
      * @param level : current cell it's level
      * @param firstCellCenter : first cell it's center
      */
-    void recursiveComputeCell(const size_t& cellIndex,
-                              const size_t& col,
-                              const size_t& lin,
-                              const size_t& level,
+    void recursiveComputeCell(const Index& cellIndex,
+                              const Index& col,
+                              const Index& lin,
+                              const Index& level,
                               const Eigen::Vector3d& firstCellCenter,
                               QStack<StackVar> &stack);
 private:
-    void enqueueCell(const size_t& col,
-            		 const size_t& lin,
-					 const size_t& level,
+    void enqueueCell(const Index& col,
+            		 const Index& lin,
+					 const Index& level,
 					 QStack<StackVar> &stack);
 };
 

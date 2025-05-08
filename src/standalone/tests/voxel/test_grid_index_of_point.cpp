@@ -11,18 +11,18 @@ TYPED_TEST(VoxelGridTests, index_of_point)
 
     const auto view = generate_cubic_point_cloud(table);
 
-    lvox::Grid::bounds_t point_cloud_bounds;
+    lvox::Bounds point_cloud_bounds;
     const double         cell_size = .5;
     view->calculateBounds(point_cloud_bounds);
     typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};
 
-    std::set<std::array<size_t, 3>> seen_idxs;
+    std::set<std::array<lvox::Index, 3>> seen_idxs;
     const Eigen::Vector3d           vec = Eigen::Vector3d::Constant(-0.5);
-    for (size_t x = 0; x < dim_x; x++)
+    for (lvox::Index x = 0; x < dim_x; x++)
     {
-        for (size_t y = 0; y < dim_y; y++)
+        for (lvox::Index y = 0; y < dim_y; y++)
         {
-            for (size_t z = 0; z < dim_z; z++)
+            for (lvox::Index z = 0; z < dim_z; z++)
             {
                 Eigen::Vector3d offset{x * cell_size, y * cell_size, z * cell_size};
                 const auto      idxs = grid.index_of_point(vec + offset);

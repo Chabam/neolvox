@@ -15,17 +15,17 @@ Ray count
 )";
 
 SphericalScanner::SphericalScanner(
-    const vector_t& origin, double horizontal_fov, double vertical_fov, double angular_resolution
+    const Vector& origin, double horizontal_fov, double vertical_fov, double angular_resolution
 )
     : m_beams{}
 {
     Logger logger{"SphericalScanner"};
 
-    const auto rays_for_resolution = [angular_resolution](double fov) -> size_t {
+    const auto rays_for_resolution = [angular_resolution](double fov) -> Index {
         return std::ceil(std::fabs(fov / angular_resolution));
     };
-    size_t nb_horizontal_rays = rays_for_resolution(horizontal_fov);
-    size_t nb_vertical_rays   = rays_for_resolution(vertical_fov);
+    Index nb_horizontal_rays = rays_for_resolution(horizontal_fov);
+    Index nb_vertical_rays   = rays_for_resolution(vertical_fov);
 
     logger.debug(
         g_spherical_scanner_info,
@@ -55,13 +55,13 @@ SphericalScanner::SphericalScanner(
     const double start_theta = to_rad(180. - (180. - vertical_fov / 2.));
     const double ang_res_rad = to_rad(angular_resolution);
 
-    for (size_t i = 0; i < nb_horizontal_rays; ++i)
+    for (Index i = 0; i < nb_horizontal_rays; ++i)
     {
         const double phi = start_phi + (i * ang_res_rad);
 
         const double sinPhi = std::sin(phi);
         const double cosPhi = std::cos(phi);
-        for (size_t j = 0; j < nb_vertical_rays; ++j)
+        for (Index j = 0; j < nb_vertical_rays; ++j)
         {
             // The angle is subtracted so that we "shoot" from down to up.
             const double theta = start_theta - (j * ang_res_rad);
