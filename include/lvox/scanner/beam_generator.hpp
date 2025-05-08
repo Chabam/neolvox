@@ -3,10 +3,10 @@
 
 #include <vector>
 
-#include <lvox/scanner/beam.hpp>
-
 namespace lvox
 {
+
+class Beam;
 
 class BeamGenerator
 {
@@ -14,7 +14,7 @@ class BeamGenerator
     BeamGenerator()          = default;
     virtual ~BeamGenerator() = default;
 
-    virtual auto get_beams() const -> std::vector<Beam> = 0;
+    virtual auto get_beams() const -> const std::vector<Beam>& = 0;
 };
 
 } // namespace lvox

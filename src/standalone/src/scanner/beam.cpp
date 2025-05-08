@@ -1,8 +1,9 @@
 #include <lvox/scanner/beam.hpp>
+
 namespace lvox
 {
 
-Beam::Beam(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction)
+Beam::Beam(const Point& origin, const Vector& direction)
     : m_origin{origin}
     , m_direction{direction.normalized()}
 {

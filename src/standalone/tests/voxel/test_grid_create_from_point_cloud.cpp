@@ -7,7 +7,7 @@ TYPED_TEST(VoxelGridTests, create_from_point_cloud)
     pdal::PointTable table;
     const auto       view = generate_cubic_point_cloud(table);
 
-    lvox::Grid::bounds_t point_cloud_bounds;
+    lvox::Bounds point_cloud_bounds;
     const double         cell_size = 0.5;
     view->calculateBounds(point_cloud_bounds);
     typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};

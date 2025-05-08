@@ -12,30 +12,21 @@ namespace lvox
 
 struct Logger
 {
-    enum Level
+    enum class Level
     {
+        Verbose,
         Debug,
         Info,
         Warn,
         Error
     };
 
-#ifndef NDEBUG
-    static constexpr auto g_default = Level::Debug;
-#else
-    static constexpr auto g_default = Level::Info;
-#endif // RT_DEBUG
-
-    Logger(
-        const std::string& category,
-        Level              lowest_enabled_level = g_default,
-        std::ostream&      ostream              = std::cout
-    );
+    Logger(const std::string& category, std::ostream& ostream = std::cout);
 
     template <typename... Args>
     auto log(Level level, std::string_view text, const Args&... args) -> void
     {
-        if (m_lowest_enabled_level > level)
+        if (g_lowest_enabled_level > level)
         {
             return;
         }
@@ -54,6 +45,12 @@ struct Logger
                         )
                     )
                  << std::endl;
+    }
+
+    template <typename... Args>
+    auto verbose(std::string_view text, const Args... args) -> void
+    {
+        return log(Level::Verbose, text, args...);
     }
 
     template <typename... Args>
@@ -82,13 +79,21 @@ struct Logger
 
     auto add_subcategory(const std::string& category) -> void { m_category += "|" + category; }
 
+    static auto set_global_level(Level level) -> void;
+
   private:
-    Level              m_lowest_enabled_level;
     static const char* level_to_text(Level level);
     static const char* level_to_color(Level level);
 
     std::string   m_category;
     std::ostream& m_stream;
+
+#ifdef LVOX_DEBUG
+    inline static Level g_lowest_enabled_level = Level::Debug;
+#else
+    inline static Level g_lowest_enabled_level = Level::Info;
+#endif // LVOX_DEBUG
+    //
 };
 
 } // namespace lvox

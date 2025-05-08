@@ -7,7 +7,7 @@ TYPED_TEST(VoxelGridTests, creation_from_box3d)
     const double dim_y = 40;
     const double dim_z = 60;
 
-    lvox::Grid::bounds_t bounds = create_bounds(dim_x, dim_y, dim_z);
+    lvox::Bounds bounds = create_bounds(dim_x, dim_y, dim_z);
 
     {
         const double                       cell_size = 1.;
@@ -16,7 +16,7 @@ TYPED_TEST(VoxelGridTests, creation_from_box3d)
         EXPECT_EQ(dim_y, grid.dim_y());
         EXPECT_EQ(dim_z, grid.dim_z());
 
-        const lvox::Grid::bounds_t grid_bounds = grid.bounds();
+        const lvox::Bounds grid_bounds = grid.bounds();
 
         EXPECT_EQ(-10., grid_bounds.minx);
         EXPECT_EQ(10., grid_bounds.maxx);
@@ -34,7 +34,7 @@ TYPED_TEST(VoxelGridTests, creation_from_box3d)
         EXPECT_EQ(dim_y * 2, grid.dim_y());
         EXPECT_EQ(dim_z * 2, grid.dim_z());
 
-        const lvox::Grid::bounds_t grid_bounds = grid.bounds();
+        const lvox::Bounds grid_bounds = grid.bounds();
 
         EXPECT_EQ(-10., grid_bounds.minx);
         EXPECT_EQ(10., grid_bounds.maxx);
@@ -54,7 +54,7 @@ TYPED_TEST(VoxelGridTests, creation_from_box3d)
         // 60 / 15 = 4
         EXPECT_EQ(4, grid.dim_z());
 
-        lvox::Grid::bounds_t grid_bounds = grid.bounds();
+        lvox::Bounds grid_bounds = grid.bounds();
 
         EXPECT_EQ(-10., grid_bounds.minx);
         // -10 + 2 * 15 = 20
