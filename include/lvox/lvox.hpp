@@ -20,7 +20,7 @@ struct LvoxOptions
     } pad_computation_method = PADMethod::BiasCorrectedMaximumLikelihoodEstimator;
 };
 
-using PadResult = lvox::DenseGrid<double>;
+using PadResult = lvox::SparseGrid<double>;
 
 auto compute_pad(
     const std::vector<std::shared_ptr<lvox::Scan>>& scans, const LvoxOptions& options

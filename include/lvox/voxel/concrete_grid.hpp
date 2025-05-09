@@ -46,13 +46,14 @@ class ConcreteGrid : public Grid
     ConcreteGrid()  = default;
     ~ConcreteGrid() = default;
 
-    ConcreteGrid(const Bounds& box3d, double cell_size)
+    ConcreteGrid(const Bounds& bounds, double cell_size)
         : m_cell_size{cell_size}
-        , m_dim_x{ConcreteGrid::adjust_dim_to_grid(box3d.maxx - box3d.minx, cell_size)}
-        , m_dim_y{ConcreteGrid::adjust_dim_to_grid(box3d.maxy - box3d.miny, cell_size)}
-        , m_dim_z{ConcreteGrid::adjust_dim_to_grid(box3d.maxz - box3d.minz, cell_size)}
+        , m_dim_x{ConcreteGrid::adjust_dim_to_grid(bounds.maxx - bounds.minx, cell_size)}
+        , m_dim_y{ConcreteGrid::adjust_dim_to_grid(bounds.maxy - bounds.miny, cell_size)}
+        , m_dim_z{ConcreteGrid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
         , m_cells{ConcreteGrid::intialize_container(m_dim_x * m_dim_y * m_dim_z)}
-        , m_bounds{box3d}
+        , m_bounds{bounds}
+        , m_at_insert_guard{}
     {
 
         Logger logger{"ConcreteGrid"};
@@ -76,9 +77,9 @@ class ConcreteGrid : public Grid
         };
 
         m_bounds.grow(
-            adjust_bounds_to_grid(m_dim_x, box3d.minx),
-            adjust_bounds_to_grid(m_dim_y, box3d.miny),
-            adjust_bounds_to_grid(m_dim_z, box3d.minz)
+            adjust_bounds_to_grid(m_dim_x, bounds.minx),
+            adjust_bounds_to_grid(m_dim_y, bounds.miny),
+            adjust_bounds_to_grid(m_dim_z, bounds.minz)
         );
     }
 
@@ -89,6 +90,7 @@ class ConcreteGrid : public Grid
         , m_dim_z{std::move(other.m_dim_z)}
         , m_cells{std::move(other.m_cells)}
         , m_bounds{std::move(other.m_bounds)}
+        , m_at_insert_guard{}
     {
     }
 
@@ -99,6 +101,7 @@ class ConcreteGrid : public Grid
         , m_dim_z{other.m_dim_z}
         , m_cells{other.m_cells}
         , m_bounds{other.m_bounds}
+        , m_at_insert_guard{}
     {
     }
 
@@ -145,7 +148,9 @@ class ConcreteGrid : public Grid
             {
                 return it->second;
             }
-            return m_cells.try_emplace(index, contained_type_t<cell_t>{}).first->second;
+            // TODO: make this "region based", it creates contention point...
+            std::lock_guard<std::mutex> lock{m_at_insert_guard};
+            return m_cells.emplace(index, contained_type_t<cell_t>{}).first->second;
         }
     }
 
@@ -251,13 +256,26 @@ class ConcreteGrid : public Grid
         return m_bounds;
     }
 
+    auto begin() -> ContainerT::iterator { return m_cells.begin(); }
+
+    auto end() -> ContainerT::iterator { return m_cells.end(); }
+
+    auto cbegin() const -> ContainerT::const_iterator { return m_cells.cbegin(); }
+
+    auto cend() const -> ContainerT::const_iterator { return m_cells.cend(); }
+
+    auto begin() const -> ContainerT::const_iterator { return m_cells.begin(); }
+
+    auto end() const -> ContainerT::const_iterator { return m_cells.end(); }
+
   private:
-    double      m_cell_size;
-    Index       m_dim_x;
-    Index       m_dim_y;
-    Index       m_dim_z;
-    container_t m_cells;
-    Bounds      m_bounds;
+    double     m_cell_size;
+    Index      m_dim_x;
+    Index      m_dim_y;
+    Index      m_dim_z;
+    ContainerT m_cells;
+    Bounds     m_bounds;
+    std::mutex m_at_insert_guard;
 
     static auto adjust_dim_to_grid(double distance, double cell_size) -> Index
     {
@@ -289,8 +307,13 @@ Bounds:
 template <typename T>
 using DenseGrid = ConcreteGrid<T, std::vector<T>>;
 
+// NOTE: We use `unordered_map` as a "sparse" array.
+// Our keys are literally just array indexes, there's no need to hash them
+// since every index is, by definition, unique.
+using IndexHash = std::identity;
+
 template <typename T>
-using SparseGrid = ConcreteGrid<T, std::map<Index, T>>;
+using SparseGrid = ConcreteGrid<T, std::unordered_map<Index, T, IndexHash>>;
 
 using DenseGridU32i  = DenseGrid<std::uint32_t>;
 using SparseGridU32i = SparseGrid<std::uint32_t>;
