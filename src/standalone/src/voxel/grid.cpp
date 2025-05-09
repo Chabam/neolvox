@@ -31,9 +31,9 @@ auto Grid::traversal(
     constexpr double inf = std::numeric_limits<double>::infinity();
 
     const Bounds bounds    = grid.bounds();
-    const Index dim_x     = grid.dim_x();
-    const Index dim_y     = grid.dim_y();
-    const Index dim_z     = grid.dim_z();
+    const Index  dim_x     = grid.dim_x();
+    const Index  dim_y     = grid.dim_y();
+    const Index  dim_z     = grid.dim_z();
     const double cell_size = grid.cell_size();
 
     const Point  beam_origin    = beam.origin();
@@ -113,10 +113,13 @@ auto Grid::traversal(
         delta.z()
     );
 
-    double distance = 0.;
+    double distance          = 0.;
+    double distance_in_voxel = 0.;
     do
     {
-        callback({current_voxel_x, current_voxel_y, current_voxel_z}, distance);
+        Index3D prev_idx{current_voxel_x, current_voxel_y, current_voxel_z};
+
+        double prev_distance = distance;
         if (t_max.x() < t_max.y())
         {
             if (t_max.x() < t_max.z())
@@ -146,6 +149,16 @@ auto Grid::traversal(
                 t_max.z() += delta.z();
                 current_voxel_z += step.z();
             }
+        }
+        distance_in_voxel = distance - prev_distance;
+
+        if (prev_distance + distance_in_voxel > max_distance)
+        {
+            callback(prev_idx, max_distance - prev_distance);
+        }
+        else
+        {
+            callback(prev_idx, distance_in_voxel);
         }
     } while (current_voxel_x >= 0 && current_voxel_y >= 0 && current_voxel_z >= 0 &&
              current_voxel_x < dim_x && current_voxel_y < dim_y && current_voxel_z < dim_z &&
