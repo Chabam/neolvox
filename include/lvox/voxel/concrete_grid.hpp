@@ -4,7 +4,6 @@
 #include <atomic>
 #include <cmath>
 #include <format>
-#include <map>
 #include <vector>
 
 #include <lvox/logger/logger.hpp>
@@ -53,7 +52,7 @@ class ConcreteGrid : public Grid
         , m_dim_z{ConcreteGrid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
         , m_cells{ConcreteGrid::intialize_container(m_dim_x * m_dim_y * m_dim_z)}
         , m_bounds{bounds}
-        , m_at_insert_guard{}
+        , m_new_value_creation_guard{}
     {
 
         Logger logger{"ConcreteGrid"};
@@ -90,7 +89,7 @@ class ConcreteGrid : public Grid
         , m_dim_z{std::move(other.m_dim_z)}
         , m_cells{std::move(other.m_cells)}
         , m_bounds{std::move(other.m_bounds)}
-        , m_at_insert_guard{}
+        , m_new_value_creation_guard{}
     {
     }
 
@@ -101,7 +100,7 @@ class ConcreteGrid : public Grid
         , m_dim_z{other.m_dim_z}
         , m_cells{other.m_cells}
         , m_bounds{other.m_bounds}
-        , m_at_insert_guard{}
+        , m_new_value_creation_guard{}
     {
     }
 
@@ -148,8 +147,7 @@ class ConcreteGrid : public Grid
             {
                 return it->second;
             }
-            // TODO: make this "region based", it creates contention point...
-            std::lock_guard<std::mutex> lock{m_at_insert_guard};
+            std::lock_guard<std::mutex> lock{m_new_value_creation_guard};
             return m_cells.emplace(index, contained_type_t<cell_t>{}).first->second;
         }
     }
@@ -275,7 +273,7 @@ class ConcreteGrid : public Grid
     Index      m_dim_z;
     ContainerT m_cells;
     Bounds     m_bounds;
-    std::mutex m_at_insert_guard;
+    std::mutex m_new_value_creation_guard;
 
     auto coords_to_index(Index x, Index y, Index z) const -> Index
     {
@@ -309,6 +307,7 @@ Bounds:
 )";
 };
 
+// Not really used, only in tests
 template <typename T>
 using DenseGrid = ConcreteGrid<T, std::vector<T>>;
 
@@ -320,11 +319,8 @@ using IndexHash = std::identity;
 template <typename T>
 using SparseGrid = ConcreteGrid<T, std::unordered_map<Index, T, IndexHash>>;
 
-using DenseGridU32i  = DenseGrid<std::uint32_t>;
-using SparseGridU32i = SparseGrid<std::uint32_t>;
-
-using ThreadSafeDenseGridU32i  = DenseGrid<std::atomic_uint32_t>;
-using ThreadSafeSparseGridU32i = SparseGrid<std::atomic_uint32_t>;
+using GridU32 = SparseGrid<std::atomic_uint32_t>;
+using GridD   = SparseGrid<std::atomic<double>>;
 
 } // namespace lvox
 

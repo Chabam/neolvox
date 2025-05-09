@@ -266,14 +266,15 @@ auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const Lv
 
         logger.info("Compute before {}/{}", i + 1, scans.size());
 
-        // TODO: use GPS time
+        // TODO: preload a spherical region around scanner to avoid contention with the grid
+        // TODO: use GPS time for the scan position
         compute_before(scan->get_points(), scan->get_scan_position({}), before, options);
 
         logger.info("Computing PAD", scans.size());
-        // for (const auto& [idx, value] : before)
-        // {
-        //     pad_compute_method(theoriticals.at(idx), hits.at(idx), value);
-        // }
+        for (const auto& [idx, value] : *before)
+        {
+            pad_compute_method(theoriticals->at(idx), hits->at(idx), value);
+        }
     }
 
     return pda_result;

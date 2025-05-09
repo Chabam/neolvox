@@ -21,7 +21,7 @@ struct LvoxOptions
 };
 
 using PadResult   = lvox::SparseGrid<std::atomic<double>>;
-using LVoxGrid    = ThreadSafeSparseGridU32i;
+using LVoxGrid    = GridU32;
 using LVoxGridPtr = std::unique_ptr<LVoxGrid>;
 
 auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const LvoxOptions& options)
