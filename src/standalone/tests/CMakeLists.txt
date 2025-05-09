@@ -6,7 +6,7 @@ target_sources(lvox_tests
     PRIVATE
     utils/utils.cpp
     scanner/test_spherical_scanner.cpp
-    voxel/test_grid_at.cpp
+    voxel/test_grid_access.cpp
     voxel/test_grid_cell_count.cpp
     voxel/test_grid_create_from_point_cloud.cpp
     voxel/test_grid_creation_from_box3d.cpp

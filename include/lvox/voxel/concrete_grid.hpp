@@ -4,7 +4,7 @@
 #include <atomic>
 #include <cmath>
 #include <format>
-#include <map>
+#include <mutex>
 #include <vector>
 
 #include <lvox/logger/logger.hpp>
@@ -51,9 +51,9 @@ class ConcreteGrid : public Grid
         , m_dim_x{ConcreteGrid::adjust_dim_to_grid(bounds.maxx - bounds.minx, cell_size)}
         , m_dim_y{ConcreteGrid::adjust_dim_to_grid(bounds.maxy - bounds.miny, cell_size)}
         , m_dim_z{ConcreteGrid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
-        , m_cells{ConcreteGrid::intialize_container(m_dim_x * m_dim_y * m_dim_z)}
+        , m_cell_count{m_dim_x * m_dim_y * m_dim_z}
+        , m_shards{initialize_shards(m_cell_count)}
         , m_bounds{bounds}
-        , m_at_insert_guard{}
     {
 
         Logger logger{"ConcreteGrid"};
@@ -88,22 +88,12 @@ class ConcreteGrid : public Grid
         , m_dim_x{std::move(other.m_dim_x)}
         , m_dim_y{std::move(other.m_dim_y)}
         , m_dim_z{std::move(other.m_dim_z)}
-        , m_cells{std::move(other.m_cells)}
+        , m_shards{std::move(other.m_shards)}
         , m_bounds{std::move(other.m_bounds)}
-        , m_at_insert_guard{}
     {
     }
 
-    ConcreteGrid(const ConcreteGrid& other)
-        : m_cell_size{other.m_cell_size}
-        , m_dim_x{other.m_dim_x}
-        , m_dim_y{other.m_dim_y}
-        , m_dim_z{other.m_dim_z}
-        , m_cells{other.m_cells}
-        , m_bounds{other.m_bounds}
-        , m_at_insert_guard{}
-    {
-    }
+    ConcreteGrid(const ConcreteGrid& other) = delete;
 
     auto operator=(ConcreteGrid&& other) -> ConcreteGrid&
     {
@@ -111,59 +101,48 @@ class ConcreteGrid : public Grid
         m_dim_x     = std::move(other.m_dim_x);
         m_dim_y     = std::move(other.m_dim_y);
         m_dim_z     = std::move(other.m_dim_z);
-        m_cells     = std::move(other.m_cells);
+        m_shards    = std::move(other.m_shards);
         m_bounds    = std::move(other.m_bounds);
 
         return *this;
     }
 
-    auto operator=(const ConcreteGrid& other) -> ConcreteGrid&
-    {
-        m_cell_size = other.m_cell_size;
-        m_dim_x     = other.m_dim_x;
-        m_dim_y     = other.m_dim_y;
-        m_dim_z     = other.m_dim_z;
-        m_cells     = other.m_cells;
-        m_bounds    = other.m_bounds;
+    auto operator=(const ConcreteGrid& other) -> ConcreteGrid& = delete;
 
-        return *this;
+    auto set_or_append(Index x, Index y, Index z, contained_type_t<cell_t> val) -> void
+    {
+        return set_or_append(coords_to_index(x, y, z), val);
     }
 
-    [[nodiscard]]
-    auto at(Index index) const -> const_cell_ref
+    auto set_or_append(Index index, contained_type_t<cell_t> val) -> void
     {
-        return m_cells.at(index);
-    }
-
-    [[nodiscard]]
-    auto at(Index index) -> cell_ref
-    {
+        std::unique_ptr<Shard>& shard = m_shards[get_shard_index(index)];
         if constexpr (is_dense_container<container_t, cell_t>::value)
         {
-            return m_cells.at(index);
+            shard->m_cells.at(index) += val;
         }
         else
         {
-            if (const auto& it = m_cells.find(index); it != m_cells.end())
+            if (const auto& it = shard->m_cells.find(index); it != shard->m_cells.end())
             {
-                return it->second;
+                it->second += val;
             }
-            // TODO: make this "region based", it creates contention point...
-            std::lock_guard<std::mutex> lock{m_at_insert_guard};
-            return m_cells.emplace(index, contained_type_t<cell_t>{}).first->second;
+
+            std::scoped_lock<std::mutex> lock{shard->m_guard};
+            shard->m_cells.emplace(index, val);
         }
     }
 
     [[nodiscard]]
-    auto at(Index x, Index y, Index z) const -> const_cell_ref
+    auto get(Index x, Index y, Index z) const -> const_cell_ref
     {
-        return at(coords_to_index(x, y, z));
+        return get(coords_to_index(x, y, z));
     }
 
     [[nodiscard]]
-    auto at(Index x, Index y, Index z) -> cell_ref
+    auto get(Index index) const -> const_cell_ref
     {
-        return at(coords_to_index(x, y, z));
+        return m_shards[get_shard_index(index)]->m_cells.at(index);
     }
 
     // NOTE: no bounds check!
@@ -229,7 +208,7 @@ class ConcreteGrid : public Grid
     [[nodiscard]]
     auto cell_count() const -> Index final
     {
-        return dim_x() * dim_y() * dim_z();
+        return m_cell_count;
     }
 
     [[nodiscard]]
@@ -256,26 +235,34 @@ class ConcreteGrid : public Grid
         return m_bounds;
     }
 
-    auto begin() -> ContainerT::iterator { return m_cells.begin(); }
-
-    auto end() -> ContainerT::iterator { return m_cells.end(); }
-
-    auto cbegin() const -> ContainerT::const_iterator { return m_cells.cbegin(); }
-
-    auto cend() const -> ContainerT::const_iterator { return m_cells.cend(); }
-
-    auto begin() const -> ContainerT::const_iterator { return m_cells.begin(); }
-
-    auto end() const -> ContainerT::const_iterator { return m_cells.end(); }
-
   private:
-    double     m_cell_size;
-    Index      m_dim_x;
-    Index      m_dim_y;
-    Index      m_dim_z;
-    ContainerT m_cells;
-    Bounds     m_bounds;
-    std::mutex m_at_insert_guard;
+    struct Shard
+    {
+        std::mutex m_guard;
+        ContainerT m_cells;
+
+        Shard(Index cell_count)
+            : m_guard{}
+            , m_cells{ConcreteGrid::initialize_container(cell_count)}
+        {
+        }
+    };
+
+    using Shards = std::vector<std::unique_ptr<Shard>>;
+
+    using ShardIndex = unsigned int;
+    auto get_shard_index(Index idx) const -> ShardIndex
+    {
+        return std::hash<Index>{}(idx) % m_shards.size();
+    }
+
+    double m_cell_size;
+    Index  m_dim_x;
+    Index  m_dim_y;
+    Index  m_dim_z;
+    Index  m_cell_count;
+    Shards m_shards;
+    Bounds m_bounds;
 
     auto coords_to_index(Index x, Index y, Index z) const -> Index
     {
@@ -287,7 +274,26 @@ class ConcreteGrid : public Grid
         return static_cast<Index>(std::ceil(distance / cell_size));
     }
 
-    static constexpr auto intialize_container(Index size) -> container_t
+    static auto initialize_shards(Index cell_count) -> Shards
+    {
+        const ShardIndex shard_count              = cell_count / 1'000'000;
+        const auto       max_cell_count_per_shard = cell_count / shard_count;
+        Index            assigned_cells           = 0;
+
+        Shards shards{shard_count};
+        for (auto it = shards.begin(); it != shards.end(); it++)
+        {
+            const Index cells_to_assign =
+                std::max(assigned_cells + max_cell_count_per_shard, cell_count - assigned_cells);
+            shards.emplace(it, std::make_unique<Shard>(cells_to_assign));
+
+            assigned_cells += cells_to_assign;
+        }
+
+        return shards;
+    }
+
+    static constexpr auto initialize_container(Index size) -> container_t
     {
         if constexpr (is_dense_container<container_t, cell_t>::value)
         {

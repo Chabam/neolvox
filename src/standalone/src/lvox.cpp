@@ -33,7 +33,6 @@ Point per core  {})",
     // IMPORTANT: must be scoped in order for jthreads to be automatically join
     {
         std::vector<std::jthread> threads;
-        auto                      start_it = points->begin();
         const auto                find_point_in_grid =
             [&logger](
                 const LVoxGridPtr& grid, pdal::PointViewIter start_it, Index points_to_compute
@@ -45,11 +44,12 @@ Point per core  {})",
                     point.getFieldAs<double>(dim::Y),
                     point.getFieldAs<double>(dim::Z),
                 });
-                grid->at(x, y, z) += 1;
+                grid->set_or_append(x, y, z, 1);
             }
             logger.debug("Hits thread finished");
         };
 
+        auto start_it = points->begin();
         for (Index i = 0; i < core_count; ++i)
         {
             const Index points_to_compute = std::min(
@@ -110,7 +110,7 @@ Point per core  {})",
                     Beam{scan_origin, beam_to_point},
                     [&grid](const Index3D& idxs, double t) mutable -> void {
                         const auto [x, y, z] = idxs;
-                        grid->at(x, y, z) += 1;
+                        grid->set_or_append(x, y, z, 1);
                     },
                     beam_to_point.norm()
                 );
@@ -176,7 +176,7 @@ Beams per core  {})",
                     beam,
                     [&grid](const Index3D& idxs, double t) mutable -> void {
                         const auto [x, y, z] = idxs;
-                        grid->at(x, y, z) += 1;
+                        grid->set_or_append(x, y, z, 1);
                     }
                 );
             }
