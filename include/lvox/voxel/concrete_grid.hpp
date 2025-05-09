@@ -276,16 +276,16 @@ class ConcreteGrid : public Grid
 
     static auto initialize_shards(Index cell_count) -> Shards
     {
-        const ShardIndex shard_count              = cell_count / 1'000'000;
+        const ShardIndex shard_count              = std::max(1UL, cell_count / 1'000'000);
         const auto       max_cell_count_per_shard = cell_count / shard_count;
         Index            assigned_cells           = 0;
 
         Shards shards{shard_count};
-        for (auto it = shards.begin(); it != shards.end(); it++)
+        for (ShardIndex i = 0; i < shard_count; ++i)
         {
             const Index cells_to_assign =
                 std::max(assigned_cells + max_cell_count_per_shard, cell_count - assigned_cells);
-            shards.emplace(it, std::make_unique<Shard>(cells_to_assign));
+            shards[i] = std::make_unique<Shard>(cells_to_assign);
 
             assigned_cells += cells_to_assign;
         }
@@ -326,11 +326,7 @@ using IndexHash = std::identity;
 template <typename T>
 using SparseGrid = ConcreteGrid<T, std::unordered_map<Index, T, IndexHash>>;
 
-using DenseGridU32i  = DenseGrid<std::uint32_t>;
-using SparseGridU32i = SparseGrid<std::uint32_t>;
-
-using ThreadSafeDenseGridU32i  = DenseGrid<std::atomic_uint32_t>;
-using ThreadSafeSparseGridU32i = SparseGrid<std::atomic_uint32_t>;
+using GridU32 = SparseGrid<std::atomic_uint32_t>;
 
 } // namespace lvox
 

@@ -9,7 +9,7 @@ TYPED_TEST(VoxelGridTests, access)
 
     lvox::Bounds bounds = create_bounds(dim_x, dim_y, dim_z);
 
-    lvox::DenseGridU32i grid{bounds, cell_size};
+    typename TestFixture::grid_t grid{bounds, cell_size};
 
     for (lvox::Index x = 0; x < dim_x; x++)
     {
