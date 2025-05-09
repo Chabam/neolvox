@@ -155,15 +155,15 @@ class ConcreteGrid : public Grid
     }
 
     [[nodiscard]]
-    auto at(Index idx_x, Index idx_y, Index idx_z) const -> const_cell_ref
+    auto at(Index x, Index y, Index z) const -> const_cell_ref
     {
-        return at(idx_x + (idx_y * m_dim_x) + (idx_z * m_dim_x * m_dim_y));
+        return at(coords_to_index(x, y, z));
     }
 
     [[nodiscard]]
-    auto at(Index idx_x, Index idx_y, Index idx_z) -> cell_ref
+    auto at(Index x, Index y, Index z) -> cell_ref
     {
-        return at(idx_x + (idx_y * m_dim_x) + (idx_z * m_dim_x * m_dim_y));
+        return at(coords_to_index(x, y, z));
     }
 
     // NOTE: no bounds check!
@@ -276,6 +276,11 @@ class ConcreteGrid : public Grid
     ContainerT m_cells;
     Bounds     m_bounds;
     std::mutex m_at_insert_guard;
+
+    auto coords_to_index(Index x, Index y, Index z) const -> Index
+    {
+        return x + (y * m_dim_x) + (z * m_dim_x * m_dim_y);
+    }
 
     static auto adjust_dim_to_grid(double distance, double cell_size) -> Index
     {
