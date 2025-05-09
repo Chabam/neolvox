@@ -12,21 +12,21 @@ namespace lvox
 
 auto compute_hits(
     const std::shared_ptr<lvox::Scan>& scan, const Bounds bounds, const LvoxOptions& options
-) -> lvox::ThreadSafeDenseGridU32i
+) -> lvox::ThreadSafeSparseGridU32i
 {
     using dim = pdal::Dimension::Id;
     Logger logger{"Hits"};
 
-    ThreadSafeDenseGridU32i hits{bounds, options.voxel_size};
+    ThreadSafeSparseGridU32i hits{bounds, options.voxel_size};
 
-    const auto   core_count      = std::thread::hardware_concurrency();
-    const auto&  points          = scan->get_points();
+    const auto  core_count      = std::thread::hardware_concurrency();
+    const auto& points          = scan->get_points();
     const Index point_count     = points->size();
     const Index points_per_core = std::ceil(static_cast<float>(point_count) / core_count);
 
     logger.debug(
         R"(
-Point count      {}
+Core count      {}
 Point count     {}
 Point per core  {})",
         core_count,
@@ -39,9 +39,9 @@ Point per core  {})",
         std::vector<std::jthread> threads;
         auto                      start_it           = points->begin();
         const auto                find_point_in_grid = [&logger](
-                                            ThreadSafeDenseGridU32i& grid,
-                                            pdal::PointViewIter      start_it,
-                                            Index                   points_to_compute
+                                            ThreadSafeSparseGridU32i& grid,
+                                            pdal::PointViewIter       start_it,
+                                            Index                     points_to_compute
                                         ) {
             for (const auto& point : std::ranges::subrange(start_it, start_it + points_to_compute))
             {
@@ -70,26 +70,26 @@ Point per core  {})",
 
 auto compute_before(
     const std::shared_ptr<lvox::Scan>& scan, const Bounds bounds, const LvoxOptions& options
-) -> lvox::ThreadSafeDenseGridU32i
+) -> lvox::ThreadSafeSparseGridU32i
 {
-    using before_result = ThreadSafeDenseGridU32i;
+    using before_result = ThreadSafeSparseGridU32i;
     using dim           = pdal::Dimension::Id;
 
-    ThreadSafeDenseGridU32i before{bounds, options.voxel_size};
+    ThreadSafeSparseGridU32i before{bounds, options.voxel_size};
 
     Logger logger{"Before"};
 
     // TODO: use GPS time
     Point scan_origin = scan->get_scan_position({});
 
-    const auto   core_count      = std::thread::hardware_concurrency();
-    const auto&  points          = scan->get_points();
+    const auto  core_count      = std::thread::hardware_concurrency();
+    const auto& points          = scan->get_points();
     const Index point_count     = points->size();
     const Index points_per_core = std::ceil(static_cast<float>(point_count) / core_count);
 
     logger.debug(
         R"(
-Point count      {}
+Core count      {}
 Point count     {}
 Point per core  {})",
         core_count,
@@ -101,10 +101,10 @@ Point per core  {})",
     {
         std::vector<std::jthread> threads;
         const auto                compute_ray_before = [&logger](
-                                            ThreadSafeDenseGridU32i& grid,
-                                            pdal::PointViewIter      start_it,
-                                            const Point&             scan_origin,
-                                            Index                   points_to_compute
+                                            ThreadSafeSparseGridU32i& grid,
+                                            pdal::PointViewIter       start_it,
+                                            const Point&              scan_origin,
+                                            Index                     points_to_compute
                                         ) -> void {
             for (const auto& point : std::ranges::subrange(start_it, start_it + points_to_compute))
             {
@@ -153,17 +153,17 @@ Point per core  {})",
 
 auto compute_theoriticals(
     const std::shared_ptr<lvox::Scan>& scan, const Bounds bounds, const LvoxOptions& options
-) -> lvox::ThreadSafeDenseGridU32i
+) -> lvox::ThreadSafeSparseGridU32i
 {
     using dim = pdal::Dimension::Id;
 
     using dim = pdal::Dimension::Id;
     Logger logger{"Compute theoriticals"};
 
-    ThreadSafeDenseGridU32i theoriticals{bounds, options.voxel_size};
+    ThreadSafeSparseGridU32i theoriticals{bounds, options.voxel_size};
 
-    const auto   core_count     = std::thread::hardware_concurrency();
-    const auto&  beams          = scan->get_beams();
+    const auto  core_count     = std::thread::hardware_concurrency();
+    const auto& beams          = scan->get_beams();
     const Index beam_count     = beams.size();
     const Index beams_per_core = std::ceil(static_cast<float>(beam_count) / core_count);
 
@@ -181,20 +181,16 @@ Beams per core  {})",
     {
         std::vector<std::jthread> threads;
         const auto                compute_rays_from_scanner = [&logger](
-                                                   ThreadSafeDenseGridU32i&          grid,
+                                                   ThreadSafeSparseGridU32i&         grid,
                                                    std::vector<Beam>::const_iterator start_it,
                                                    Index beams_to_compute
                                                ) -> void {
             for (const auto& beam : std::ranges::subrange(start_it, start_it + beams_to_compute))
             {
-                Grid::traversal(
-                    grid,
-                    beam,
-                    [&grid](const Index3D& idxs, double t) mutable -> void {
-                        const auto [x, y, z] = idxs;
-                        grid.at(x, y, z) += 1;
-                    }
-                );
+                Grid::traversal(grid, beam, [&grid](const Index3D& idxs, double t) mutable -> void {
+                    const auto [x, y, z] = idxs;
+                    grid.at(x, y, z) += 1;
+                });
             }
 
             logger.debug("Theoritical thread finished");
@@ -268,8 +264,8 @@ auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const Lv
     PadResult pda_result{total_bounds, options.voxel_size};
     for (Index i = 0; i < scans.size(); i++)
     {
-        const auto&             scan = scans[i];
-        ThreadSafeDenseGridU32i theoriticals;
+        const auto&              scan = scans[i];
+        ThreadSafeSparseGridU32i theoriticals;
 
         if (options.simulated_scanner)
         {
@@ -278,18 +274,19 @@ auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const Lv
         }
         else
         {
-            theoriticals = ThreadSafeDenseGridU32i{total_bounds, options.voxel_size};
+            theoriticals = ThreadSafeSparseGridU32i{total_bounds, options.voxel_size};
         }
 
         logger.info("Compute hits {}/{}", i + 1, scans.size());
-        ThreadSafeDenseGridU32i hits{compute_hits(scan, total_bounds, options)};
+        ThreadSafeSparseGridU32i hits{compute_hits(scan, total_bounds, options)};
 
         logger.info("Compute before {}/{}", i + 1, scans.size());
-        ThreadSafeDenseGridU32i before{compute_before(scan, total_bounds, options)};
+        ThreadSafeSparseGridU32i before{compute_before(scan, total_bounds, options)};
 
-        for (Index i = 0; i < theoriticals.cell_count(); ++i)
+        logger.info("Computing PAD", scans.size());
+        for (const auto& [idx, value] : before)
         {
-            pda_result.at(i) += pad_compute_method(theoriticals.at(i), hits.at(i), before.at(i));
+            pad_compute_method(theoriticals.at(idx), hits.at(idx), value);
         }
     }
 
