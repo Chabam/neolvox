@@ -20,11 +20,12 @@ struct LvoxOptions
     } pad_computation_method = PADMethod::BiasCorrectedMaximumLikelihoodEstimator;
 };
 
-using PadResult = lvox::SparseGrid<double>;
+using PadResult   = lvox::SparseGrid<std::atomic<double>>;
+using LVoxGrid    = ThreadSafeSparseGridU32i;
+using LVoxGridPtr = std::unique_ptr<LVoxGrid>;
 
-auto compute_pad(
-    const std::vector<std::shared_ptr<lvox::Scan>>& scans, const LvoxOptions& options
-) -> PadResult;
+auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const LvoxOptions& options)
+    -> PadResult;
 
 } // namespace lvox
 
