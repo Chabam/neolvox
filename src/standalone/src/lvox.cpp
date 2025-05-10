@@ -1,3 +1,4 @@
+#include <ranges>
 #include <thread>
 
 #include <pdal/Dimension.hpp>
@@ -10,61 +11,11 @@
 namespace lvox
 {
 
-auto compute_hits(const PointCloudView& points, LVoxGridPtr& grid, const LvoxOptions& options)
-    -> void
-{
-    using dim = pdal::Dimension::Id;
-    Logger logger{"Hits"};
-
-    const auto  core_count      = std::thread::hardware_concurrency();
-    const Index point_count     = points->size();
-    const Index points_per_core = std::ceil(static_cast<float>(point_count) / core_count);
-
-    logger.debug(
-        R"(
-Core count      {}
-Point count     {}
-Point per core  {})",
-        core_count,
-        point_count,
-        points_per_core
-    );
-
-    // IMPORTANT: must be scoped in order for jthreads to be automatically join
-    {
-        std::vector<std::jthread> threads;
-        auto                      start_it = points->begin();
-        const auto                find_point_in_grid =
-            [&logger](
-                const LVoxGridPtr& grid, pdal::PointViewIter start_it, Index points_to_compute
-            ) -> void {
-            for (const auto& point : std::ranges::subrange(start_it, start_it + points_to_compute))
-            {
-                const auto [x, y, z] = grid->index_of_point({
-                    point.getFieldAs<double>(dim::X),
-                    point.getFieldAs<double>(dim::Y),
-                    point.getFieldAs<double>(dim::Z),
-                });
-                grid->at(x, y, z) += 1;
-            }
-            logger.debug("Hits thread finished");
-        };
-
-        for (Index i = 0; i < core_count; ++i)
-        {
-            const Index points_to_compute = std::min(
-                points_per_core, static_cast<Index>(std::distance(start_it, points->end()))
-            );
-            threads.emplace_back(find_point_in_grid, std::ref(grid), start_it, points_to_compute);
-            start_it += points_to_compute;
-        }
-    }
-}
-
-auto compute_before(
+auto compute_rays_count_and_length(
     const PointCloudView& points,
     const Point&          scan_origin,
-    const LVoxGridPtr&    grid,
+    const CountGridPtr&   counts,
+    const LengthGridPtr&  lengths,
     const LvoxOptions&    options
 ) -> void
 {
@@ -72,16 +23,15 @@ auto compute_before(
 
     Logger logger{"Before"};
 
-    const auto  core_count      = std::thread::hardware_concurrency();
     const Index point_count     = points->size();
-    const Index points_per_core = std::ceil(static_cast<float>(point_count) / core_count);
+    const Index points_per_core = std::ceil(static_cast<float>(point_count) / options.job_limit);
 
     logger.debug(
         R"(
 Core count      {}
 Point count     {}
 Point per core  {})",
-        core_count,
+        options.job_limit,
         point_count,
         points_per_core
     );
@@ -90,27 +40,29 @@ Point per core  {})",
     {
         std::vector<std::jthread> threads;
         const auto                compute_ray_before = [&logger](
-                                            const LVoxGridPtr&  grid,
-                                            pdal::PointViewIter start_it,
-                                            const Point&        scan_origin,
-                                            Index               points_to_compute
+                                            const CountGridPtr&  counts,
+                                            const LengthGridPtr& lengths,
+                                            const Point&         scan_origin,
+                                            auto&&               points
                                         ) -> void {
-            for (const auto& point : std::ranges::subrange(start_it, start_it + points_to_compute))
+            for (const auto& point : points)
             {
                 const Point pt{
-                    point.getFieldAs<double>(dim::X),
-                    point.getFieldAs<double>(dim::Y),
-                    point.getFieldAs<double>(dim::Z)
+                    point.template getFieldAs<double>(dim::X),
+                    point.template getFieldAs<double>(dim::Y),
+                    point.template getFieldAs<double>(dim::Z)
                 };
 
                 const Vector beam_to_point{scan_origin - pt};
 
                 Grid::traversal(
-                    *grid,
+                    *counts,
                     Beam{scan_origin, beam_to_point},
-                    [&grid](const Index3D& idxs, double t) mutable -> void {
+                    [&counts,
+                     &lengths](const Index3D& idxs, double distance_in_voxel) mutable -> void {
                         const auto [x, y, z] = idxs;
-                        grid->at(x, y, z) += 1;
+                        counts->at(x, y, z) += 1;
+                        lengths->at(x, y, z) += 1;
                     },
                     beam_to_point.norm()
                 );
@@ -119,27 +71,24 @@ Point per core  {})",
             logger.debug("Before thread finished");
         };
 
-        auto start_it = points->begin();
-        for (Index i = 0; i < core_count; ++i)
+        for (auto chunk : *points | std::views::chunk(points_per_core))
         {
-            const Index points_to_compute = std::min(
-                points_per_core, static_cast<Index>(std::distance(start_it, points->end()))
-            );
-
             threads.emplace_back(
                 compute_ray_before,
-                std::ref(grid),
-                start_it,
+                std::ref(counts),
+                std::ref(lengths),
                 std::ref(scan_origin),
-                points_to_compute
+                std::move(chunk)
             );
-            start_it += points_to_compute;
         }
     }
 }
 
 auto compute_theoriticals(
-    const std::vector<Beam>& beams, const LVoxGridPtr& grid, const LvoxOptions& options
+    const std::vector<Beam>& beams,
+    const CountGridPtr&      counts,
+    const LengthGridPtr&     lengths,
+    const LvoxOptions&       options
 ) -> void
 {
     using dim = pdal::Dimension::Id;
@@ -147,16 +96,15 @@ auto compute_theoriticals(
     using dim = pdal::Dimension::Id;
     Logger logger{"Compute theoriticals"};
 
-    const auto  core_count     = std::thread::hardware_concurrency();
     const Index beam_count     = beams.size();
-    const Index beams_per_core = std::ceil(static_cast<float>(beam_count) / core_count);
+    const Index beams_per_core = std::ceil(static_cast<float>(beam_count) / options.job_limit);
 
     logger.debug(
         R"(
 Core count      {}
 Beams count     {}
 Beams per core  {})",
-        core_count,
+        options.job_limit,
         beam_count,
         beams_per_core
     );
@@ -164,56 +112,47 @@ Beams per core  {})",
     // IMPORTANT: must be scoped in order for jthreads to be automatically join
     {
         std::vector<std::jthread> threads;
-        const auto                compute_rays_from_scanner = [&logger](
-                                                   const LVoxGridPtr&                grid,
-                                                   std::vector<Beam>::const_iterator start_it,
-                                                   Index beams_to_compute
-                                               ) -> void {
-            for (const auto& beam : std::ranges::subrange(start_it, start_it + beams_to_compute))
+        const auto                compute_rays_from_scanner =
+            [&logger](
+                const CountGridPtr& counts, const LengthGridPtr& lengths, auto&& beams
+            ) -> void {
+            for (const auto& beam : beams)
             {
                 Grid::traversal(
-                    *grid,
+                    *counts,
                     beam,
-                    [&grid](const Index3D& idxs, double t) mutable -> void {
+                    [&counts,
+                     &lengths](const Index3D& idxs, double distance_in_voxel) mutable -> void {
                         const auto [x, y, z] = idxs;
-                        grid->at(x, y, z) += 1;
+                        counts->at(x, y, z) += 1;
+                        lengths->at(x, y, z) += distance_in_voxel;
                     }
                 );
             }
 
             logger.debug("Theoritical thread finished");
         };
-        auto start_it = beams.begin();
-        for (Index i = 0; i < core_count; ++i)
+        for (const auto chunk : beams | std::views::chunk(beams_per_core))
         {
-            const Index beams_to_compute =
-                std::min(beams_per_core, static_cast<Index>(std::distance(start_it, beams.end())));
             threads.emplace_back(
-                compute_rays_from_scanner, std::ref(grid), start_it, beams_to_compute
+                compute_rays_from_scanner, std::ref(counts), std::ref(lengths), chunk
             );
-
-            start_it += beams_to_compute;
         }
     }
 }
 
-auto compute_beer_lambert(std::uint32_t theoriticals, std::uint32_t hits, std::uint32_t before)
-    -> double
+auto compute_beer_lambert(std::uint32_t ray_count, double length) -> double
 {
     const auto G = [](double val) -> double {
         return 0.5 * val;
     };
-    const auto N   = theoriticals + before;
-    const auto N_i = hits;
-    const auto RDI = N_i / N;
 
     // TODO: implement
     return 0.;
 }
 
-auto compute_bias_corrected_maximum_likelihood_estimator(
-    std::uint32_t theoriticals, std::uint32_t hits, std::uint32_t before
-) -> double
+auto compute_bias_corrected_maximum_likelihood_estimator(std::uint32_t ray_count, double length)
+    -> double
 {
     // TODO: implement
     return 0.;
@@ -234,7 +173,7 @@ auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const Lv
         total_bounds.grow(scan_bounds);
     }
 
-    std::function<double(double, double, double)> pad_compute_method;
+    std::function<double(Index, double)> pad_compute_method;
     switch (options.pad_computation_method)
     {
     case LvoxOptions::PADMethod::BeerLambert:
@@ -250,30 +189,68 @@ auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const Lv
     PadResult pda_result{total_bounds, options.voxel_size};
     for (Index i = 0; i < scans.size(); i++)
     {
-        const auto& scan         = scans[i];
-        auto        theoriticals = std::make_unique<LVoxGrid>(total_bounds, options.voxel_size);
-        auto        before       = std::make_unique<LVoxGrid>(total_bounds, options.voxel_size);
-        auto        hits         = std::make_unique<LVoxGrid>(total_bounds, options.voxel_size);
+        const auto& scan    = scans[i];
+        auto        lengths = std::make_unique<LengthGrid>(total_bounds, options.voxel_size);
+        auto        counts  = std::make_unique<CountGrid>(total_bounds, options.voxel_size);
 
         if (options.simulated_scanner)
         {
             logger.info("Compute theoriticals {}/{}", i + 1, scans.size());
-            compute_theoriticals(scan->get_beams(), theoriticals, options);
+            compute_theoriticals(scan->get_beams(), counts, lengths, options);
         }
-
-        logger.info("Compute hits {}/{}", i + 1, scans.size());
-        compute_hits(scan->get_points(), hits, options);
 
         logger.info("Compute before {}/{}", i + 1, scans.size());
 
         // TODO: preload a spherical region around scanner to avoid contention with the grid
         // TODO: use GPS time for the scan position
-        compute_before(scan->get_points(), scan->get_scan_position({}), before, options);
+        compute_rays_count_and_length(
+            scan->get_points(), scan->get_scan_position({}), counts, lengths, options
+        );
 
-        logger.info("Computing PAD", scans.size());
-        for (const auto& [idx, value] : *before)
         {
-            pad_compute_method(theoriticals->at(idx), hits->at(idx), value);
+
+            const auto  cells          = std::views::keys(*counts);
+            const auto  cell_count     = std::ranges::distance(cells);
+            const Index cells_per_core = std::ceil(cell_count / options.job_limit);
+
+            logger.info("Computing PAD", scans.size());
+            logger.debug(
+                R"(
+         Core count      {}
+         Beams count     {}
+         Beams per core  {})",
+                options.job_limit,
+                cell_count,
+                cells_per_core
+            );
+            const auto is_under_threshold = [](const auto& ray_count) -> bool {
+                return ray_count < 5;
+            };
+            std::vector<std::jthread> threads;
+
+            const auto process_cells_with_data =
+                [&logger, &is_under_threshold, &pad_compute_method](
+                    const CountGridPtr&       counts,
+                    const LengthGridPtr&      lengths,
+                    std::ranges::range auto&& idx_range
+                ) -> void {
+                for (auto&& idx : idx_range)
+                {
+                    const auto& ray_count = counts->at(idx);
+                    if (is_under_threshold(ray_count))
+                        continue;
+
+                    pad_compute_method(ray_count, lengths->at(idx));
+                }
+                logger.debug("Compute PAD job finished");
+            };
+
+            for (auto&& chunk : cells | std::views::chunk(cells_per_core))
+            {
+                threads.emplace_back(
+                    process_cells_with_data, std::ref(counts), std::ref(lengths), std::move(chunk)
+                );
+            }
         }
     }
 
