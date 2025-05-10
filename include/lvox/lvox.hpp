@@ -1,8 +1,9 @@
 #ifndef LVOX_LVOX_HPP
 #define LVOX_LVOX_HPP
 
-#include <lvox/voxel/concrete_grid.hpp>
+#include <thread>
 
+#include <lvox/voxel/concrete_grid.hpp>
 namespace lvox
 {
 
@@ -12,6 +13,7 @@ struct LvoxOptions
 {
     double voxel_size        = .5;
     bool   simulated_scanner = false;
+    int    job_limit         = std::thread::hardware_concurrency();
 
     enum class PADMethod
     {
@@ -20,9 +22,14 @@ struct LvoxOptions
     } pad_computation_method = PADMethod::BiasCorrectedMaximumLikelihoodEstimator;
 };
 
-using PadResult   = lvox::SparseGrid<std::atomic<double>>;
-using LVoxGrid    = GridU32;
-using LVoxGridPtr = std::unique_ptr<LVoxGrid>;
+using PadResult  = lvox::SparseGrid<std::atomic<double>>;
+using CountGrid  = GridU32;
+using LengthGrid = GridD;
+
+template <typename Grid>
+using GridPtr       = std::unique_ptr<Grid>;
+using CountGridPtr  = GridPtr<CountGrid>;
+using LengthGridPtr = GridPtr<LengthGrid>;
 
 auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const LvoxOptions& options)
     -> PadResult;

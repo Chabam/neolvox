@@ -37,10 +37,12 @@ template <typename T, std::ranges::range ContainerT>
 class ConcreteGrid : public Grid
 {
   public:
-    using cell_t         = T;
-    using const_cell_ref = const cell_t&;
-    using cell_ref       = cell_t&;
-    using container_t    = ContainerT;
+    using cell_t           = T;
+    using const_cell_ref   = const cell_t&;
+    using cell_ref         = cell_t&;
+    using container_t      = ContainerT;
+    using iterator_t       = ContainerT::iterator;
+    using const_iterator_t = ContainerT::const_iterator;
 
     ConcreteGrid()  = default;
     ~ConcreteGrid() = default;
@@ -254,17 +256,17 @@ class ConcreteGrid : public Grid
         return m_bounds;
     }
 
-    auto begin() -> ContainerT::iterator { return m_cells.begin(); }
+    auto begin() -> iterator_t { return m_cells.begin(); }
 
-    auto end() -> ContainerT::iterator { return m_cells.end(); }
+    auto end() -> iterator_t { return m_cells.end(); }
 
-    auto cbegin() const -> ContainerT::const_iterator { return m_cells.cbegin(); }
+    auto cbegin() const -> const_iterator_t { return m_cells.cbegin(); }
 
-    auto cend() const -> ContainerT::const_iterator { return m_cells.cend(); }
+    auto cend() const -> const_iterator_t { return m_cells.cend(); }
 
-    auto begin() const -> ContainerT::const_iterator { return m_cells.begin(); }
+    auto begin() const -> const_iterator_t { return m_cells.begin(); }
 
-    auto end() const -> ContainerT::const_iterator { return m_cells.end(); }
+    auto end() const -> const_iterator_t { return m_cells.end(); }
 
   private:
     double     m_cell_size;
