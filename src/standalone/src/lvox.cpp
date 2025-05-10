@@ -13,21 +13,21 @@ namespace lvox
 
 struct LvoxComputeData
 {
-    CountGridPtr                m_counts;
-    LengthGridPtr               m_lengths;
-    std::optional<CountGridPtr> m_hits;
+    CountGrid                m_counts;
+    LengthGrid               m_lengths;
+    std::optional<CountGrid> m_hits;
 };
 
 auto compute_rays_count_and_length(
-    const PointCloudView&  points,
-    const Point&           scan_origin,
-    const LvoxComputeData& data,
-    const LvoxOptions&     options
+    const PointCloudView& points,
+    const Point&          scan_origin,
+    LvoxComputeData&      data,
+    const LvoxOptions&    options
 ) -> void
 {
     using dim = pdal::Dimension::Id;
 
-    Logger logger{"Before"};
+    Logger logger{"Compute ray counts and length"};
 
     const Index point_count     = points->size();
     const Index points_per_core = std::ceil(static_cast<float>(point_count) / options.job_limit);
@@ -45,10 +45,8 @@ Point per core  {})",
     // IMPORTANT: must be scoped in order for jthreads to be automatically join
     {
         std::vector<std::jthread> threads;
-        const auto                compute_ray_before =
-            [&logger](
-                const LvoxComputeData& data, const Point& scan_origin, auto&& points
-            ) -> void {
+        const auto                trace_points_from_scanner =
+            [&logger](LvoxComputeData& data, const Point& scan_origin, auto&& points) -> void {
             for (const auto& point : points)
             {
                 const Point pt{
@@ -60,35 +58,35 @@ Point per core  {})",
                 const Vector beam_to_point{scan_origin - pt};
 
                 Grid::traversal(
-                    *data.m_counts,
+                    data.m_counts,
                     Beam{scan_origin, beam_to_point},
                     [&data,
                      add_hits = data.m_hits.has_value()](const Grid::VoxelHitInfo& voxel_hit_info
                     ) mutable -> void {
                         const auto [x, y, z] = voxel_hit_info.m_index;
-                        data.m_counts->at(x, y, z) += 1;
-                        data.m_lengths->at(x, y, z) += 1;
-                        if (add_hits)
-                            (*data.m_hits)->at(x, y, z) += 1;
+                        data.m_counts.at(x, y, z) += 1;
+                        data.m_lengths.at(x, y, z) += 1;
+                        if (add_hits && voxel_hit_info.m_is_last_voxel)
+                            (*data.m_hits).at(x, y, z) += 1;
                     },
                     beam_to_point.norm()
                 );
             }
 
-            logger.debug("Before thread finished");
+            logger.debug("thread finished");
         };
 
         for (auto chunk : *points | std::views::chunk(points_per_core))
         {
             threads.emplace_back(
-                compute_ray_before, std::ref(data), std::ref(scan_origin), std::move(chunk)
+                trace_points_from_scanner, std::ref(data), std::ref(scan_origin), std::move(chunk)
             );
         }
     }
 }
 
 auto compute_theoriticals(
-    const std::vector<Beam>& beams, const LvoxComputeData& data, const LvoxOptions& options
+    const std::vector<Beam>& beams, LvoxComputeData& data, const LvoxOptions& options
 ) -> void
 {
     using dim = pdal::Dimension::Id;
@@ -113,21 +111,21 @@ Beams per core  {})",
     {
         std::vector<std::jthread> threads;
         const auto                compute_rays_from_scanner =
-            [&logger](const LvoxComputeData& data, auto&& beams) -> void {
+            [&logger](LvoxComputeData& data, auto&& beams) -> void {
             for (const auto& beam : beams)
             {
                 Grid::traversal(
-                    *data.m_counts,
+                    data.m_counts,
                     beam,
                     [&data](const Grid::VoxelHitInfo& voxel_hit_info) mutable -> void {
                         const auto [x, y, z] = voxel_hit_info.m_index;
-                        data.m_counts->at(x, y, z) += 1;
-                        data.m_lengths->at(x, y, z) += voxel_hit_info.m_distance_in_voxel;
+                        data.m_counts.at(x, y, z) += 1;
+                        data.m_lengths.at(x, y, z) += voxel_hit_info.m_distance_in_voxel;
                     }
                 );
             }
 
-            logger.debug("Theoritical thread finished");
+            logger.debug("thread finished");
         };
         for (const auto chunk : beams | std::views::chunk(beams_per_core))
         {
@@ -136,18 +134,24 @@ Beams per core  {})",
     }
 }
 
-auto compute_beer_lambert(std::uint32_t ray_count, double length) -> double
+auto compute_beer_lambert(const LvoxComputeData& data, const Index& index) -> double
 {
     const auto G = [](double val) -> double {
         return 0.5 * val;
     };
 
-    // TODO: implement
-    return 0.;
+    const CountGrid& hits_grid       = *data.m_hits;
+    const auto       hits            = hits_grid.is_na(index) ? 0 : hits_grid.at(index).load();
+    const auto       ray_count       = data.m_counts.at(index).load();
+    const double     RDI             = hits / static_cast<double>(ray_count);
+    const double     mean_ray_length = data.m_lengths.at(index).load() / ray_count;
+
+    return -(std::log(1. - RDI) / G(mean_ray_length));
 }
 
-auto compute_bias_corrected_maximum_likelihood_estimator(std::uint32_t ray_count, double length)
-    -> double
+auto compute_bias_corrected_maximum_likelihood_estimator(
+    const LvoxComputeData& data, const Index& index
+) -> double
 {
     // TODO: implement
     return 0.;
@@ -168,8 +172,8 @@ auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const Lv
         total_bounds.grow(scan_bounds);
     }
 
-    std::function<double(Index, double)> pad_compute_method;
-    bool                                 needs_hits_computation = false;
+    std::function<double(const LvoxComputeData& data, const Index& index)> pad_compute_method;
+    bool needs_hits_computation = false;
     switch (options.pad_computation_method)
     {
     case LvoxOptions::PADMethod::BeerLambert:
@@ -183,25 +187,25 @@ auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const Lv
         throw std::runtime_error{"Unsupported PAD Computation method provided"};
     }
 
-    PadResult pda_result{total_bounds, options.voxel_size};
-    for (Index i = 0; i < scans.size(); i++)
+    PadResult pad_result{total_bounds, options.voxel_size};
+
+    for (const auto [scan_num, scan] : std::views::enumerate(scans))
     {
-        const auto&     scan = scans[i];
+
         LvoxComputeData data{
-            .m_counts  = std::make_unique<CountGrid>(total_bounds, options.voxel_size),
-            .m_lengths = std::make_unique<LengthGrid>(total_bounds, options.voxel_size),
-            .m_hits    = needs_hits_computation
-                             ? std::make_unique<CountGrid>(total_bounds, options.voxel_size)
-                             : std::optional<CountGridPtr>{},
+            .m_counts  = CountGrid{total_bounds, options.voxel_size},
+            .m_lengths = LengthGrid{total_bounds, options.voxel_size},
+            .m_hits    = needs_hits_computation ? CountGrid{total_bounds, options.voxel_size}
+                                                : std::optional<CountGrid>{},
         };
 
         if (options.simulated_scanner)
         {
-            logger.info("Compute theoriticals {}/{}", i + 1, scans.size());
+            logger.info("Compute theoriticals {}/{}", scan_num + 1, scans.size());
             compute_theoriticals(scan->get_beams(), data, options);
         }
 
-        logger.info("Compute before {}/{}", i + 1, scans.size());
+        logger.info("Compute ray counts and length {}/{}", scan_num + 1, scans.size());
 
         // TODO: preload a spherical region around scanner to avoid contention with the grid
         // TODO: use GPS time for the scan position
@@ -209,50 +213,71 @@ auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const Lv
             scan->get_points(), scan->get_scan_position({}), data, options
         );
 
-        {
+        const auto  cells          = std::views::keys(data.m_counts);
+        const auto  cell_count     = std::ranges::distance(cells);
+        const Index cells_per_core = std::ceil(cell_count / options.job_limit);
 
-            const auto  cells          = std::views::keys(*data.m_counts);
-            const auto  cell_count     = std::ranges::distance(cells);
-            const Index cells_per_core = std::ceil(cell_count / options.job_limit);
+        logger.info("Computing PAD", scans.size());
+        logger.debug(
+            R"(
+Core count      {}
+Cells count     {}
+Cells per core  {})",
+            options.job_limit,
+            cell_count,
+            cells_per_core
+        );
 
-            logger.info("Computing PAD", scans.size());
-            logger.debug(
-                R"(
-         Core count      {}
-         Beams count     {}
-         Beams per core  {})",
-                options.job_limit,
-                cell_count,
-                cells_per_core
-            );
-            const auto is_under_threshold = [](const auto& ray_count) -> bool {
-                return ray_count < 5;
-            };
-            std::vector<std::jthread> threads;
+        const auto is_under_threshold = [](const auto& ray_count) -> bool {
+            return ray_count < 5;
+        };
 
-            const auto process_cells_with_data =
-                [&logger, &is_under_threshold, &pad_compute_method](
-                    const LvoxComputeData& data, std::ranges::range auto&& idx_range
-                ) -> void {
-                for (auto&& idx : idx_range)
-                {
-                    const auto& ray_count = data.m_counts->at(idx);
-                    if (is_under_threshold(ray_count))
-                        continue;
+        std::vector<std::jthread> threads;
 
-                    pad_compute_method(ray_count, data.m_lengths->at(idx));
-                }
-                logger.debug("Compute PAD job finished");
-            };
-
-            for (auto&& chunk : cells | std::views::chunk(cells_per_core))
+        const auto process_cells_with_data =
+            [&logger, &is_under_threshold, &pad_compute_method, &pad_result](
+                const LvoxComputeData& data, auto&& idx_range
+            ) -> void {
+            for (const auto& idx : idx_range)
             {
-                threads.emplace_back(process_cells_with_data, std::ref(data), std::move(chunk));
+                const auto& ray_count = data.m_counts.at(idx);
+                if (is_under_threshold(ray_count))
+                    continue;
+
+                pad_result.at(idx) += pad_compute_method(data, idx);
+            }
+            logger.debug("Compute PAD job finished");
+        };
+
+        for (auto&& chunk : cells | std::views::chunk(cells_per_core))
+        {
+            threads.emplace_back(process_cells_with_data, std::ref(data), std::move(chunk));
+        }
+    }
+
+    {
+        const auto  cells          = std::views::keys(pad_result);
+        const auto  cell_count     = std::ranges::distance(cells);
+        const Index cells_per_core = std::ceil(cell_count / options.job_limit);
+
+        {
+            std::vector<std::jthread> threads;
+            const auto                mean_of_results = [scan_count =
+                                              scans.size()](PadResult& pad, auto&& idxs) -> void {
+                for (const auto& idx : idxs)
+                {
+                    pad.at(idx).store(pad.at(idx).load() / static_cast<double>(scan_count));
+                }
+            };
+
+            for (auto&& chunk : pad_result | std::views::keys | std::views::chunk(cells_per_core))
+            {
+                threads.emplace_back(mean_of_results, std::ref(pad_result), std::move(chunk));
             }
         }
     }
 
-    return pda_result;
+    return pad_result;
 }
 
 } // namespace lvox

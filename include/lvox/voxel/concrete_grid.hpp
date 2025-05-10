@@ -65,6 +65,7 @@ class ConcreteGrid : public Grid
             m_dim_y,
             m_dim_z,
             m_cell_size,
+            cell_count(),
             m_bounds.minx,
             m_bounds.maxx,
             m_bounds.miny,
@@ -256,6 +257,15 @@ class ConcreteGrid : public Grid
         return m_bounds;
     }
 
+    auto is_na(Index x) const -> bool
+    {
+        if constexpr (is_dense_container<ContainerT, cell_t>::value)
+            return at(x) == contained_type_t<ContainerT>{};
+        else
+            return !m_cells.contains(x);
+    };
+    auto is_na(Index x, Index y, Index z) const -> bool { return is_na(coords_to_index(x, y, z)); };
+
     auto begin() -> iterator_t { return m_cells.begin(); }
 
     auto end() -> iterator_t { return m_cells.end(); }
@@ -302,6 +312,7 @@ class ConcreteGrid : public Grid
     static constexpr auto g_grid_loginfo = R"(
 Creating grid of dimension: {}x{}x{}
 Voxel size: {}
+Voxel count: {}
 Bounds:
     x: {}, {}
     y: {}, {}

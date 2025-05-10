@@ -19,17 +19,12 @@ struct LvoxOptions
     {
         BeerLambert,
         BiasCorrectedMaximumLikelihoodEstimator
-    } pad_computation_method = PADMethod::BiasCorrectedMaximumLikelihoodEstimator;
+    } pad_computation_method = PADMethod::BeerLambert;
 };
 
 using PadResult  = lvox::SparseGrid<std::atomic<double>>;
 using CountGrid  = GridU32;
 using LengthGrid = GridD;
-
-template <typename Grid>
-using GridPtr       = std::unique_ptr<Grid>;
-using CountGridPtr  = GridPtr<CountGrid>;
-using LengthGridPtr = GridPtr<LengthGrid>;
 
 auto compute_pad(const std::vector<std::shared_ptr<lvox::Scan>>& scans, const LvoxOptions& options)
     -> PadResult;
