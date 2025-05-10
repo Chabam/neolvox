@@ -62,10 +62,10 @@ Point per core  {})",
                 Grid::traversal(
                     *data.m_counts,
                     Beam{scan_origin, beam_to_point},
-                    [&data, add_hits = data.m_hits.has_value()](
-                        const Index3D& idxs, double distance_in_voxel
+                    [&data,
+                     add_hits = data.m_hits.has_value()](const Grid::VoxelHitInfo& voxel_hit_info
                     ) mutable -> void {
-                        const auto [x, y, z] = idxs;
+                        const auto [x, y, z] = voxel_hit_info.m_index;
                         data.m_counts->at(x, y, z) += 1;
                         data.m_lengths->at(x, y, z) += 1;
                         if (add_hits)
@@ -119,10 +119,10 @@ Beams per core  {})",
                 Grid::traversal(
                     *data.m_counts,
                     beam,
-                    [&data](const Index3D& idxs, double distance_in_voxel) mutable -> void {
-                        const auto [x, y, z] = idxs;
+                    [&data](const Grid::VoxelHitInfo& voxel_hit_info) mutable -> void {
+                        const auto [x, y, z] = voxel_hit_info.m_index;
                         data.m_counts->at(x, y, z) += 1;
-                        data.m_lengths->at(x, y, z) += distance_in_voxel;
+                        data.m_lengths->at(x, y, z) += voxel_hit_info.m_distance_in_voxel;
                     }
                 );
             }

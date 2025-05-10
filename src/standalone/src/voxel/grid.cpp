@@ -17,10 +17,10 @@ Delta ({}, {}, {})
 )";
 
 auto Grid::traversal(
-    const Grid&                                        grid,
-    const Beam&                                        beam,
-    const std::function<void(const Index3D&, double)>& callback,
-    const double                                       max_distance
+    const Grid&                                     grid,
+    const Beam&                                     beam,
+    const std::function<void(const VoxelHitInfo&)>& callback,
+    const double                                    max_distance
 ) -> void
 {
 
@@ -113,24 +113,29 @@ auto Grid::traversal(
         delta.z()
     );
 
-    double distance          = 0.;
-    double distance_in_voxel = 0.;
+    double       total_traveled_distance = 0.;
+    VoxelHitInfo current_hit{
+        .m_index             = Index3D{current_voxel_x, current_voxel_y, current_voxel_z},
+        .m_distance_in_voxel = 0.,
+        .m_is_last_voxel     = false,
+    };
+    bool can_continue = true;
     do
     {
-        Index3D prev_idx{current_voxel_x, current_voxel_y, current_voxel_z};
+        Index3D prev_idx      = current_hit.m_index;
+        double  prev_distance = total_traveled_distance;
 
-        double prev_distance = distance;
         if (t_max.x() < t_max.y())
         {
             if (t_max.x() < t_max.z())
             {
-                distance = t_max.x();
+                total_traveled_distance = t_max.x();
                 t_max.x() += delta.x();
                 current_voxel_x += step.x();
             }
             else
             {
-                distance = t_max.z();
+                total_traveled_distance = t_max.z();
                 t_max.z() += delta.z();
                 current_voxel_z += step.z();
             }
@@ -145,24 +150,29 @@ auto Grid::traversal(
             else
             {
 
-                distance = t_max.z();
+                total_traveled_distance = t_max.z();
                 t_max.z() += delta.z();
                 current_voxel_z += step.z();
             }
         }
-        distance_in_voxel = distance - prev_distance;
 
-        if (prev_distance + distance_in_voxel > max_distance)
-        {
-            callback(prev_idx, max_distance - prev_distance);
-        }
-        else
-        {
-            callback(prev_idx, distance_in_voxel);
-        }
-    } while (current_voxel_x >= 0 && current_voxel_y >= 0 && current_voxel_z >= 0 &&
-             current_voxel_x < dim_x && current_voxel_y < dim_y && current_voxel_z < dim_z &&
-             distance <= max_distance);
+        current_hit.m_distance_in_voxel = total_traveled_distance - prev_distance;
+
+        const bool is_above_min_bounds =
+            current_voxel_x >= 0 && current_voxel_y >= 0 && current_voxel_z >= 0;
+        const bool is_under_max_bounds =
+            current_voxel_x < dim_x && current_voxel_y < dim_y && current_voxel_z < dim_z;
+        const bool is_under_max_distance = total_traveled_distance <= max_distance;
+
+        can_continue = is_above_min_bounds && is_under_max_bounds && is_under_max_distance;
+
+        current_hit.m_is_last_voxel = !can_continue;
+        if (prev_distance + current_hit.m_distance_in_voxel > max_distance)
+            current_hit.m_distance_in_voxel = max_distance - prev_distance;
+
+        callback(current_hit);
+        current_hit.m_index = Index3D{current_voxel_x, current_voxel_y, current_voxel_z};
+    } while (can_continue);
 }
 
 } // namespace lvox
