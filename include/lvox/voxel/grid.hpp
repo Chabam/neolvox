@@ -37,12 +37,18 @@ class Grid
     [[nodiscard]]
     virtual auto bounds() const -> const Bounds& = 0;
 
-    // Woo and Amanatides' fast traversal algorithm
+    struct VoxelHitInfo
+    {
+        Index3D m_index;
+        double  m_distance_in_voxel;
+        bool    m_is_last_voxel;
+    };
 
+    // Woo and Amanatides' fast traversal algorithm
     static auto traversal(
         const Grid&                                        grid,
         const Beam&                                        beam,
-        const std::function<void(const Index3D&, double)>& callback,
+        const std::function<void(const VoxelHitInfo&)>& callback,
         const double max_distance = std::numeric_limits<double>::max()
     ) -> void;
 };
