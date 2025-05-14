@@ -158,13 +158,13 @@ class ConcreteGrid : public Grid
     [[nodiscard]]
     auto at(Index x, Index y, Index z) const -> const_cell_ref
     {
-        return at(coords_to_index(x, y, z));
+        return at(index3d_to_index(x, y, z));
     }
 
     [[nodiscard]]
     auto at(Index x, Index y, Index z) -> cell_ref
     {
-        return at(coords_to_index(x, y, z));
+        return at(index3d_to_index(x, y, z));
     }
 
     // NOTE: no bounds check!
@@ -257,14 +257,32 @@ class ConcreteGrid : public Grid
         return m_bounds;
     }
 
-    auto is_na(Index x) const -> bool
+    auto is_na(Index i) const -> bool
     {
         if constexpr (is_dense_container<ContainerT, cell_t>::value)
-            return at(x) == contained_type_t<ContainerT>{};
+            return at(i) == contained_type_t<ContainerT>{};
         else
-            return !m_cells.contains(x);
+            return !m_cells.contains(i);
     };
-    auto is_na(Index x, Index y, Index z) const -> bool { return is_na(coords_to_index(x, y, z)); };
+
+    auto is_na(Index x, Index y, Index z) const -> bool
+    {
+        return is_na(index3d_to_index(x, y, z));
+    };
+
+    [[nodiscard]]
+    auto index3d_to_index(Index x, Index y, Index z) const -> Index
+    {
+        return x + (y * m_dim_x) + (z * m_dim_x * m_dim_y);
+    }
+
+    [[nodiscard]]
+    auto index_to_index3d(Index i) const -> Index3D
+    {
+        const auto z      = i / (m_dim_x * m_dim_y);
+        const auto offsetted_i = i - (z * m_dim_x * m_dim_y);
+        return {offsetted_i % m_dim_x, offsetted_i / m_dim_x, z};
+    }
 
     auto begin() -> iterator_t { return m_cells.begin(); }
 
@@ -286,11 +304,6 @@ class ConcreteGrid : public Grid
     ContainerT m_cells;
     Bounds     m_bounds;
     std::mutex m_new_value_creation_guard;
-
-    auto coords_to_index(Index x, Index y, Index z) const -> Index
-    {
-        return x + (y * m_dim_x) + (z * m_dim_x * m_dim_y);
-    }
 
     static auto adjust_dim_to_grid(double distance, double cell_size) -> Index
     {
