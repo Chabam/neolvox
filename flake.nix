@@ -24,6 +24,7 @@
           eigen
           pdal
           gtest
+          hdf5-cpp
         ];
       };
     };

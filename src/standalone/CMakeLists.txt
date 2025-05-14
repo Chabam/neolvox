@@ -33,7 +33,7 @@ target_sources(lvox
   src/main.cpp
 )
 
-target_link_libraries(lvox PUBLIC lvox_common)
+target_link_libraries(lvox PUBLIC lvox_common ${HDF5_CXX_LIBRARIES})
 
 set_target_properties(lvox
   PROPERTIES
