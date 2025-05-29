@@ -19,7 +19,6 @@ struct ComputeOptions
     double voxel_size        = .5;
     bool   simulated_scanner = false;
     int    job_limit         = std::thread::hardware_concurrency();
-
 };
 
 struct PADComputeOptions final : public ComputeOptions
@@ -31,7 +30,7 @@ struct PADComputeOptions final : public ComputeOptions
     } pad_computation_method = PADMethod::BeerLambert;
 };
 
-using PadResult  = lvox::SparseGrid<std::atomic<double>>;
+using PadResult  = GridD;
 using CountGrid  = GridU32;
 using LengthGrid = GridD;
 
@@ -56,10 +55,22 @@ auto compute_theoriticals(
     const std::vector<Beam>& beams, ComputeData& data, const ComputeOptions& options
 ) -> void;
 
-//  Calls `compute_rays_count_and_length` plus the chosen PAD compute algorithm
+//  Wrapper for the whole PAD computation. Does the following:
+//
+// - Compute the scene bounds
+// - Creates a compute data struct
+// - For each scans
+//   - Compute the rays length and count in each voxels (with `compute_rays_count_and_length`)
+//   - Compute with the beams from a virtual scanner if requested
+//   - Compute the PAD values for each voxels using the values from the computed grids
+// - Averages the PAD values from every scans
 auto compute_pad(
     const std::vector<std::shared_ptr<lvox::Scan>>& scans, const PADComputeOptions& options
 ) -> PadResult;
+
+auto compute_scene_bounds(
+    const std::vector<std::shared_ptr<lvox::Scan>>& scans, const ComputeOptions& options
+) -> lvox::Bounds;
 
 } // namespace algorithms
 

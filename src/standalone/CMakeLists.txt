@@ -11,12 +11,14 @@ target_sources(lvox_common
   src/scanner/spherical_scanner.cpp
   src/scanner/tls_scan.cpp
   src/voxel/grid.cpp
+  src/voxel/h5_exporter.cpp
 )
 
 target_link_libraries(lvox_common
   PUBLIC
   pdalcpp
   Eigen3::Eigen
+  ${HDF5_CXX_LIBRARIES}
 )
 
 target_include_directories(lvox_common
@@ -33,7 +35,7 @@ target_sources(lvox
   src/main.cpp
 )
 
-target_link_libraries(lvox PUBLIC lvox_common ${HDF5_CXX_LIBRARIES})
+target_link_libraries(lvox PUBLIC lvox_common)
 
 set_target_properties(lvox
   PROPERTIES
