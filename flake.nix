@@ -11,21 +11,26 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
     in
-    {
-      devShells.x86_64-linux.default = pkgs.mkShell {
-        nativeBuildInputs = with pkgs; [
-          # Tooling
-          gcc
-          gdb
-          cmake
-          valgrind
+      {
+        devShells.x86_64-linux.default = pkgs.mkShell {
+          nativeBuildInputs = with pkgs; [
+            # Tooling
+            gcc
+            gdb
+            cmake
+            valgrind
 
-          # Dependencies
-          eigen
-          pdal
-          gtest
-          hdf5-cpp
-        ];
+            # Dependencies
+            eigen
+            pdal
+            gtest
+            hdf5-cpp
+
+            # Scripts
+            python313
+            python313Packages.h5py
+            python313Packages.matplotlib
+          ];
+        };
       };
-    };
 }
