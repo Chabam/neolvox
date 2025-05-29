@@ -1,7 +1,7 @@
 #ifndef LVOX_SCANNER_BEAM_HPP
 #define LVOX_SCANNER_BEAM_HPP
 
-#include <lvox/lvox_types.hpp>
+#include <lvox/types.hpp>
 
 namespace lvox
 {

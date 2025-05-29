@@ -3,7 +3,7 @@
 
 #include <functional>
 
-#include <lvox/lvox_types.hpp>
+#include <lvox/types.hpp>
 
 namespace lvox
 {

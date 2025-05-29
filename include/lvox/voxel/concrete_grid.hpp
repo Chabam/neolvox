@@ -7,7 +7,7 @@
 #include <vector>
 
 #include <lvox/logger/logger.hpp>
-#include <lvox/lvox_types.hpp>
+#include <lvox/types.hpp>
 #include <lvox/voxel/grid.hpp>
 
 namespace lvox

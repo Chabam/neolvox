@@ -1,5 +1,5 @@
-#ifndef LVOX_LVOX_TYPES_HPP
-#define LVOX_LVOX_TYPES_HPP
+#ifndef LVOX_TYPES_HPP
+#define LVOX_TYPES_HPP
 
 #include <Eigen/Eigen>
 
@@ -17,4 +17,4 @@ using Index3D        = std::array<Index, 3>;
 
 } // namespace lvox
 
-#endif // LVOX_LVOX_TYPES_HPP
+#endif // LVOX_TYPES_HPP
