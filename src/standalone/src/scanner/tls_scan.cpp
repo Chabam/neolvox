@@ -1,5 +1,5 @@
 #include <lvox/logger/logger.hpp>
-#include <lvox/lvox_types.hpp>
+#include <lvox/types.hpp>
 #include <lvox/scanner/beam_generator.hpp>
 #include <lvox/scanner/tls_scan.hpp>
 

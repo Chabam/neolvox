@@ -5,8 +5,8 @@ add_library(lvox_common)
 
 target_sources(lvox_common
   PUBLIC
+  src/algorithms.cpp
   src/logger/logger.cpp
-  src/lvox.cpp
   src/scanner/beam.cpp
   src/scanner/spherical_scanner.cpp
   src/scanner/tls_scan.cpp

@@ -14,7 +14,7 @@
 #include <pdal/io/BufferReader.hpp>
 #include <pdal/io/LasReader.hpp>
 
-#include <lvox/lvox.hpp>
+#include <lvox/algorithms.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
 #include <lvox/scanner/tls_scan.hpp>
 
@@ -23,7 +23,7 @@ auto print_usage() -> void
     std::cout << "Usage: lvox POINT_CLOUD_FILE" << std::endl;
 }
 
-auto create_out_h5_file(const lvox::PadResult& result, const std::filesystem::path& in_file) -> void
+auto create_out_h5_file(const lvox::algorithms::PadResult& result, const std::filesystem::path& in_file) -> void
 {
     const std::string filename  = in_file.filename().string();
     const std::string plot_name = filename.substr(0, filename.find_last_of("."));
@@ -126,10 +126,10 @@ Amount of points    {})",
     const auto pts_view_set = file_reader->execute(pts_table);
     const auto voxel_size   = 0.1;
 
-    Eigen::Vector3d       scan_origin = lvox::Vector::Constant(0.); // (0,0,0)
-    const lvox::PadResult result      = lvox::compute_pad(
+    Eigen::Vector3d                   scan_origin = lvox::Vector::Constant(0.); // (0,0,0)
+    const lvox::algorithms::PadResult result      = lvox::algorithms::compute_pad(
         {std::make_shared<lvox::TLSScan>(*pts_view_set.begin(), scan_origin)},
-        lvox::LvoxOptions{.voxel_size = voxel_size}
+        lvox::algorithms::PADComputeOptions{{.voxel_size = voxel_size}}
     );
 
     struct MinMax

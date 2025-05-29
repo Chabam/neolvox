@@ -3,7 +3,7 @@
 #include <pdal/PointTable.hpp>
 #include <pdal/PointView.hpp>
 
-#include <lvox/lvox_types.hpp>
+#include <lvox/types.hpp>
 
 auto create_bounds(double dim_x, double dim_y, double dim_z) -> pdal::BOX3D
 {
