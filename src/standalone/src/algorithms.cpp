@@ -48,7 +48,7 @@ Point per core  {})",
                     point.template getFieldAs<double>(dim::Z)
                 };
 
-                const Vector beam_to_point{scan_origin - pt};
+                const Vector beam_to_point{pt - scan_origin};
 
                 Grid::traversal(
                     data.m_counts,
