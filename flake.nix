@@ -10,6 +10,13 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
+      scriptDeps = pkgs.python3.withPackages (pkgs: with pkgs; [
+              napari
+              matplotlib
+              numpy
+              h5py
+              anyqt
+            ]);
     in
       {
         devShells.x86_64-linux.default = pkgs.mkShell {
@@ -27,10 +34,10 @@
             hdf5-cpp
 
             # Scripts
-            python313
-            python313Packages.h5py
-            python313Packages.matplotlib
+            scriptDeps
+            qt5.qtbase
           ];
+          QT_QPA_PLATFORM_PLUGIN_PATH = with pkgs; "${qt5.qtbase.bin}/lib/qt-${qt5.qtbase.version}/plugins";
         };
       };
 }
