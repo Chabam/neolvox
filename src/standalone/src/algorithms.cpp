@@ -48,19 +48,22 @@ Point per core  {})",
                     point.template getFieldAs<double>(dim::Z)
                 };
 
-                const Vector beam_to_point{pt - scan_origin};
+                const Vector beam_to_point{scan_origin - pt};
+
+                if (data.m_hits)
+                {
+                    const auto [x, y, z] = data.m_hits->index_of_point(pt);
+                    data.m_hits->at(x, y, z) += 1;
+                }
 
                 Grid::traversal(
                     data.m_counts,
-                    Beam{scan_origin, beam_to_point},
-                    [&data,
-                     add_hits = data.m_hits.has_value()](const Grid::VoxelHitInfo& voxel_hit_info
+                    Beam{pt, beam_to_point},
+                    [&data](const Grid::VoxelHitInfo& voxel_hit_info
                     ) mutable -> void {
                         const auto [x, y, z] = voxel_hit_info.m_index;
                         data.m_counts.at(x, y, z) += 1;
                         data.m_lengths.at(x, y, z) += 1;
-                        if (add_hits && voxel_hit_info.m_is_last_voxel)
-                            (*data.m_hits).at(x, y, z) += 1;
                     },
                     beam_to_point.norm()
                 );
