@@ -41,7 +41,6 @@ class Grid
     {
         Index3D m_index;
         double  m_distance_in_voxel;
-        bool    m_is_last_voxel;
     };
 
     // Woo and Amanatides' fast traversal algorithm

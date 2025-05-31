@@ -117,7 +117,6 @@ auto Grid::traversal(
     VoxelHitInfo current_hit{
         .m_index             = Index3D{current_voxel_x, current_voxel_y, current_voxel_z},
         .m_distance_in_voxel = 0.,
-        .m_is_last_voxel     = false,
     };
     bool can_continue = true;
     do
@@ -166,7 +165,6 @@ auto Grid::traversal(
 
         can_continue = is_above_min_bounds && is_under_max_bounds && is_under_max_distance;
 
-        current_hit.m_is_last_voxel = !can_continue;
         if (prev_distance + current_hit.m_distance_in_voxel > max_distance)
             current_hit.m_distance_in_voxel = max_distance - prev_distance;
 
