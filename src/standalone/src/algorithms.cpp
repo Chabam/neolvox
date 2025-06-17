@@ -4,7 +4,8 @@
 #include <pdal/Dimension.hpp>
 #include <pdal/PointView.hpp>
 
-#include <lvox/algorithms.hpp>
+#include <lvox/algorithms/algorithms.hpp>
+#include <lvox/algorithms/grid_traversal.hpp>
 #include <lvox/scanner/beam.hpp>
 #include <lvox/scanner/scan.hpp>
 
@@ -56,10 +57,10 @@ Point per core  {})",
                     data.m_hits->at(x, y, z) += 1;
                 }
 
-                Grid::traversal(
+                grid_traversal(
                     data.m_counts,
                     Beam{pt, beam_to_point},
-                    [&data](const Grid::VoxelHitInfo& voxel_hit_info
+                    [&data](const VoxelHitInfo& voxel_hit_info
                     ) mutable -> void {
                         const auto [x, y, z] = voxel_hit_info.m_index;
                         data.m_counts.at(x, y, z) += 1;
@@ -109,10 +110,10 @@ Beams per core  {})",
         const auto compute_rays_from_scanner = [&logger](ComputeData& data, auto&& beams) -> void {
             for (const auto& beam : beams)
             {
-                Grid::traversal(
+                grid_traversal(
                     data.m_counts,
                     beam,
-                    [&data](const Grid::VoxelHitInfo& voxel_hit_info) mutable -> void {
+                    [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
                         const auto [x, y, z] = voxel_hit_info.m_index;
                         data.m_counts.at(x, y, z) += 1;
                         data.m_lengths.at(x, y, z) += voxel_hit_info.m_distance_in_voxel;

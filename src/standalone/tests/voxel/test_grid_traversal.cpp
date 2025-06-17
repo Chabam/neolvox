@@ -3,6 +3,7 @@
 #include <pdal/PointView.hpp>
 
 #include <lvox/scanner/beam.hpp>
+#include <lvox/algorithms/grid_traversal.hpp>
 
 TYPED_TEST(VoxelGridTests, grid_traversal_x_axis)
 {
@@ -25,10 +26,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_x_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_idxs](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
             }
         );
@@ -47,10 +48,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_x_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_idxs](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
             }
         );
@@ -86,10 +87,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_y_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_idxs](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
             }
         );
@@ -108,10 +109,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_y_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_idxs](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
             }
         );
@@ -146,10 +147,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_z_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_idxs](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
             }
         );
@@ -168,10 +169,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_z_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_idxs](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
             }
         );
@@ -210,10 +211,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_diagonals)
         lvox::Beam   beam{min, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_idxs](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
             }
         );
@@ -249,10 +250,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_diagonals)
         lvox::Beam   beam{max, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_idxs](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
             }
         );
@@ -303,10 +304,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_max_distance)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_idxs](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
             },
             (dim_x / 2) - 0.1
@@ -341,10 +342,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_distance_in_voxel)
         lvox::Beam   beam{pos, dir};
 
         std::vector<double> visited_voxel_distances;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_distances](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_distances](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_distances.push_back(hit.m_distance_in_voxel);
             },
             1.5
@@ -360,10 +361,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_distance_in_voxel)
         lvox::Beam   beam{pos, dir};
 
         std::vector<double> visited_voxel_distances;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_distances](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_distances](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_distances.push_back(hit.m_distance_in_voxel);
             },
             1.
@@ -379,10 +380,10 @@ TYPED_TEST(VoxelGridTests, grid_traversal_distance_in_voxel)
         lvox::Beam   beam{pos, dir};
 
         std::vector<double> visited_voxel_distances;
-        lvox::Grid::traversal(
+        lvox::algorithms::grid_traversal(
             grid,
             beam,
-            [&visited_voxel_distances](const lvox::Grid::VoxelHitInfo& hit) mutable {
+            [&visited_voxel_distances](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_distances.push_back(hit.m_distance_in_voxel);
             },
             0.5

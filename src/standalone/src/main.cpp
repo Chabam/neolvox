@@ -12,7 +12,7 @@
 #include <pdal/io/BufferReader.hpp>
 #include <pdal/io/LasReader.hpp>
 
-#include <lvox/algorithms.hpp>
+#include<lvox/algorithms/algorithms.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
 #include <lvox/scanner/tls_scan.hpp>
 #include <lvox/voxel/h5_exporter.hpp>

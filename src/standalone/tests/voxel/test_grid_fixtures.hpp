@@ -6,8 +6,6 @@
 
 #include <lvox/voxel/grid.hpp>
 
-#include "lvox/voxel/concrete_grid.hpp"
-
 template <class GridT, lvox::Index x, lvox::Index y, lvox::Index z, double cell_size>
 struct VoxelGridTestParam
 {

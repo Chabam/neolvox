@@ -4,7 +4,7 @@
 #include <H5Cpp.h>
 #include <filesystem>
 
-#include <lvox/voxel/concrete_grid.hpp>
+#include <lvox/voxel/grid.hpp>
 
 namespace lvox
 {

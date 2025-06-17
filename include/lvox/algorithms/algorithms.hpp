@@ -4,12 +4,13 @@
 #include <thread>
 
 #include <lvox/types.hpp>
-#include <lvox/voxel/concrete_grid.hpp>
+#include <lvox/voxel/grid.hpp>
 
 namespace lvox
 {
 
 class Scan;
+class Beam;
 
 namespace algorithms
 {
