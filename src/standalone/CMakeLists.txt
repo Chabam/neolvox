@@ -10,7 +10,6 @@ target_sources(lvox_common
   src/scanner/beam.cpp
   src/scanner/spherical_scanner.cpp
   src/scanner/tls_scan.cpp
-  src/voxel/grid.cpp
   src/voxel/h5_exporter.cpp
 )
 

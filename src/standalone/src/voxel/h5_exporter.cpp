@@ -4,7 +4,7 @@
 
 #include <lvox/voxel/h5_exporter.hpp>
 
-#include "lvox/voxel/concrete_grid.hpp"
+#include "lvox/voxel/grid.hpp"
 
 namespace lvox::h5_exporter
 {

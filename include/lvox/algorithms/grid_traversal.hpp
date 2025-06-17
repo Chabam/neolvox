@@ -1,4 +1,8 @@
+#ifndef LVOX_GRID_TRAVERSAL
+#define LVOX_GRID_TRAVERSAL
+
 #include <format>
+#include <limits>
 #include <stdexcept>
 
 #include <lvox/logger/logger.hpp>
@@ -6,6 +10,9 @@
 #include <lvox/voxel/grid.hpp>
 
 namespace lvox
+{
+
+namespace algorithms
 {
 
 constexpr auto g_grid_traversal_info = R"(
@@ -16,11 +23,18 @@ t_max ({}, {}, {})
 Delta ({}, {}, {})
 )";
 
-auto Grid::traversal(
-    const Grid&                                     grid,
-    const Beam&                                     beam,
-    const std::function<void(const VoxelHitInfo&)>& callback,
-    const double                                    max_distance
+struct VoxelHitInfo
+{
+    Index3D m_index;
+    double  m_distance_in_voxel;
+};
+
+template <typename GridT, typename HitCallback>
+auto grid_traversal(
+    const GridT&  grid,
+    const Beam&   beam,
+    HitCallback&& callback,
+    const double  max_distance = std::numeric_limits<double>::infinity()
 ) -> void
 {
 
@@ -52,7 +66,7 @@ auto Grid::traversal(
 
     // Source: https://stackoverflow.com/a/4609795
     // Returns -1 if the slope is negative, 1 if positive and 0 if there's no slope.
-    const auto get_axis_dir = [](double val) -> signed char {
+    static const auto get_axis_dir = [](double val) -> signed char {
         return (0. < val) - (val < 0.);
     };
 
@@ -65,7 +79,7 @@ auto Grid::traversal(
 
     const Vector inv_dir = 1. / beam_direction.array();
 
-    const auto compute_t_max_component = //
+    static const auto compute_t_max_component = //
         [inf](
             double dir_component,
             double origin_component,
@@ -173,4 +187,8 @@ auto Grid::traversal(
     } while (can_continue);
 }
 
+} // namespace algorithms
+
 } // namespace lvox
+
+#endif // LVOX_GRID_TRAVERSAL
