@@ -1,16 +1,18 @@
 #include <H5Fpublic.h>
+#include <H5public.h>
 #include <cstdint>
 #include <filesystem>
+#include <ranges>
 
 #include <lvox/voxel/h5_exporter.hpp>
 
-#include "lvox/voxel/grid.hpp"
+#include <lvox/voxel/grid.hpp>
 
 namespace lvox::h5_exporter
 {
 
 template <typename GridType>
-auto write_grid_to_h5(
+auto write_grid_as_coo_matrix_to_h5(
     const std::string& filename, const std::string& dataset_name, const GridType& grid
 ) -> void
 {
@@ -24,12 +26,13 @@ auto write_grid_to_h5(
         output = H5::H5File{filename, H5F_ACC_TRUNC};
     }
 
-    const auto voxel_size = grid.cell_size();
+    const auto    voxel_size       = grid.cell_size();
+    const hsize_t voxels_with_data = std::distance(grid.begin(), grid.end());
 
-    using h5_dimension_t = std::array<hsize_t, 3>;
-    h5_dimension_t dimensions{grid.dim_z(), grid.dim_y(), grid.dim_x()};
+    using h5_dimension_t = std::array<hsize_t, 1>;
+    const h5_dimension_t voxel_count_dim{voxels_with_data};
 
-    const H5::DataSpace data_space{std::tuple_size_v<h5_dimension_t>, dimensions.data()};
+    const H5::DataSpace data_space{std::tuple_size_v<h5_dimension_t>, voxel_count_dim.data()};
 
     using cell_t = contained_type<typename GridType::cell_t>::type;
     static_assert(
@@ -46,39 +49,64 @@ auto write_grid_to_h5(
         h5_data_t = H5::PredType::NATIVE_INT32;
     }
 
+    H5::Group plot_group = output.createGroup(dataset_name, 6);
+
     H5::DSetCreatPropList create_prop_list{};
-    h5_dimension_t        chunk_dims{5, 5, 5};
-    create_prop_list.setChunk(3, chunk_dims.data());
+    h5_dimension_t        chunk_dims{1000};
+    create_prop_list.setChunk(1, chunk_dims.data());
     create_prop_list.setDeflate(6);
     create_prop_list.setFillValue(h5_data_t, 0);
 
-    H5::DataSet dataset =
-        output.createDataSet(dataset_name, h5_data_t, data_space, create_prop_list);
-
-    const hsize_t        singular_coord_dim[] = {1};
-    H5::DataSpace        singular_coord_data_space{1, singular_coord_dim};
-    const h5_dimension_t singular_3d_coord_count = {1, 1, 1};
-
-    for (const auto& [idx, pad_value] : grid)
+    // Writing indexes
     {
-        const auto& [x, y, z] = grid.index_to_index3d(idx);
+        const auto indexes =
+            grid | std::views::keys | std::views::transform([&grid](Index index) -> Index3D {
+                return grid.index_to_index3d(index);
+            });
 
-        // NOTE: Conversion from row-major to column-major.
-        h5_dimension_t offset = {z, y, x};
-        data_space.selectHyperslab(H5S_SELECT_SET, singular_3d_coord_count.data(), offset.data());
+        const std::vector<size_t> xs =
+            indexes | std::views::elements<0> | std::ranges::to<std::vector<size_t>>();
+        const std::vector<size_t> ys =
+            indexes | std::views::elements<1> | std::ranges::to<std::vector<size_t>>();
+        const std::vector<size_t> zs =
+            indexes | std::views::elements<2> | std::ranges::to<std::vector<size_t>>();
 
-        dataset.write(&pad_value, h5_data_t, singular_coord_data_space, data_space);
+        const auto  h5_size_t = H5::PredType::NATIVE_HSIZE;
+        H5::DataSet xs_data =
+            plot_group.createDataSet("x", h5_size_t, data_space, create_prop_list);
+        xs_data.write(xs.data(), h5_size_t);
+
+        H5::DataSet ys_data =
+            plot_group.createDataSet("y", h5_size_t, data_space, create_prop_list);
+        ys_data.write(ys.data(), h5_size_t);
+
+        H5::DataSet zs_data =
+            plot_group.createDataSet("z", h5_size_t, data_space, create_prop_list);
+        zs_data.write(zs.data(), h5_size_t);
     }
+
+    // Writing values
+    {
+        const auto values = grid | std::views::values | std::ranges::to<std::vector<cell_t>>();
+
+        H5::DataSet values_data =
+            plot_group.createDataSet("values", h5_data_t, data_space, create_prop_list);
+        values_data.write(values.data(), h5_data_t);
+    }
+
+    const hsize_t                singular_coord_dim[] = {1};
+    H5::DataSpace                singular_coord_data_space{1, singular_coord_dim};
+    const std::array<hsize_t, 3> singular_3d_coord_count = {1, 1, 1};
 
     const auto    h5_voxel_size_t = H5::PredType::NATIVE_DOUBLE;
     H5::Attribute voxel_size_attr =
-        dataset.createAttribute("Voxel size", h5_voxel_size_t, H5::DataSpace{});
+        plot_group.createAttribute("Voxel size", h5_voxel_size_t, H5::DataSpace{});
     voxel_size_attr.write(h5_voxel_size_t, &voxel_size);
 
     const auto h5_min_coords_t = H5::PredType::NATIVE_DOUBLE;
 
     H5::DataSpace min_coords_data_space{1, singular_coord_dim};
-    H5::Attribute min_coord_attr = dataset.createAttribute(
+    H5::Attribute min_coord_attr = plot_group.createAttribute(
         "Minimal coordinates values", h5_min_coords_t, min_coords_data_space
     );
 
@@ -94,7 +122,7 @@ auto export_grid(
 {
 
     const std::string filename = in_file.filename().string();
-    write_grid_to_h5(
+    write_grid_as_coo_matrix_to_h5(
         std::format("{}_lvox_out.h5", filename.substr(0, filename.find_last_of("."))),
         dataset,
         result
@@ -106,7 +134,7 @@ auto export_grid(
 ) -> void
 {
     const std::string filename = in_file.filename().string();
-    write_grid_to_h5(
+    write_grid_as_coo_matrix_to_h5(
         std::format("{}_lvox_out.h5", filename.substr(0, filename.find_last_of("."))),
         dataset,
         result
