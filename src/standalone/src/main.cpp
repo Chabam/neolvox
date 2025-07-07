@@ -16,46 +16,67 @@
 #include <lvox/scanner/spherical_scanner.hpp>
 #include <lvox/scanner/tls_scan.hpp>
 #include <lvox/voxel/h5_exporter.hpp>
-
-auto print_usage() -> void
-{
-    std::cout << "Usage: lvox POINT_CLOUD_FILE" << std::endl;
-}
+#include "lvox/scanner/trajectory.hpp"
 
 auto main(int argc, char* argv[]) -> int
 {
-    if (argc < 2)
+    namespace fs = std::filesystem;
+    using dim    = pdal::Dimension::Id;
+
+    std::vector<std::string> args{argv, argv+argc};
+
+    if (args.size() < 2)
     {
         std::cout << "Invalid amount of arguments supplied" << std::endl;
-        print_usage();
+        std::cout << "Usage: lvox POINT_CLOUD_FILE" << std::endl;
         return 1;
     }
-    lvox::Logger logger{"LVOX Standalone"};
 
-    namespace fs = std::filesystem;
-    fs::path file{argv[1]};
+    bool is_mls = false;
+    fs::path traj_file;
+    fs::path file;
+    auto arg_it = args.begin();
+    while(arg_it != args.end())
+    {
+        // TODO: handle this better? Or just make it PDAL plugin
+        if (*arg_it == "-m")
+        {
+            is_mls = false;
+            traj_file = *(arg_it+1);
+        }
+        else
+        {
+            file = *arg_it;
+        }
+    }
+
+    lvox::Logger logger{"LVOX Standalone"};
+    lvox::Trajectory traj(file);
+
+    return 0;
 
     pdal::Options options;
     options.add("filename", file.c_str());
 
     pdal::PointTable pts_table;
-    pts_table.layout()->registerDim(pdal::Dimension::Id::X);
-    pts_table.layout()->registerDim(pdal::Dimension::Id::Y);
-    pts_table.layout()->registerDim(pdal::Dimension::Id::Z);
+    pts_table.layout()->registerDim(dim::X);
+    pts_table.layout()->registerDim(dim::Y);
+    pts_table.layout()->registerDim(dim::Z);
+    pts_table.layout()->registerDim(dim::GpsTime);
 
     pdal::PointViewPtr view{std::make_shared<pdal::PointView>(pts_table)};
+    auto stage_factory = std::make_unique<pdal::StageFactory>();
 
-    std::unique_ptr<pdal::Reader> file_reader;
-    const std::string             extension = file.extension().string().substr(1);
-    if (extension == "las" or extension == "laz")
+    const std::string driver = pdal::StageFactory::inferReaderDriver(file);
+
+    if (driver.empty())
     {
-        file_reader = std::make_unique<pdal::LasReader>();
+        throw std::runtime_error(
+            std::format("Cannot determine reader for input file: {}", file.c_str())
+        );
     }
-    else
-    {
-        std::cout << std::format("Unsupported file extension: '{}'", extension) << std::endl;
-        return 1;
-    }
+
+    pdal::Stage* file_reader = stage_factory->createStage(driver);
 
     file_reader->setOptions(options);
     file_reader->prepare(pts_table);
@@ -85,7 +106,7 @@ Amount of points    {})",
         .m_hits{{bounds, compute_options.voxel_size}},
     };
     lvox::algorithms::compute_rays_count_and_length(
-        scans->get_points(), scans->get_scan_position({}), data, compute_options
+        *scans, data, compute_options
     );
 
     logger.info("Writing output HDF5 file");

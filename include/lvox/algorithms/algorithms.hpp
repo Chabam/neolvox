@@ -45,15 +45,12 @@ struct ComputeData
 // Compute which voxels the rays have went to in a voxel grid and
 // computes the length that the rays travelled inside each of them.
 auto compute_rays_count_and_length(
-    const PointCloudView& points,
-    const Point&          scan_origin,
-    ComputeData&          data,
-    const ComputeOptions& options
+    const Scan& scan, ComputeData& data, const ComputeOptions& options
 ) -> void;
 
 // Compute the rays count and length from a virtual scanner
 auto compute_theoriticals(
-    const std::vector<Beam>& beams, ComputeData& data, const ComputeOptions& options
+    const Scan& scan, ComputeData& data, const ComputeOptions& options
 ) -> void;
 
 //  Wrapper for the whole PAD computation. Does the following:
@@ -66,11 +63,11 @@ auto compute_theoriticals(
 //   - Compute the PAD values for each voxels using the values from the computed grids
 // - Averages the PAD values from every scans
 auto compute_pad(
-    const std::vector<std::shared_ptr<lvox::Scan>>& scans, const PADComputeOptions& options
+    const std::vector<std::shared_ptr<Scan>>& scans, const PADComputeOptions& options
 ) -> PadResult;
 
 auto compute_scene_bounds(
-    const std::vector<std::shared_ptr<lvox::Scan>>& scans, const ComputeOptions& options
+    const std::vector<std::shared_ptr<Scan>>& scans, const ComputeOptions& options
 ) -> lvox::Bounds;
 
 } // namespace algorithms

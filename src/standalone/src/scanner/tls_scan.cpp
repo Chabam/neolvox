@@ -34,7 +34,7 @@ auto TLSScan::get_beams() const -> std::vector<lvox::Beam>
     return {};
 }
 
-auto TLSScan::get_scan_position(long) const -> const Point&
+auto TLSScan::get_scan_position(double) const -> Point
 {
     return m_scan_origin;
 }

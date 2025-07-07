@@ -13,17 +13,15 @@ namespace lvox::algorithms
 {
 
 auto compute_rays_count_and_length(
-    const PointCloudView& points,
-    const Point&          scan_origin,
-    ComputeData&          data,
-    const ComputeOptions& options
+    const std::shared_ptr<Scan>& scan, ComputeData& data, const ComputeOptions& options
 ) -> void
 {
     using dim = pdal::Dimension::Id;
 
     Logger logger{"Compute ray counts and length"};
 
-    const Index point_count     = points->size();
+    const PointCloudView& points      = scan->get_points();
+    const Index           point_count = points->size();
     const Index points_per_core = std::ceil(static_cast<float>(point_count) / options.job_limit);
 
     logger.debug(
@@ -36,19 +34,21 @@ Point per core  {})",
         points_per_core
     );
 
-    // IMPORTANT: must be scoped in order for jthreads to be automatically join
+    // IMPORTANT: must be scoped in order for jthreads to be automatically joined
     {
         std::vector<std::jthread> threads;
-        const auto                trace_points_from_scanner =
-            [&logger](ComputeData& data, const Point& scan_origin, auto&& points) -> void {
+        const auto                trace_points_from_scanner = [&logger,
+                                                &scan](ComputeData& data, auto&& points) -> void {
             for (const auto& point : points)
             {
                 const Point pt{
                     point.template getFieldAs<double>(dim::X),
                     point.template getFieldAs<double>(dim::Y),
-                    point.template getFieldAs<double>(dim::Z)
+                    point.template getFieldAs<double>(dim::Z),
                 };
 
+                const Point scan_origin =
+                    scan->get_scan_position(point.template getFieldAs<double>(dim::GpsTime));
                 const Vector beam_to_point{scan_origin - pt};
 
                 if (data.m_hits)
@@ -60,8 +60,7 @@ Point per core  {})",
                 grid_traversal(
                     data.m_counts,
                     Beam{pt, beam_to_point},
-                    [&data](const VoxelHitInfo& voxel_hit_info
-                    ) mutable -> void {
+                    [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
                         const auto [x, y, z] = voxel_hit_info.m_index;
                         data.m_counts.at(x, y, z) += 1;
                         data.m_lengths.at(x, y, z) += 1;
@@ -75,9 +74,7 @@ Point per core  {})",
 
         for (auto chunk : *points | std::views::chunk(points_per_core))
         {
-            threads.emplace_back(
-                trace_points_from_scanner, std::ref(data), std::ref(scan_origin), std::move(chunk)
-            );
+            threads.emplace_back(trace_points_from_scanner, std::ref(data), std::move(chunk));
         }
     }
 }
@@ -104,7 +101,7 @@ Beams per core  {})",
         beams_per_core
     );
 
-    // IMPORTANT: must be scoped in order for jthreads to be automatically join
+    // IMPORTANT: must be scoped in order for jthreads to be automatically joined
     {
         std::vector<std::jthread> threads;
         const auto compute_rays_from_scanner = [&logger](ComputeData& data, auto&& beams) -> void {
@@ -198,10 +195,7 @@ auto compute_pad(
         logger.info("Compute ray counts and length {}/{}", scan_num + 1, scans.size());
 
         // TODO: preload a spherical region around scanner to avoid contention with the grid
-        // TODO: use GPS time for the scan position
-        compute_rays_count_and_length(
-            scan->get_points(), scan->get_scan_position({}), data, options
-        );
+        compute_rays_count_and_length(scan, data, options);
 
         const auto  cells          = std::views::keys(data.m_counts);
         const auto  cell_count     = std::ranges::distance(cells);
@@ -275,7 +269,7 @@ auto compute_scene_bounds(
     const std::vector<std::shared_ptr<lvox::Scan>>& scans, const ComputeOptions& options
 ) -> lvox::Bounds
 {
-       Bounds total_bounds;
+    Bounds total_bounds;
 
     for (const auto& scan : scans)
     {

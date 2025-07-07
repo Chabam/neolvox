@@ -1,20 +1,17 @@
-#ifndef LVOX_TLS_SCAN_HPP
-#define LVOX_TLS_SCAN_HPP
+#ifndef LVOX_MLS_SCAN_HPP
+#define LVOX_MLS_SCAN_HPP
 
 #include <lvox/scanner/scan.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
+#include <lvox/scanner/trajectory.hpp>
 
 namespace lvox
 {
 
-class TLSScan : public Scan
+class MLSScan : public Scan
 {
   public:
-    TLSScan(
-        PointCloudView                         point_cloud,
-        const Point&                           scan_origin,
-        const std::optional<SphericalScanner>& scanner = {}
-    );
+    MLSScan(PointCloudView point_cloud, const std::shared_ptr<Trajectory>& trajectory);
 
     virtual auto get_points() const -> const PointCloudView& final;
     virtual auto get_beams() const -> std::vector<lvox::Beam> final;
@@ -22,10 +19,10 @@ class TLSScan : public Scan
 
   private:
     PointCloudView                  m_pts_view;
-    Point                           m_scan_origin;
+    std::shared_ptr<Trajectory>     m_trajectory;
     std::optional<SphericalScanner> m_scanner;
 };
 
 } // namespace lvox
 
-#endif // LVOX_TLS_SCAN_HPP
+#endif // LVOX_MLS_SCAN_HPP
