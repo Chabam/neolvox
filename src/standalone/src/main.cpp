@@ -19,24 +19,37 @@
 #include <lvox/voxel/h5_exporter.hpp>
 #include "lvox/scanner/trajectory.hpp"
 
+constexpr auto g_usage_info =
+R"(Usage: lvox [OPTIONS] FILE
+Options:
+   ARGS               EXPECTED VALUES     DESCRIPTION
+   -t, --trajectory   filename            Path to a trajectory file, used for computing an MLS scan
+   -o, --scan-origin  x y z               Coordinates for the scan position when computing a TLS scan
+   -v, --voxel-size   decimal             Coordinates for the scan position when computing a TLS scan
+   -h, --help                             Prints this message
+)";
 auto main(int argc, char* argv[]) -> int
 {
     namespace fs = std::filesystem;
     using dim    = pdal::Dimension::Id;
 
     std::vector<std::string> args{argv, argv+argc};
-
+    lvox::Logger             logger{"LVOX Standalone"};
+    
     if (args.size() < 2)
     {
-        std::cout << "Invalid amount of arguments supplied" << std::endl;
-        std::cout << "Usage: lvox POINT_CLOUD_FILE" << std::endl;
+        logger.error("Invalid amount of arguments supplied");
+        std::cout << g_usage_info << std::endl;
         return 1;
     }
 
     bool is_mls = false;
     double voxel_size = 0.1;
+    Eigen::Vector3d scan_origin = lvox::Vector::Constant(0.); // (0,0,0)
+
     fs::path traj_file;
     fs::path file;
+
     auto arg_it = args.begin();
     while(arg_it != args.end())
     {
@@ -44,22 +57,50 @@ auto main(int argc, char* argv[]) -> int
         if (*arg_it == "-t" || *arg_it == "--trajectory")
         {
             is_mls = true;
-            traj_file = *(arg_it + 1);
-            arg_it += 2;
+            traj_file = *++arg_it;
         }
-        else if (*arg_it == "-v")
+        else if (*arg_it == "-v" || *arg_it == "--voxel-size")
         {
-            voxel_size = std::stod(*(arg_it + 1));
-            arg_it += 2;
+            voxel_size = std::stod(*++arg_it);
+        }
+        else if (*arg_it == "-o" || *arg_it == "--scan-origin")
+        {
+            scan_origin = {std::stod(*++arg_it), std::stod(*++arg_it), std::stod(*++arg_it)};
+        }
+        else if (*arg_it == "-h" || *arg_it == "--help")
+        {
+            std::cout << g_usage_info << std::endl;
+            return 0;
         }
         else
         {
             file = *arg_it;
-            ++arg_it;
+        }
+        ++arg_it;
+    }
+
+    if (!fs::exists(file) || !fs::is_regular_file(file))
+    {
+        logger.error("Provided point cloud file doesn't exists or is not a file: {}", file.string());
+        return 1;
+    }
+
+
+    if (is_mls)
+    {
+        if (!fs::exists(traj_file) || !fs::is_regular_file(traj_file))
+        {
+            logger.error("Provided trajectory file doesn't exists or is not a file: {}", traj_file.string());
+            return 1;
+        }
+
+        if (scan_origin != lvox::Vector::Constant(0.))
+        {
+            logger.warn("Scan origin being set while in MLS mode, ignoring it");
         }
     }
 
-    lvox::Logger logger{"LVOX Standalone"};
+
 
     pdal::Options options;
     options.add("filename", file.c_str());
@@ -106,11 +147,10 @@ Amount of points    {})",
     }
     else
     {
-        Eigen::Vector3d scan_origin = lvox::Vector::Constant(0.); // (0,0,0)
         scan = std::make_shared<lvox::TLSScan>(*pts_view_set.begin(), scan_origin);
     }
 
-    const lvox::algorithms::ComputeOptions compute_options{.voxel_size = 0.1};
+    const lvox::algorithms::ComputeOptions compute_options{.voxel_size = voxel_size};
     // const lvox::algorithms::PadResult result      = lvox::algorithms::compute_pad(
     //     {scans},
     //     lvox::algorithms::PADComputeOptions{compute_options}
