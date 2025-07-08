@@ -45,12 +45,12 @@ struct ComputeData
 // Compute which voxels the rays have went to in a voxel grid and
 // computes the length that the rays travelled inside each of them.
 auto compute_rays_count_and_length(
-    const Scan& scan, ComputeData& data, const ComputeOptions& options
+    const std::shared_ptr<Scan>& scan, ComputeData& data, const ComputeOptions& options
 ) -> void;
 
 // Compute the rays count and length from a virtual scanner
 auto compute_theoriticals(
-    const Scan& scan, ComputeData& data, const ComputeOptions& options
+     const std::shared_ptr<Scan>& scan, ComputeData& data, const ComputeOptions& options
 ) -> void;
 
 //  Wrapper for the whole PAD computation. Does the following:
