@@ -5,6 +5,7 @@
 
 #include <lvox/types.hpp>
 #include <lvox/voxel/grid.hpp>
+#include <lvox/scanner/spherical_scanner.hpp>
 
 namespace lvox
 {
@@ -18,7 +19,6 @@ namespace algorithms
 struct ComputeOptions
 {
     double voxel_size        = .5;
-    bool   simulated_scanner = false;
     int    job_limit         = std::thread::hardware_concurrency();
 };
 
@@ -29,6 +29,8 @@ struct PADComputeOptions final : public ComputeOptions
         BeerLambert,
         BiasCorrectedMaximumLikelihoodEstimator
     } pad_computation_method = PADMethod::BeerLambert;
+
+    std::optional<SphericalScanner> theoritical_scanner;
 };
 
 using PadResult  = GridD;
@@ -45,12 +47,12 @@ struct ComputeData
 // Compute which voxels the rays have went to in a voxel grid and
 // computes the length that the rays travelled inside each of them.
 auto compute_rays_count_and_length(
-    const std::shared_ptr<Scan>& scan, ComputeData& data, const ComputeOptions& options
+    const Scan& scan, ComputeData& data, const ComputeOptions& options
 ) -> void;
 
 // Compute the rays count and length from a virtual scanner
 auto compute_theoriticals(
-     const std::shared_ptr<Scan>& scan, ComputeData& data, const ComputeOptions& options
+    const std::vector<Beam>& scan, ComputeData& data, const ComputeOptions& options
 ) -> void;
 
 //  Wrapper for the whole PAD computation. Does the following:
@@ -63,11 +65,11 @@ auto compute_theoriticals(
 //   - Compute the PAD values for each voxels using the values from the computed grids
 // - Averages the PAD values from every scans
 auto compute_pad(
-    const std::vector<std::shared_ptr<Scan>>& scans, const PADComputeOptions& options
+    const std::vector<Scan>& scans, const PADComputeOptions& options
 ) -> PadResult;
 
 auto compute_scene_bounds(
-    const std::vector<std::shared_ptr<Scan>>& scans, const ComputeOptions& options
+    const std::vector<Scan>& scans, const ComputeOptions& options
 ) -> lvox::Bounds;
 
 } // namespace algorithms

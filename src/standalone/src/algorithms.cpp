@@ -1,4 +1,5 @@
 #include <ranges>
+#include <stdexcept>
 #include <thread>
 
 #include <pdal/Dimension.hpp>
@@ -9,18 +10,20 @@
 #include <lvox/scanner/beam.hpp>
 #include <lvox/scanner/scan.hpp>
 
+#include "lvox/scanner/trajectory.hpp"
+
 namespace lvox::algorithms
 {
 
 auto compute_rays_count_and_length(
-    const std::shared_ptr<Scan>& scan, ComputeData& data, const ComputeOptions& options
+    const Scan& scan, ComputeData& data, const ComputeOptions& options
 ) -> void
 {
     using dim = pdal::Dimension::Id;
 
     Logger logger{"Compute ray counts and length"};
 
-    const PointCloudView& points      = scan->get_points();
+    const PointCloudView& points      = scan.m_points;
     const Index           point_count = points->size();
     const Index points_per_core = std::ceil(static_cast<float>(point_count) / options.job_limit);
 
@@ -47,8 +50,11 @@ Point per core  {})",
                     point.template getFieldAs<double>(dim::Z),
                 };
 
-                const Point scan_origin =
-                    scan->get_scan_position(point.template getFieldAs<double>(dim::GpsTime));
+                const Point scan_origin = std::visit(
+                    Scan::ComputeBeamOrigin{point.template getFieldAs<double>(dim::GpsTime)},
+                    scan.m_scanner_origin
+                );
+
                 const Vector beam_to_point{scan_origin - pt};
 
                 if (data.m_hits)
@@ -150,9 +156,8 @@ auto compute_bias_corrected_maximum_likelihood_estimator(
     return 0.;
 }
 
-auto compute_pad(
-    const std::vector<std::shared_ptr<lvox::Scan>>& scans, const PADComputeOptions& options
-) -> PadResult
+auto compute_pad(const std::vector<lvox::Scan>& scans, const PADComputeOptions& options)
+    -> PadResult
 {
     Logger logger{"LVOX"};
     logger.info("Scan count {}", scans.size());
@@ -186,10 +191,10 @@ auto compute_pad(
                                                 : std::optional<CountGrid>{},
         };
 
-        if (options.simulated_scanner)
+        if (options.theoritical_scanner)
         {
             logger.info("Compute theoriticals {}/{}", scan_num + 1, scans.size());
-            compute_theoriticals(scan->get_beams(), data, options);
+            compute_theoriticals(options.theoritical_scanner->get_beams(), data, options);
         }
 
         logger.info("Compute ray counts and length {}/{}", scan_num + 1, scans.size());
@@ -265,16 +270,15 @@ Cells per core  {})",
     return pad_result;
 }
 
-auto compute_scene_bounds(
-    const std::vector<std::shared_ptr<lvox::Scan>>& scans, const ComputeOptions& options
-) -> lvox::Bounds
+auto compute_scene_bounds(const std::vector<lvox::Scan>& scans, const ComputeOptions& options)
+    -> lvox::Bounds
 {
     Bounds total_bounds;
 
     for (const auto& scan : scans)
     {
         Bounds scan_bounds;
-        scan->get_points()->calculateBounds(scan_bounds);
+        scan.m_points->calculateBounds(scan_bounds);
         total_bounds.grow(scan_bounds);
     }
 

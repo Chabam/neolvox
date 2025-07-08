@@ -12,15 +12,16 @@
 #include <pdal/io/BufferReader.hpp>
 #include <pdal/io/LasReader.hpp>
 
-#include<lvox/algorithms/algorithms.hpp>
+#include <lvox/algorithms/algorithms.hpp>
+#include <lvox/scanner/scan.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
-#include <lvox/scanner/mls_scan.hpp>
-#include <lvox/scanner/tls_scan.hpp>
 #include <lvox/voxel/h5_exporter.hpp>
+
 #include "lvox/scanner/trajectory.hpp"
+#include "lvox/types.hpp"
 
 constexpr auto g_usage_info =
-R"(Usage: lvox [OPTIONS] FILE
+    R"(Usage: lvox [OPTIONS] FILE
 Options:
    ARGS               EXPECTED VALUES     DESCRIPTION
    -t, --trajectory   filename            Path to a trajectory file, used for computing an MLS scan
@@ -28,14 +29,15 @@ Options:
    -v, --voxel-size   decimal             Coordinates for the scan position when computing a TLS scan
    -h, --help                             Prints this message
 )";
+
 auto main(int argc, char* argv[]) -> int
 {
     namespace fs = std::filesystem;
     using dim    = pdal::Dimension::Id;
 
-    std::vector<std::string> args{argv, argv+argc};
+    std::vector<std::string> args{argv, argv + argc};
     lvox::Logger             logger{"LVOX Standalone"};
-    
+
     if (args.size() < 2)
     {
         logger.error("Invalid amount of arguments supplied");
@@ -43,20 +45,20 @@ auto main(int argc, char* argv[]) -> int
         return 1;
     }
 
-    bool is_mls = false;
-    double voxel_size = 0.1;
+    bool            is_mls      = false;
+    double          voxel_size  = 0.1;
     Eigen::Vector3d scan_origin = lvox::Vector::Constant(0.); // (0,0,0)
 
     fs::path traj_file;
     fs::path file;
 
     auto arg_it = args.begin();
-    while(arg_it != args.end())
+    while (arg_it != args.end())
     {
         // TODO: handle this better? Or just make it PDAL plugin
         if (*arg_it == "-t" || *arg_it == "--trajectory")
         {
-            is_mls = true;
+            is_mls    = true;
             traj_file = *++arg_it;
         }
         else if (*arg_it == "-v" || *arg_it == "--voxel-size")
@@ -81,16 +83,19 @@ auto main(int argc, char* argv[]) -> int
 
     if (!fs::exists(file) || !fs::is_regular_file(file))
     {
-        logger.error("Provided point cloud file doesn't exists or is not a file: {}", file.string());
+        logger.error(
+            "Provided point cloud file doesn't exists or is not a file: {}", file.string()
+        );
         return 1;
     }
-
 
     if (is_mls)
     {
         if (!fs::exists(traj_file) || !fs::is_regular_file(traj_file))
         {
-            logger.error("Provided trajectory file doesn't exists or is not a file: {}", traj_file.string());
+            logger.error(
+                "Provided trajectory file doesn't exists or is not a file: {}", traj_file.string()
+            );
             return 1;
         }
 
@@ -99,8 +104,6 @@ auto main(int argc, char* argv[]) -> int
             logger.warn("Scan origin being set while in MLS mode, ignoring it");
         }
     }
-
-
 
     pdal::Options options;
     options.add("filename", file.c_str());
@@ -112,7 +115,7 @@ auto main(int argc, char* argv[]) -> int
     pts_table.layout()->registerDim(dim::GpsTime);
 
     pdal::PointViewPtr view{std::make_shared<pdal::PointView>(pts_table)};
-    auto stage_factory = std::make_unique<pdal::StageFactory>();
+    auto               stage_factory = std::make_unique<pdal::StageFactory>();
 
     const std::string driver = pdal::StageFactory::inferReaderDriver(file);
 
@@ -136,19 +139,20 @@ Amount of points    {})",
         file_reader->preview().m_pointCount
     );
 
-    const auto pts_view_set = file_reader->execute(pts_table);
-    std::shared_ptr<lvox::Scan> scan;
+    const auto          pts_view_set = file_reader->execute(pts_table);
+    lvox::ScannerOrigin scanner_origin;
 
     if (is_mls)
     {
         logger.info("Loading trajectory traj_file {}", traj_file.string());
-        auto traj = std::make_shared<lvox::Trajectory>(traj_file);
-        scan = std::make_shared<lvox::MLSScan>(*pts_view_set.begin(), traj);
+        scanner_origin = std::make_shared<lvox::Trajectory>(traj_file);
     }
     else
     {
-        scan = std::make_shared<lvox::TLSScan>(*pts_view_set.begin(), scan_origin);
+        scanner_origin = scan_origin;
     }
+
+    lvox::Scan scan{*pts_view_set.begin(), scanner_origin};
 
     const lvox::algorithms::ComputeOptions compute_options{.voxel_size = voxel_size};
     // const lvox::algorithms::PadResult result      = lvox::algorithms::compute_pad(
@@ -161,9 +165,7 @@ Amount of points    {})",
         .m_lengths{bounds, compute_options.voxel_size},
         .m_hits{{bounds, compute_options.voxel_size}},
     };
-    lvox::algorithms::compute_rays_count_and_length(
-        scan, data, compute_options
-    );
+    lvox::algorithms::compute_rays_count_and_length(scan, data, compute_options);
 
     logger.info("Writing output HDF5 file");
     lvox::h5_exporter::export_grid(*data.m_hits, "hits", file);
