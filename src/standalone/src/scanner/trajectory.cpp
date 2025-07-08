@@ -32,8 +32,11 @@ Trajectory::Trajectory(const std::filesystem::path& trajectory_file)
 
     auto         factory = std::make_unique<pdal::StageFactory>();
     pdal::Stage* reader  = factory->createStage(driver);
-
-    reader_opts.add("header", "InternalTime X Y Z Yaw Pitch Roll");
+    // world_time x y z q0 q1 q2 q3 r g b nx ny nz roll pitch yaw
+    reader_opts.add(
+        "header",
+        "InternalTime X Y Z Q0 Q1 Q2 Q3 Red Green Blue NormalX NormalY NormalZ Yaw Pitch Roll"
+    );
     reader_opts.add("skip", 1);
     reader_opts.add("separator", " ");
 
@@ -88,7 +91,9 @@ auto Trajectory::get_point_from_gps_time(double gps_time) -> std::optional<Point
                     p1.getFieldAs<double>(DimId::Roll), p2.getFieldAs<double>(DimId::Roll), frac
                 ),
                 std::lerp(
-                    p1.getFieldAs<double>(DimId::Azimuth), p2.getFieldAs<double>(DimId::Azimuth), frac
+                    p1.getFieldAs<double>(DimId::Azimuth),
+                    p2.getFieldAs<double>(DimId::Azimuth),
+                    frac
                 )
             }
     };
