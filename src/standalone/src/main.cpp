@@ -41,7 +41,7 @@ auto main(int argc, char* argv[]) -> int
     while(arg_it != args.end())
     {
         // TODO: handle this better? Or just make it PDAL plugin
-        if (*arg_it == "-m")
+        if (*arg_it == "-t" || *arg_it == "--trajectory"
         {
             is_mls = true;
             traj_file = *(arg_it + 1);
