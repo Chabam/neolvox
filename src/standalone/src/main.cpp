@@ -41,7 +41,7 @@ auto main(int argc, char* argv[]) -> int
     while(arg_it != args.end())
     {
         // TODO: handle this better? Or just make it PDAL plugin
-        if (*arg_it == "-t" || *arg_it == "--trajectory"
+        if (*arg_it == "-t" || *arg_it == "--trajectory")
         {
             is_mls = true;
             traj_file = *(arg_it + 1);
@@ -100,8 +100,8 @@ Amount of points    {})",
 
     if (is_mls)
     {
-        logger.info("Loading trajectory file {}", file.string());
-        auto traj = std::make_shared<lvox::Trajectory>(file);
+        logger.info("Loading trajectory traj_file {}", traj_file.string());
+        auto traj = std::make_shared<lvox::Trajectory>(traj_file);
         scan = std::make_shared<lvox::MLSScan>(*pts_view_set.begin(), traj);
     }
     else
