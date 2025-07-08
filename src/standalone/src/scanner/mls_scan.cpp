@@ -8,7 +8,7 @@ namespace lvox
 {
 
 MLSScan::MLSScan(
-    pdal::PointViewPtr point_cloud,
+    const pdal::PointViewPtr& point_cloud,
     const std::shared_ptr<Trajectory>& trajectory
 )
     : m_pts_view{point_cloud}
@@ -33,7 +33,7 @@ auto MLSScan::get_beams() const -> std::vector<lvox::Beam>
     return {};
 }
 
-auto MLSScan::get_scan_position(double gps_time) const -> const Point&
+auto MLSScan::get_scan_position(double gps_time) const -> Point
 {
     const std::optional<lvox::Trajectory::Point> point =
         m_trajectory->get_point_from_gps_time(gps_time);

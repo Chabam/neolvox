@@ -11,7 +11,7 @@ class TLSScan : public Scan
 {
   public:
     TLSScan(
-        PointCloudView                         point_cloud,
+        const PointCloudView&                  point_cloud,
         const Point&                           scan_origin,
         const std::optional<SphericalScanner>& scanner = {}
     );

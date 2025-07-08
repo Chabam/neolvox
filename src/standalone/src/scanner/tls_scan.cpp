@@ -7,7 +7,7 @@ namespace lvox
 {
 
 TLSScan::TLSScan(
-    pdal::PointViewPtr                           point_cloud,
+    const pdal::PointViewPtr&                    point_cloud,
     const Point&                                 scan_origin,
     const std::optional<lvox::SphericalScanner>& scanner
 )

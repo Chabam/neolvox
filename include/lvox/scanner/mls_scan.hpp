@@ -11,7 +11,7 @@ namespace lvox
 class MLSScan : public Scan
 {
   public:
-    MLSScan(PointCloudView point_cloud, const std::shared_ptr<Trajectory>& trajectory);
+    MLSScan(const PointCloudView& point_cloud, const std::shared_ptr<Trajectory>& trajectory);
 
     virtual auto get_points() const -> const PointCloudView& final;
     virtual auto get_beams() const -> std::vector<lvox::Beam> final;

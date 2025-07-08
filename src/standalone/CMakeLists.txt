@@ -9,6 +9,7 @@ target_sources(lvox_common
   src/logger/logger.cpp
   src/scanner/beam.cpp
   src/scanner/spherical_scanner.cpp
+  src/scanner/mls_scan.cpp
   src/scanner/tls_scan.cpp
   src/scanner/trajectory.cpp
   src/voxel/h5_exporter.cpp
