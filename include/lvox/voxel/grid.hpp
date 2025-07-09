@@ -10,7 +10,6 @@
 
 #include <lvox/logger/logger.hpp>
 #include <lvox/types.hpp>
-#include <lvox/voxel/grid.hpp>
 
 namespace lvox
 {
@@ -36,7 +35,7 @@ template <typename T>
 using contained_type_t = contained_type<T>::type;
 
 template <typename T, std::ranges::range ContainerT>
-class ConcreteGrid
+class Grid
 {
   public:
     using cell_t           = T;
@@ -46,27 +45,27 @@ class ConcreteGrid
     using iterator_t       = ContainerT::iterator;
     using const_iterator_t = ContainerT::const_iterator;
 
-    ConcreteGrid()  = default;
-    ~ConcreteGrid() = default;
+    Grid()  = default;
+    ~Grid() = default;
 
-    ConcreteGrid(const Bounds& bounds, double cell_size)
+    Grid(const Bounds& bounds, double cell_size)
         : m_cell_size{cell_size}
-        , m_dim_x{ConcreteGrid::adjust_dim_to_grid(bounds.maxx - bounds.minx, cell_size)}
-        , m_dim_y{ConcreteGrid::adjust_dim_to_grid(bounds.maxy - bounds.miny, cell_size)}
-        , m_dim_z{ConcreteGrid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
-        , m_cells{ConcreteGrid::intialize_container(m_dim_x * m_dim_y * m_dim_z)}
+        , m_dim_x{Grid::adjust_dim_to_grid(bounds.maxx - bounds.minx, cell_size)}
+        , m_dim_y{Grid::adjust_dim_to_grid(bounds.maxy - bounds.miny, cell_size)}
+        , m_dim_z{Grid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
+        , m_cells{Grid::intialize_container(m_dim_x * m_dim_y * m_dim_z)}
         , m_bounds{
             bounds.minx,
             bounds.miny,
             bounds.minz,
-            ConcreteGrid::adjust_bounds_to_grid(m_dim_x, bounds.minx),
-            ConcreteGrid::adjust_bounds_to_grid(m_dim_y, bounds.miny),
-            ConcreteGrid::adjust_bounds_to_grid(m_dim_z, bounds.minz)
+            Grid::adjust_bounds_to_grid(m_dim_x, bounds.minx),
+            Grid::adjust_bounds_to_grid(m_dim_y, bounds.miny),
+            Grid::adjust_bounds_to_grid(m_dim_z, bounds.minz)
         }
         , m_cells_access{}
     {
 
-        Logger logger{"ConcreteGrid"};
+        Logger logger{"Grid"};
 
         logger.debug(
             g_grid_loginfo,
@@ -84,7 +83,7 @@ class ConcreteGrid
         );
     }
 
-    ConcreteGrid(ConcreteGrid&& other)
+    Grid(Grid&& other)
         : m_cell_size{std::move(other.m_cell_size)}
         , m_dim_x{std::move(other.m_dim_x)}
         , m_dim_y{std::move(other.m_dim_y)}
@@ -95,7 +94,7 @@ class ConcreteGrid
     {
     }
 
-    ConcreteGrid(const ConcreteGrid& other)
+    Grid(const Grid& other)
         : m_cell_size{other.m_cell_size}
         , m_dim_x{other.m_dim_x}
         , m_dim_y{other.m_dim_y}
@@ -106,7 +105,7 @@ class ConcreteGrid
     {
     }
 
-    auto operator=(ConcreteGrid&& other) -> ConcreteGrid&
+    auto operator=(Grid&& other) -> Grid&
     {
         m_cell_size = std::move(other.m_cell_size);
         m_dim_x     = std::move(other.m_dim_x);
@@ -118,7 +117,7 @@ class ConcreteGrid
         return *this;
     }
 
-    auto operator=(const ConcreteGrid& other) -> ConcreteGrid&
+    auto operator=(const Grid& other) -> Grid&
     {
         m_cell_size = other.m_cell_size;
         m_dim_x     = other.m_dim_x;
@@ -298,13 +297,13 @@ class ConcreteGrid
     auto end() const -> const_iterator_t { return m_cells.end(); }
 
   private:
-    const double            m_cell_size;
-    const Index             m_dim_x;
-    const Index             m_dim_y;
-    const Index             m_dim_z;
-    ContainerT              m_cells;
-    const Bounds            m_bounds;
-    std::shared_mutex       m_cells_access;
+    double                    m_cell_size;
+    Index                     m_dim_x;
+    Index                     m_dim_y;
+    Index                     m_dim_z;
+    ContainerT                m_cells;
+    Bounds                    m_bounds;
+    mutable std::shared_mutex m_cells_access;
 
     static auto adjust_dim_to_grid(double distance, double cell_size) -> Index
     {
@@ -341,7 +340,7 @@ Bounds:
 
 // Not really used, only in tests
 template <typename T>
-using DenseGrid = ConcreteGrid<T, std::vector<T>>;
+using DenseGrid = Grid<T, std::vector<T>>;
 
 // NOTE: We use `unordered_map` as a "sparse" array.
 // Our keys are literally just array indexes, there's no need to hash them
@@ -349,7 +348,7 @@ using DenseGrid = ConcreteGrid<T, std::vector<T>>;
 using IndexHash = std::identity;
 
 template <typename T>
-using SparseGrid = ConcreteGrid<T, std::unordered_map<Index, T, IndexHash>>;
+using SparseGrid = Grid<T, std::unordered_map<Index, T, IndexHash>>;
 
 using GridU32 = SparseGrid<std::atomic_uint32_t>;
 using GridD   = SparseGrid<std::atomic<double>>;
