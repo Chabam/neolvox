@@ -5,6 +5,7 @@
 #include <cmath>
 #include <format>
 #include <vector>
+#include <mutex>
 
 #include <lvox/logger/logger.hpp>
 #include <lvox/types.hpp>

@@ -1,6 +1,8 @@
 #include <cmath>
-#include <gtest/gtest.h>
+#include <numbers>
 #include <ranges>
+
+#include <gtest/gtest.h>
 
 #include <lvox/scanner/spherical_scanner.hpp>
 

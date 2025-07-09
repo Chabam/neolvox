@@ -106,7 +106,7 @@ auto main(int argc, char* argv[]) -> int
     }
 
     pdal::Options options;
-    options.add("filename", file.c_str());
+    options.add("filename", file.string());
 
     pdal::PointTable pts_table;
     pts_table.layout()->registerDim(dim::X);
@@ -117,12 +117,12 @@ auto main(int argc, char* argv[]) -> int
     pdal::PointViewPtr view{std::make_shared<pdal::PointView>(pts_table)};
     auto               stage_factory = std::make_unique<pdal::StageFactory>();
 
-    const std::string driver = pdal::StageFactory::inferReaderDriver(file);
+    const std::string driver = pdal::StageFactory::inferReaderDriver(file.string());
 
     if (driver.empty())
     {
         throw std::runtime_error(
-            std::format("Cannot determine reader for input file: {}", file.c_str())
+            std::format("Cannot determine reader for input file: {}", file.string())
         );
     }
 

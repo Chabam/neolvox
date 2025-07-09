@@ -1,7 +1,6 @@
 #include <voxel/test_grid_fixtures.hpp>
 #include <pdal/PointView.hpp>
 
-
 TYPED_TEST(VoxelGridTests, index_of_point)
 {
     pdal::PointTable table;

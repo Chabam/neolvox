@@ -20,7 +20,7 @@ Trajectory::Trajectory(const std::filesystem::path& trajectory_file)
     , m_pts_table{}
     , m_pts_view_set{}
 {
-    const std::string driver   = pdal::StageFactory::inferReaderDriver(trajectory_file);
+    const std::string driver   = pdal::StageFactory::inferReaderDriver(trajectory_file.string());
     const std::string filename = trajectory_file.string();
     if (driver.empty())
         throw std::runtime_error(

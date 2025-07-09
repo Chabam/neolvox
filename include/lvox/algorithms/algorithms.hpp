@@ -18,8 +18,9 @@ namespace algorithms
 
 struct ComputeOptions
 {
-    double voxel_size        = .5;
-    int    job_limit         = std::thread::hardware_concurrency();
+    double          voxel_size        = .5;
+    bool            simulated_scanner = false;
+    unsigned int    job_limit         = std::thread::hardware_concurrency();
 };
 
 struct PADComputeOptions final : public ComputeOptions

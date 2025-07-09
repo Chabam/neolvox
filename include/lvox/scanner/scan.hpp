@@ -1,6 +1,8 @@
 #ifndef LVOX_SCAN_HPP
 #define LVOX_SCAN_HPP
 
+#include <variant>
+
 #include <lvox/types.hpp>
 
 namespace lvox
