@@ -4,8 +4,9 @@
 #include <atomic>
 #include <cmath>
 #include <format>
-#include <vector>
+#include <shared_mutex>
 #include <mutex>
+#include <vector>
 
 #include <lvox/logger/logger.hpp>
 #include <lvox/types.hpp>
@@ -54,8 +55,15 @@ class ConcreteGrid
         , m_dim_y{ConcreteGrid::adjust_dim_to_grid(bounds.maxy - bounds.miny, cell_size)}
         , m_dim_z{ConcreteGrid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
         , m_cells{ConcreteGrid::intialize_container(m_dim_x * m_dim_y * m_dim_z)}
-        , m_bounds{bounds}
-        , m_new_value_creation_guard{}
+        , m_bounds{
+            bounds.minx,
+            bounds.miny,
+            bounds.minz,
+            ConcreteGrid::adjust_bounds_to_grid(m_dim_x, bounds.minx),
+            ConcreteGrid::adjust_bounds_to_grid(m_dim_y, bounds.miny),
+            ConcreteGrid::adjust_bounds_to_grid(m_dim_z, bounds.minz)
+        }
+        , m_cells_access{}
     {
 
         Logger logger{"ConcreteGrid"};
@@ -74,16 +82,6 @@ class ConcreteGrid
             m_bounds.minz,
             m_bounds.maxz
         );
-
-        const auto adjust_bounds_to_grid = [cell_size](Index dim, double min) -> double {
-            return min + dim * cell_size;
-        };
-
-        m_bounds.grow(
-            adjust_bounds_to_grid(m_dim_x, bounds.minx),
-            adjust_bounds_to_grid(m_dim_y, bounds.miny),
-            adjust_bounds_to_grid(m_dim_z, bounds.minz)
-        );
     }
 
     ConcreteGrid(ConcreteGrid&& other)
@@ -93,7 +91,7 @@ class ConcreteGrid
         , m_dim_z{std::move(other.m_dim_z)}
         , m_cells{std::move(other.m_cells)}
         , m_bounds{std::move(other.m_bounds)}
-        , m_new_value_creation_guard{}
+        , m_cells_access{}
     {
     }
 
@@ -104,7 +102,7 @@ class ConcreteGrid
         , m_dim_z{other.m_dim_z}
         , m_cells{other.m_cells}
         , m_bounds{other.m_bounds}
-        , m_new_value_creation_guard{}
+        , m_cells_access{}
     {
     }
 
@@ -147,11 +145,13 @@ class ConcreteGrid
         }
         else
         {
+            std::shared_lock read_lock{m_cells_access};
             if (const auto& it = m_cells.find(index); it != m_cells.end())
             {
                 return it->second;
             }
-            std::lock_guard<std::mutex> lock{m_new_value_creation_guard};
+
+            std::unique_lock write_lock{m_cells_access};
             return m_cells.emplace(index, contained_type_t<cell_t>{}).first->second;
         }
     }
@@ -298,17 +298,22 @@ class ConcreteGrid
     auto end() const -> const_iterator_t { return m_cells.end(); }
 
   private:
-    double     m_cell_size;
-    Index      m_dim_x;
-    Index      m_dim_y;
-    Index      m_dim_z;
-    ContainerT m_cells;
-    Bounds     m_bounds;
-    std::mutex m_new_value_creation_guard;
+    const double            m_cell_size;
+    const Index             m_dim_x;
+    const Index             m_dim_y;
+    const Index             m_dim_z;
+    ContainerT              m_cells;
+    const Bounds            m_bounds;
+    std::shared_mutex       m_cells_access;
 
     static auto adjust_dim_to_grid(double distance, double cell_size) -> Index
     {
         return static_cast<Index>(std::ceil(distance / cell_size));
+    }
+
+    auto adjust_bounds_to_grid(Index dim, double min) const -> double
+    {
+        return min + dim * m_cell_size;
     }
 
     static constexpr auto intialize_container(Index size) -> container_t
