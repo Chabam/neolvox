@@ -35,7 +35,7 @@ Trajectory::Trajectory(const std::filesystem::path& trajectory_file)
     // world_time x y z q0 q1 q2 q3 r g b nx ny nz roll pitch yaw
     reader_opts.add(
         "header",
-        "InternalTime X Y Z Q0 Q1 Q2 Q3 Red Green Blue NormalX NormalY NormalZ Yaw Pitch Roll"
+        "GpsTime X Y Z Q0 Q1 Q2 Q3 Red Green Blue NormalX NormalY NormalZ Pitch Roll Azimuth"
     );
     reader_opts.add("skip", 1);
     reader_opts.add("separator", " ");
