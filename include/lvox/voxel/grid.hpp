@@ -150,7 +150,7 @@ class ConcreteGrid
             {
                 return it->second;
             }
-
+            read_lock.unlock();
             std::unique_lock write_lock{m_cells_access};
             return m_cells.emplace(index, contained_type_t<cell_t>{}).first->second;
         }

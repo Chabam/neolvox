@@ -155,11 +155,13 @@ Amount of points    {})",
     lvox::Scan scan{*pts_view_set.begin(), scanner_origin};
 
     const lvox::algorithms::ComputeOptions compute_options{.voxel_size = voxel_size};
-    // const lvox::algorithms::PadResult result      = lvox::algorithms::compute_pad(
-    //     {scans},
-    //     lvox::algorithms::PADComputeOptions{compute_options}
-    // );
-    const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds({scan}, compute_options);
+    const lvox::algorithms::PadResult result = lvox::algorithms::compute_pad(
+        {scan},
+        lvox::algorithms::PADComputeOptions{compute_options}
+    );
+    lvox::h5_exporter::export_grid(result, "pad", file);
+
+    /*const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds({scan}, compute_options);
     lvox::algorithms::ComputeData data{
         .m_counts{bounds, compute_options.voxel_size},
         .m_lengths{bounds, compute_options.voxel_size},
@@ -170,5 +172,5 @@ Amount of points    {})",
     logger.info("Writing output HDF5 file");
     lvox::h5_exporter::export_grid(*data.m_hits, "hits", file);
     lvox::h5_exporter::export_grid(data.m_counts, "counts", file);
-    lvox::h5_exporter::export_grid(data.m_lengths, "lengths", file);
+    lvox::h5_exporter::export_grid(data.m_lengths, "lengths", file);*/
 }
