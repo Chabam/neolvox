@@ -19,6 +19,9 @@ struct is_dense_container : std::is_same<ContainerT, std::vector<T>>
 {
 };
 
+template <std::ranges::range ContainerT, typename T>
+using is_dense_container_v = is_dense_container<ContainerT, T>::value;
+
 template <typename T>
 struct contained_type
 {
@@ -144,14 +147,24 @@ class Grid
         }
         else
         {
-            std::shared_lock read_lock{m_cells_access};
-            if (const auto& it = m_cells.find(index); it != m_cells.end())
             {
-                return it->second;
+                std::shared_lock read_lock{m_cells_access};
+                if (const auto& it = m_cells.find(index); it != m_cells.end())
+                {
+                    return it->second;
+                }
             }
-            read_lock.unlock();
-            std::unique_lock write_lock{m_cells_access};
-            return m_cells.emplace(index, contained_type_t<cell_t>{}).first->second;
+
+            {
+                std::unique_lock write_lock{m_cells_access};
+
+                if (const auto& it = m_cells.find(index); it != m_cells.end())
+                {
+                    return it->second;
+                }
+
+                return m_cells.emplace(index, contained_type_t<cell_t>{}).first->second;
+            }
         }
     }
 
@@ -260,7 +273,7 @@ class Grid
     auto is_na(Index i) const -> bool
     {
         if constexpr (is_dense_container<ContainerT, cell_t>::value)
-            return at(i) == contained_type_t<ContainerT>{};
+            return at(i) == cell_t{};
         else
             return !m_cells.contains(i);
     };
@@ -350,8 +363,8 @@ using IndexHash = std::identity;
 template <typename T>
 using SparseGrid = Grid<T, std::unordered_map<Index, T, IndexHash>>;
 
-using GridU32 = SparseGrid<std::atomic_uint32_t>;
-using GridD   = SparseGrid<std::atomic<double>>;
+using GridU32 = DenseGrid<std::atomic_uint32_t>;
+using GridD   = DenseGrid<std::atomic<double>>;
 
 } // namespace lvox
 
