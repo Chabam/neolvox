@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <ranges>
 #include <stdexcept>
 #include <thread>
@@ -11,6 +12,7 @@
 #include <lvox/scanner/scan.hpp>
 
 #include "lvox/scanner/trajectory.hpp"
+#include "lvox/voxel/grid.hpp"
 
 namespace lvox::algorithms
 {
@@ -202,8 +204,12 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const PADComputeOptions& 
         // TODO: preload a spherical region around scanner to avoid contention with the grid
         compute_rays_count_and_length(scan, data, options);
 
-        const auto  cells          = std::views::keys(data.m_counts);
-        const auto  cell_count     = std::ranges::distance(cells);
+        const auto index_of_cells_with_data =
+            data.m_counts | std::views::enumerate | std::views::filter([](const auto& pair) {
+                return std::get<1>(pair) > 0;
+            }) |
+            std::views::keys | std::ranges::to<std::vector<Index>>();
+        const auto  cell_count     = std::ranges::distance(index_of_cells_with_data);
         const Index cells_per_core = std::ceil(cell_count / options.job_limit);
 
         logger.info("Computing PAD", scans.size());
@@ -217,14 +223,14 @@ Cells per core  {})",
             cells_per_core
         );
 
-        const auto is_under_threshold = [](const auto& ray_count) -> bool {
+        constexpr auto is_under_threshold = [](const auto& ray_count) -> bool {
             return ray_count < 5;
         };
 
         std::vector<std::jthread> threads;
 
         const auto process_cells_with_data =
-            [&logger, &is_under_threshold, &pad_compute_method, &pad_result](
+            [&logger, &is_under_threshold, &pad_compute_method, &pad_result, scan_count = scans.size()](
                 const ComputeData& data, auto&& idx_range
             ) -> void {
             for (const auto& idx : idx_range)
@@ -233,37 +239,15 @@ Cells per core  {})",
                 if (is_under_threshold(ray_count))
                     continue;
 
-                pad_result.at(idx) += pad_compute_method(data, idx);
+                // Weighted sum of the PAD to avoid the mean afterwards
+                pad_result.at(idx) += pad_compute_method(data, idx) / static_cast<double>(scan_count);
             }
             logger.debug("Compute PAD job finished");
         };
 
-        for (auto&& chunk : cells | std::views::chunk(cells_per_core))
+        for (auto&& chunk : index_of_cells_with_data | std::views::chunk(cells_per_core))
         {
             threads.emplace_back(process_cells_with_data, std::ref(data), std::move(chunk));
-        }
-    }
-
-    {
-        const auto  cells          = std::views::keys(pad_result);
-        const auto  cell_count     = std::ranges::distance(cells);
-        const Index cells_per_core = std::ceil(cell_count / options.job_limit);
-
-        {
-            std::vector<std::jthread> threads;
-
-            const auto mean_of_results = [scan_count =
-                                              scans.size()](PadResult& pad, auto&& idxs) -> void {
-                for (const auto& idx : idxs)
-                {
-                    pad.at(idx).store(pad.at(idx).load() / static_cast<double>(scan_count));
-                }
-            };
-
-            for (auto&& chunk : pad_result | std::views::keys | std::views::chunk(cells_per_core))
-            {
-                threads.emplace_back(mean_of_results, std::ref(pad_result), std::move(chunk));
-            }
         }
     }
 

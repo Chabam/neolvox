@@ -17,18 +17,16 @@ class Trajectory
     {
         double      m_gps_time;
         lvox::Point m_coord;
-        Vector      m_orientation;
     };
 
     // TODO: Make this more flexible with reader options
     Trajectory(const std::filesystem::path& trajectory_file);
 
-    auto get_point_from_gps_time(double gps_time) -> std::optional<Point>;
+    auto interpolate_point_from_gps_time(double gps_time) const -> std::optional<lvox::Point>;
+    auto get_points() const -> const std::vector<Point>& { return m_traj_points; }
 
   private:
-    pdal::PointViewPtr m_pts_view;
-    pdal::PointTable   m_pts_table;
-    pdal::PointViewSet m_pts_view_set;
+    std::vector<Point> m_traj_points;
 };
 } // namespace lvox
 

@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <filesystem>
+#include <ranges>
 
 #include <pdal/StageFactory.hpp>
 
@@ -16,16 +17,23 @@ namespace lvox
 // This class can be removed if one day it becomes available from the
 // cpp interface.
 Trajectory::Trajectory(const std::filesystem::path& trajectory_file)
-    : m_pts_view{}
-    , m_pts_table{}
-    , m_pts_view_set{}
+    : m_traj_points{}
 {
+    using dim                  = pdal::Dimension::Id;
     const std::string driver   = pdal::StageFactory::inferReaderDriver(trajectory_file.string());
     const std::string filename = trajectory_file.string();
+
     if (driver.empty())
         throw std::runtime_error(
             std::format("Cannot determine reader for input file: {}", filename.c_str())
         );
+
+    pdal::PointTable pts_table;
+    const auto&      layout = pts_table.layout();
+    layout->registerDim(dim::GpsTime);
+    layout->registerDim(dim::X);
+    layout->registerDim(dim::Y);
+    layout->registerDim(dim::Z);
 
     pdal::Options reader_opts;
     reader_opts.add("filename", filename);
@@ -41,61 +49,54 @@ Trajectory::Trajectory(const std::filesystem::path& trajectory_file)
     reader_opts.add("separator", " ");
 
     reader->setOptions(reader_opts);
-    reader->prepare(m_pts_table);
-    m_pts_view_set = reader->execute(m_pts_table);
-    m_pts_view     = *(m_pts_view_set.begin());
+    reader->prepare(pts_table);
+    const auto view_set = reader->execute(pts_table);
+
+    m_traj_points = **view_set.begin() | std::ranges::views::transform([](const auto& pt) -> Point {
+        return Point{
+            .m_gps_time = pt.template getFieldAs<double>(dim::GpsTime),
+            .m_coord =
+                {pt.template getFieldAs<double>(dim::X),
+                 pt.template getFieldAs<double>(dim::Y),
+                 pt.template getFieldAs<double>(dim::Z)}
+        };
+    }) | std::ranges::to<std::vector<Point>>(),
+
+    std::ranges::sort(m_traj_points, [](const Point& lhs, const Point& rhs) -> bool {
+        return lhs.m_gps_time < rhs.m_gps_time;
+    });
 }
 
-auto Trajectory::get_point_from_gps_time(double gps_time) -> std::optional<Point>
+auto Trajectory::interpolate_point_from_gps_time(double gps_time) const -> std::optional<lvox::Point>
 {
-    using DimId               = pdal::Dimension::Id;
-    pdal::PointViewIter upper = std::lower_bound(
-        m_pts_view->begin(),
-        m_pts_view->end(),
+    using DimId = pdal::Dimension::Id;
+    auto upper  = std::lower_bound(
+        m_traj_points.begin(),
+        m_traj_points.end(),
         gps_time,
-        [](const pdal::PointRef pt, double time) {
-            return pt.getFieldAs<double>(DimId::GpsTime) < time;
+        [](const Point pt, double time) {
+            return pt.m_gps_time < time;
         }
     );
 
     // gps time is not found in the trajectory
-    if (upper == m_pts_view->begin() || upper == m_pts_view->end())
+    if (upper == m_traj_points.begin() || upper == m_traj_points.end())
     {
         return {};
     }
 
     // Returning a point in the trajectory that is the closest to the
     // requested gps time by linear interpolation.
-    pdal::PointRef p1   = *(upper - 1);
-    pdal::PointRef p2   = *upper;
-    const double   t1   = p1.getFieldAs<double>(DimId::GpsTime);
-    const double   t2   = p2.getFieldAs<double>(DimId::GpsTime);
-    const double   frac = (gps_time - t1) / (t2 - t1);
+    const auto   p1   = *(upper - 1);
+    const auto   p2   = *upper;
+    const double t1   = p1.m_gps_time;
+    const double t2   = p2.m_gps_time;
+    const double frac = (gps_time - t1) / (t2 - t1);
 
-    return Point{
-        .m_gps_time = std::lerp(
-            p1.getFieldAs<double>(DimId::GpsTime), p2.getFieldAs<double>(DimId::GpsTime), frac
-        ),
-        .m_coord =
-            lvox::Point{
-                std::lerp(p1.getFieldAs<double>(DimId::X), p2.getFieldAs<double>(DimId::X), frac),
-                std::lerp(p1.getFieldAs<double>(DimId::Y), p2.getFieldAs<double>(DimId::Y), frac),
-                std::lerp(p1.getFieldAs<double>(DimId::Z), p2.getFieldAs<double>(DimId::Z), frac)
-            },
-        .m_orientation =
-            lvox::Vector{
-                std::lerp(
-                    p1.getFieldAs<double>(DimId::Pitch), p2.getFieldAs<double>(DimId::Pitch), frac
-                ),
-                std::lerp(
-                    p1.getFieldAs<double>(DimId::Roll), p2.getFieldAs<double>(DimId::Roll), frac
-                ),
-                std::lerp(
-                    p1.getFieldAs<double>(DimId::Azimuth),
-                    p2.getFieldAs<double>(DimId::Azimuth),
-                    frac
-                )
-            }
+    return lvox::Point{
+        std::lerp(p1.m_coord.x(), p2.m_coord.x(), frac),
+        std::lerp(p1.m_coord.y(), p2.m_coord.y(), frac),
+        std::lerp(p1.m_coord.z(), p2.m_coord.z(), frac)
     };
 }
 

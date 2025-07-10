@@ -35,10 +35,10 @@ auto main(int argc, char* argv[]) -> int
     namespace fs = std::filesystem;
     using dim    = pdal::Dimension::Id;
 
-    std::vector<std::string> args{argv, argv + argc};
+    std::vector<std::string> args{argv + 1, argv + argc};
     lvox::Logger             logger{"LVOX Standalone"};
 
-    if (args.size() < 2)
+    if (args.empty())
     {
         logger.error("Invalid amount of arguments supplied");
         std::cout << g_usage_info << std::endl;
@@ -109,10 +109,11 @@ auto main(int argc, char* argv[]) -> int
     options.add("filename", file.string());
 
     pdal::PointTable pts_table;
-    pts_table.layout()->registerDim(dim::X);
-    pts_table.layout()->registerDim(dim::Y);
-    pts_table.layout()->registerDim(dim::Z);
-    pts_table.layout()->registerDim(dim::GpsTime);
+    auto layout = pts_table.layout();
+    layout->registerDim(dim::X);
+    layout->registerDim(dim::Y);
+    layout->registerDim(dim::Z);
+    layout->registerDim(dim::GpsTime);
 
     pdal::PointViewPtr view{std::make_shared<pdal::PointView>(pts_table)};
     auto               stage_factory = std::make_unique<pdal::StageFactory>();
@@ -144,7 +145,7 @@ Amount of points    {})",
 
     if (is_mls)
     {
-        logger.info("Loading trajectory traj_file {}", traj_file.string());
+        logger.info("Loading trajectory file {}", traj_file.string());
         scanner_origin = std::make_shared<lvox::Trajectory>(traj_file);
     }
     else
@@ -155,22 +156,22 @@ Amount of points    {})",
     lvox::Scan scan{*pts_view_set.begin(), scanner_origin};
 
     const lvox::algorithms::ComputeOptions compute_options{.voxel_size = voxel_size};
-    const lvox::algorithms::PadResult result = lvox::algorithms::compute_pad(
-        {scan},
-        lvox::algorithms::PADComputeOptions{compute_options}
-    );
-    lvox::h5_exporter::export_grid(result, "pad", file);
+    // const lvox::algorithms::PadResult result = lvox::algorithms::compute_pad(
+    //     {scan},
+    //     lvox::algorithms::PADComputeOptions{compute_options}
+    // );
+    // lvox::h5_exporter::export_grid(result, "pad", file);
 
-    /*const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds({scan}, compute_options);
-    lvox::algorithms::ComputeData data{
-        .m_counts{bounds, compute_options.voxel_size},
-        .m_lengths{bounds, compute_options.voxel_size},
-        .m_hits{{bounds, compute_options.voxel_size}},
-    };
-    lvox::algorithms::compute_rays_count_and_length(scan, data, compute_options);
+    const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds({scan}, compute_options);
+      lvox::algorithms::ComputeData data{
+      .m_counts{bounds, compute_options.voxel_size},
+      .m_lengths{bounds, compute_options.voxel_size},
+      .m_hits{{bounds, compute_options.voxel_size}},
+      };
+      lvox::algorithms::compute_rays_count_and_length(scan, data, compute_options);
 
     logger.info("Writing output HDF5 file");
     lvox::h5_exporter::export_grid(*data.m_hits, "hits", file);
     lvox::h5_exporter::export_grid(data.m_counts, "counts", file);
-    lvox::h5_exporter::export_grid(data.m_lengths, "lengths", file);*/
+    lvox::h5_exporter::export_grid(data.m_lengths, "lengths", file);
 }

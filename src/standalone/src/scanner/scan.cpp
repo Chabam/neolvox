@@ -11,7 +11,7 @@ auto Scan::ComputeBeamOrigin::operator()(const Point& scan_origin) -> Point
 
 auto Scan::ComputeBeamOrigin::operator()(const std::shared_ptr<Trajectory>& trajectory) -> Point
 {
-    const auto point = trajectory->get_point_from_gps_time(gps_time);
+    const auto point = trajectory->interpolate_point_from_gps_time(gps_time);
 
     [[unlikely]]
     if (!point)
@@ -21,7 +21,7 @@ auto Scan::ComputeBeamOrigin::operator()(const std::shared_ptr<Trajectory>& traj
         );
     }
 
-    return point->m_coord;
+    return *point;
 }
 
 } // namespace lvox
