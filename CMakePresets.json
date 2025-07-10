@@ -48,6 +48,15 @@
                 "LVOX_STANDALONE": "ON",
                 "BUILD_TESTING": "ON"
             }
+        },
+        {
+            "name": "windows-standalone",
+            "inherits": [ "windows-vcpkg" ],
+            "cacheVariables": {
+                "LVOX_COMPUTREE_BINDINGS": "OFF",
+                "LVOX_STANDALONE": "ON",
+                "BUILD_TESTING": "ON"
+            }
         }
     ]
 }

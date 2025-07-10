@@ -4,9 +4,8 @@
 #include <filesystem>
 #include <ranges>
 
-#include <lvox/voxel/h5_exporter.hpp>
-
 #include <lvox/voxel/grid.hpp>
+#include <lvox/voxel/h5_exporter.hpp>
 
 namespace lvox::h5_exporter
 {
@@ -59,10 +58,10 @@ auto write_grid_as_coo_matrix_to_h5(
 
     // Writing indexes
     {
-        const auto indexes =
-            grid | std::views::keys | std::views::transform([&grid](Index index) -> Index3D {
-                return grid.index_to_index3d(index);
-            });
+        const auto indexes = grid | std::views::enumerate | std::views::keys |
+                             std::views::transform([&grid](Index index) -> Index3D {
+                                 return grid.index_to_index3d(index);
+                             });
 
         const std::vector<size_t> xs =
             indexes | std::views::elements<0> | std::ranges::to<std::vector<size_t>>();
@@ -87,16 +86,19 @@ auto write_grid_as_coo_matrix_to_h5(
 
     // Writing values
     {
-        const auto values = grid | std::views::values | std::ranges::to<std::vector<cell_t>>();
+        const auto values = grid | std::views::enumerate | std::views::values |
+                            std::ranges::to<std::vector<cell_t>>();
 
         H5::DataSet values_data =
             plot_group.createDataSet("values", h5_data_t, data_space, create_prop_list);
         values_data.write(values.data(), h5_data_t);
     }
 
-    const hsize_t                singular_coord_dim[] = {1};
-    H5::DataSpace                singular_coord_data_space{1, singular_coord_dim};
-    const std::array<hsize_t, 3> singular_3d_coord_count = {1, 1, 1};
+    // Minimum coordinate attribute
+    const std::array<hsize_t,1>  scalar_value_dim{1};
+    H5::DataSpace                scalar_data_space{1, scalar_value_dim.data()};
+    const std::array<hsize_t, 1> singular_3d_coord_count = {3};
+    H5::DataSpace singular_3d_coord_data_space{1, singular_3d_coord_count.data()};
 
     const auto    h5_voxel_size_t = H5::PredType::NATIVE_DOUBLE;
     H5::Attribute voxel_size_attr =
@@ -105,14 +107,21 @@ auto write_grid_as_coo_matrix_to_h5(
 
     const auto h5_min_coords_t = H5::PredType::NATIVE_DOUBLE;
 
-    H5::DataSpace min_coords_data_space{1, singular_coord_dim};
     H5::Attribute min_coord_attr = plot_group.createAttribute(
-        "Minimal coordinates values", h5_min_coords_t, min_coords_data_space
+        "Minimal coordinates values", h5_min_coords_t, singular_3d_coord_data_space
     );
 
     const lvox::Bounds&         bounds     = grid.bounds();
     const std::array<double, 3> min_coords = {bounds.minx, bounds.miny, bounds.minz};
     min_coord_attr.write(h5_voxel_size_t, min_coords.data());
+
+    // Grid dimensions
+    const auto h5_grid_dim_t = H5::PredType::NATIVE_UINT64;
+    H5::Attribute grid_dims_attr =
+        plot_group.createAttribute("Dimensions", h5_grid_dim_t, singular_3d_coord_data_space);
+    const std::array<Index, 3> grid_dims = {grid.dim_x(), grid.dim_y(), grid.dim_z()};
+    grid_dims_attr.write(h5_grid_dim_t, grid_dims.data());
+
     output.close();
 }
 

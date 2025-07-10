@@ -29,6 +29,10 @@ target_link_libraries(lvox_tests
     lvox_common
 )
 
+if (WIN32)
+    target_compile_definitions(lvox_tests PRIVATE NOMINMAX)
+endif()
+
 target_include_directories(lvox_tests PUBLIC ${neolvox_SOURCE_DIR}/include)
 
 set_target_properties(lvox_tests

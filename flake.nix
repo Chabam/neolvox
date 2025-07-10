@@ -11,11 +11,12 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
       scriptDeps = pkgs.python3.withPackages (pkgs: with pkgs; [
-              napari
-              matplotlib
-              numpy
-              h5py
               anyqt
+              h5py
+              matplotlib
+              napari
+              numpy
+              sparse
             ]);
     in
       {

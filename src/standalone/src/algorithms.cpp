@@ -1,4 +1,6 @@
+#include <cstddef>
 #include <ranges>
+#include <stdexcept>
 #include <thread>
 
 #include <pdal/Dimension.hpp>
@@ -9,21 +11,22 @@
 #include <lvox/scanner/beam.hpp>
 #include <lvox/scanner/scan.hpp>
 
+#include "lvox/scanner/trajectory.hpp"
+#include "lvox/voxel/grid.hpp"
+
 namespace lvox::algorithms
 {
 
 auto compute_rays_count_and_length(
-    const PointCloudView& points,
-    const Point&          scan_origin,
-    ComputeData&          data,
-    const ComputeOptions& options
+    const Scan& scan, ComputeData& data, const ComputeOptions& options
 ) -> void
 {
     using dim = pdal::Dimension::Id;
 
     Logger logger{"Compute ray counts and length"};
 
-    const Index point_count     = points->size();
+    const PointCloudView& points      = scan.m_points;
+    const Index           point_count = points->size();
     const Index points_per_core = std::ceil(static_cast<float>(point_count) / options.job_limit);
 
     logger.debug(
@@ -36,18 +39,23 @@ Point per core  {})",
         points_per_core
     );
 
-    // IMPORTANT: must be scoped in order for jthreads to be automatically join
+    // IMPORTANT: must be scoped in order for jthreads to be automatically joined
     {
         std::vector<std::jthread> threads;
-        const auto                trace_points_from_scanner =
-            [&logger](ComputeData& data, const Point& scan_origin, auto&& points) -> void {
+        const auto                trace_points_from_scanner = [&logger,
+                                                &scan](ComputeData& data, auto&& points) -> void {
             for (const auto& point : points)
             {
                 const Point pt{
                     point.template getFieldAs<double>(dim::X),
                     point.template getFieldAs<double>(dim::Y),
-                    point.template getFieldAs<double>(dim::Z)
+                    point.template getFieldAs<double>(dim::Z),
                 };
+
+                const Point scan_origin = std::visit(
+                    Scan::ComputeBeamOrigin{point.template getFieldAs<double>(dim::GpsTime)},
+                    scan.m_scanner_origin
+                );
 
                 const Vector beam_to_point{scan_origin - pt};
 
@@ -60,8 +68,7 @@ Point per core  {})",
                 grid_traversal(
                     data.m_counts,
                     Beam{pt, beam_to_point},
-                    [&data](const VoxelHitInfo& voxel_hit_info
-                    ) mutable -> void {
+                    [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
                         const auto [x, y, z] = voxel_hit_info.m_index;
                         data.m_counts.at(x, y, z) += 1;
                         data.m_lengths.at(x, y, z) += 1;
@@ -75,9 +82,7 @@ Point per core  {})",
 
         for (auto chunk : *points | std::views::chunk(points_per_core))
         {
-            threads.emplace_back(
-                trace_points_from_scanner, std::ref(data), std::ref(scan_origin), std::move(chunk)
-            );
+            threads.emplace_back(trace_points_from_scanner, std::ref(data), std::move(chunk));
         }
     }
 }
@@ -104,7 +109,7 @@ Beams per core  {})",
         beams_per_core
     );
 
-    // IMPORTANT: must be scoped in order for jthreads to be automatically join
+    // IMPORTANT: must be scoped in order for jthreads to be automatically joined
     {
         std::vector<std::jthread> threads;
         const auto compute_rays_from_scanner = [&logger](ComputeData& data, auto&& beams) -> void {
@@ -153,9 +158,8 @@ auto compute_bias_corrected_maximum_likelihood_estimator(
     return 0.;
 }
 
-auto compute_pad(
-    const std::vector<std::shared_ptr<lvox::Scan>>& scans, const PADComputeOptions& options
-) -> PadResult
+auto compute_pad(const std::vector<lvox::Scan>& scans, const PADComputeOptions& options)
+    -> PadResult
 {
     Logger logger{"LVOX"};
     logger.info("Scan count {}", scans.size());
@@ -189,22 +193,23 @@ auto compute_pad(
                                                 : std::optional<CountGrid>{},
         };
 
-        if (options.simulated_scanner)
+        if (options.theoritical_scanner)
         {
             logger.info("Compute theoriticals {}/{}", scan_num + 1, scans.size());
-            compute_theoriticals(scan->get_beams(), data, options);
+            compute_theoriticals(options.theoritical_scanner->get_beams(), data, options);
         }
 
         logger.info("Compute ray counts and length {}/{}", scan_num + 1, scans.size());
 
         // TODO: preload a spherical region around scanner to avoid contention with the grid
-        // TODO: use GPS time for the scan position
-        compute_rays_count_and_length(
-            scan->get_points(), scan->get_scan_position({}), data, options
-        );
+        compute_rays_count_and_length(scan, data, options);
 
-        const auto  cells          = std::views::keys(data.m_counts);
-        const auto  cell_count     = std::ranges::distance(cells);
+        const auto index_of_cells_with_data =
+            data.m_counts | std::views::enumerate | std::views::filter([](const auto& pair) {
+                return std::get<1>(pair) > 0;
+            }) |
+            std::views::keys | std::ranges::to<std::vector<Index>>();
+        const auto  cell_count     = std::ranges::distance(index_of_cells_with_data);
         const Index cells_per_core = std::ceil(cell_count / options.job_limit);
 
         logger.info("Computing PAD", scans.size());
@@ -218,14 +223,14 @@ Cells per core  {})",
             cells_per_core
         );
 
-        const auto is_under_threshold = [](const auto& ray_count) -> bool {
+        constexpr auto is_under_threshold = [](const auto& ray_count) -> bool {
             return ray_count < 5;
         };
 
         std::vector<std::jthread> threads;
 
         const auto process_cells_with_data =
-            [&logger, &is_under_threshold, &pad_compute_method, &pad_result](
+            [&logger, &is_under_threshold, &pad_compute_method, &pad_result, scan_count = scans.size()](
                 const ComputeData& data, auto&& idx_range
             ) -> void {
             for (const auto& idx : idx_range)
@@ -234,53 +239,30 @@ Cells per core  {})",
                 if (is_under_threshold(ray_count))
                     continue;
 
-                pad_result.at(idx) += pad_compute_method(data, idx);
+                // Weighted sum of the PAD to avoid the mean afterwards
+                pad_result.at(idx) += pad_compute_method(data, idx) / static_cast<double>(scan_count);
             }
             logger.debug("Compute PAD job finished");
         };
 
-        for (auto&& chunk : cells | std::views::chunk(cells_per_core))
+        for (auto&& chunk : index_of_cells_with_data | std::views::chunk(cells_per_core))
         {
             threads.emplace_back(process_cells_with_data, std::ref(data), std::move(chunk));
-        }
-    }
-
-    {
-        const auto  cells          = std::views::keys(pad_result);
-        const auto  cell_count     = std::ranges::distance(cells);
-        const Index cells_per_core = std::ceil(cell_count / options.job_limit);
-
-        {
-            std::vector<std::jthread> threads;
-
-            const auto mean_of_results = [scan_count =
-                                              scans.size()](PadResult& pad, auto&& idxs) -> void {
-                for (const auto& idx : idxs)
-                {
-                    pad.at(idx).store(pad.at(idx).load() / static_cast<double>(scan_count));
-                }
-            };
-
-            for (auto&& chunk : pad_result | std::views::keys | std::views::chunk(cells_per_core))
-            {
-                threads.emplace_back(mean_of_results, std::ref(pad_result), std::move(chunk));
-            }
         }
     }
 
     return pad_result;
 }
 
-auto compute_scene_bounds(
-    const std::vector<std::shared_ptr<lvox::Scan>>& scans, const ComputeOptions& options
-) -> lvox::Bounds
+auto compute_scene_bounds(const std::vector<lvox::Scan>& scans, const ComputeOptions& options)
+    -> lvox::Bounds
 {
-       Bounds total_bounds;
+    Bounds total_bounds;
 
     for (const auto& scan : scans)
     {
         Bounds scan_bounds;
-        scan->get_points()->calculateBounds(scan_bounds);
+        scan.m_points->calculateBounds(scan_bounds);
         total_bounds.grow(scan_bounds);
     }
 

@@ -2,6 +2,7 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy
 import argparse
+import sparse
 
 
 def main():
