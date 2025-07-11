@@ -13,20 +13,14 @@ namespace lvox
 class Trajectory
 {
   public:
-    struct Point
-    {
-        double      m_gps_time;
-        lvox::Point m_coord;
-    };
-
     // TODO: Make this more flexible with reader options
-    Trajectory(const std::filesystem::path& trajectory_file);
+    Trajectory(PointCloudView&& trajectory_points);
 
     auto interpolate_point_from_gps_time(double gps_time) const -> std::optional<lvox::Point>;
-    auto get_points() const -> const std::vector<Point>& { return m_traj_points; }
+    auto get_points() const -> const PointCloud& { return *m_traj_points; }
 
   private:
-    std::vector<Point> m_traj_points;
+    PointCloudView m_traj_points;
 };
 } // namespace lvox
 

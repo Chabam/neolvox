@@ -11,7 +11,6 @@
 #include <lvox/scanner/beam.hpp>
 #include <lvox/scanner/scan.hpp>
 
-#include "lvox/scanner/trajectory.hpp"
 #include "lvox/voxel/grid.hpp"
 
 namespace lvox::algorithms
@@ -44,16 +43,12 @@ Point per core  {})",
         std::vector<std::jthread> threads;
         const auto                trace_points_from_scanner = [&logger,
                                                 &scan](ComputeData& data, auto&& points) -> void {
-            for (const auto& point : points)
+            for (const auto& timed_point : points)
             {
-                const Point pt{
-                    point.template getFieldAs<double>(dim::X),
-                    point.template getFieldAs<double>(dim::Y),
-                    point.template getFieldAs<double>(dim::Z),
-                };
-
+                const double gps_time = timed_point.m_gps_time;
+                const Point& pt = timed_point.m_point;
                 const Point scan_origin = std::visit(
-                    Scan::ComputeBeamOrigin{point.template getFieldAs<double>(dim::GpsTime)},
+                    Scan::ComputeBeamOrigin{timed_point.m_gps_time},
                     scan.m_scanner_origin
                 );
 
@@ -264,9 +259,7 @@ auto compute_scene_bounds(const std::vector<lvox::Scan>& scans, const ComputeOpt
 
     for (const auto& scan : scans)
     {
-        Bounds scan_bounds;
-        scan.m_points->calculateBounds(scan_bounds);
-        total_bounds.grow(scan_bounds);
+        total_bounds.grow(scan.m_bounds);
     }
 
     return total_bounds;

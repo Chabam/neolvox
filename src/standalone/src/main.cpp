@@ -1,7 +1,10 @@
 #include <filesystem>
 #include <format>
+#include <functional>
 #include <iostream>
 #include <memory>
+#include <ranges>
+#include <stdexcept>
 
 #include <pdal/Dimension.hpp>
 #include <pdal/Options.hpp>
@@ -30,13 +33,91 @@ Options:
    -h, --help                             Prints this message
 )";
 
+auto load_point_cloud_from_file(
+    const std::filesystem::path&                        file,
+    std::optional<std::reference_wrapper<lvox::Bounds>> bounds                    = {},
+    std::optional<pdal::Options>                        additional_reader_options = {}
+) -> lvox::PointCloudView
+{
+    using dim    = pdal::Dimension::Id;
+    namespace fs = std::filesystem;
+
+    lvox::Logger logger{"Point cloud reader"};
+    if (!fs::exists(file) || !fs::is_regular_file(file))
+    {
+        throw std::runtime_error{std::format(
+            "Provided point cloud file doesn't exists or is not a file: {}", file.string()
+        )};
+    }
+
+    pdal::Options options;
+    options.add("filename", file.string());
+
+    if (additional_reader_options)
+    {
+        options.add(*additional_reader_options);
+    }
+
+    pdal::PointTable pts_table;
+    auto             layout = pts_table.layout();
+    layout->registerDim(dim::X);
+    layout->registerDim(dim::Y);
+    layout->registerDim(dim::Z);
+    layout->registerDim(dim::GpsTime);
+
+    auto stage_factory = std::make_unique<pdal::StageFactory>();
+
+    const std::string driver = pdal::StageFactory::inferReaderDriver(file.string());
+
+    if (driver.empty())
+    {
+        throw std::runtime_error(
+            std::format("Cannot determine reader for input file: {}", file.string())
+        );
+    }
+
+    pdal::Stage* file_reader = stage_factory->createStage(driver);
+
+    file_reader->setOptions(options);
+    file_reader->prepare(pts_table);
+
+    logger.info(
+        R"(
+Loading file        {}
+Amount of points    {})",
+        file.filename().string(),
+        file_reader->preview().m_pointCount
+    );
+
+    const auto pts_view_set = file_reader->execute(pts_table);
+    const auto view         = *pts_view_set.begin();
+
+    if (bounds)
+    {
+        view->calculateBounds(*bounds);
+    }
+
+    return std::make_unique<lvox::PointCloud>(
+        *view | std::ranges::views::transform([](const auto& pt) -> lvox::TimedPoint {
+            return {
+                pt.template getFieldAs<double>(dim::GpsTime),
+                lvox::Point{
+                    pt.template getFieldAs<double>(dim::X),
+                    pt.template getFieldAs<double>(dim::Y),
+                    pt.template getFieldAs<double>(dim::Z),
+                }
+            };
+        }) |
+        std::ranges::to<lvox::PointCloud>()
+    );
+}
+
 auto main(int argc, char* argv[]) -> int
 {
     namespace fs = std::filesystem;
-    using dim    = pdal::Dimension::Id;
 
     std::vector<std::string> args{argv + 1, argv + argc};
-    lvox::Logger             logger{"LVOX Standalone"};
+    lvox::Logger             logger{"LVOX"};
 
     if (args.empty())
     {
@@ -45,9 +126,9 @@ auto main(int argc, char* argv[]) -> int
         return 1;
     }
 
-    bool            is_mls      = false;
-    double          voxel_size  = 0.1;
-    Eigen::Vector3d scan_origin = lvox::Vector::Constant(0.); // (0,0,0)
+    bool        is_mls      = false;
+    double      voxel_size  = 0.1;
+    lvox::Point scan_origin = lvox::Vector::Constant(0.); // (0,0,0)
 
     fs::path traj_file;
     fs::path file;
@@ -81,79 +162,41 @@ auto main(int argc, char* argv[]) -> int
         ++arg_it;
     }
 
-    if (!fs::exists(file) || !fs::is_regular_file(file))
-    {
-        logger.error(
-            "Provided point cloud file doesn't exists or is not a file: {}", file.string()
-        );
-        return 1;
-    }
+    lvox::Bounds scan_bounds;
 
     if (is_mls)
     {
-        if (!fs::exists(traj_file) || !fs::is_regular_file(traj_file))
-        {
-            logger.error(
-                "Provided trajectory file doesn't exists or is not a file: {}", traj_file.string()
-            );
-            return 1;
-        }
-
         if (scan_origin != lvox::Vector::Constant(0.))
         {
             logger.warn("Scan origin being set while in MLS mode, ignoring it");
         }
     }
 
-    pdal::Options options;
-    options.add("filename", file.string());
-
-    pdal::PointTable pts_table;
-    auto layout = pts_table.layout();
-    layout->registerDim(dim::X);
-    layout->registerDim(dim::Y);
-    layout->registerDim(dim::Z);
-    layout->registerDim(dim::GpsTime);
-
-    pdal::PointViewPtr view{std::make_shared<pdal::PointView>(pts_table)};
-    auto               stage_factory = std::make_unique<pdal::StageFactory>();
-
-    const std::string driver = pdal::StageFactory::inferReaderDriver(file.string());
-
-    if (driver.empty())
-    {
-        throw std::runtime_error(
-            std::format("Cannot determine reader for input file: {}", file.string())
-        );
-    }
-
-    pdal::Stage* file_reader = stage_factory->createStage(driver);
-
-    file_reader->setOptions(options);
-    file_reader->prepare(pts_table);
-
-    logger.info(
-        R"(
-Loading file        {}
-Amount of points    {})",
-        file.filename().string(),
-        file_reader->preview().m_pointCount
-    );
-
-    const auto          pts_view_set = file_reader->execute(pts_table);
     lvox::ScannerOrigin scanner_origin;
 
     if (is_mls)
     {
         logger.info("Loading trajectory file {}", traj_file.string());
-        scanner_origin = std::make_shared<lvox::Trajectory>(traj_file);
+        pdal::Options reader_opts;
+        reader_opts.add(
+            "header",
+            "GpsTime X Y Z Q0 Q1 Q2 Q3 Red Green Blue NormalX NormalY NormalZ Pitch Roll Azimuth"
+        );
+        reader_opts.add("skip", 1);
+        reader_opts.add("separator", " ");
+
+        scanner_origin =
+            std::make_shared<lvox::Trajectory>(load_point_cloud_from_file(traj_file, {}, reader_opts));
     }
     else
     {
         scanner_origin = scan_origin;
     }
 
-    lvox::Scan scan{*pts_view_set.begin(), scanner_origin};
+    std::vector<lvox::Scan> scans;
+    scans.emplace_back(
+        load_point_cloud_from_file(file, {scan_bounds}), scanner_origin, scan_bounds
+    );
 
     const lvox::algorithms::ComputeOptions compute_options{.voxel_size = voxel_size};
     // const lvox::algorithms::PadResult result = lvox::algorithms::compute_pad(
@@ -162,13 +205,13 @@ Amount of points    {})",
     // );
     // lvox::h5_exporter::export_grid(result, "pad", file);
 
-    const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds({scan}, compute_options);
-      lvox::algorithms::ComputeData data{
-      .m_counts{bounds, compute_options.voxel_size},
-      .m_lengths{bounds, compute_options.voxel_size},
-      .m_hits{{bounds, compute_options.voxel_size}},
-      };
-      lvox::algorithms::compute_rays_count_and_length(scan, data, compute_options);
+    const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds(scans, compute_options);
+    lvox::algorithms::ComputeData data{
+        .m_counts{bounds, compute_options.voxel_size},
+        .m_lengths{bounds, compute_options.voxel_size},
+        .m_hits{{bounds, compute_options.voxel_size}},
+    };
+    lvox::algorithms::compute_rays_count_and_length(scans[0], data, compute_options);
 
     logger.info("Writing output HDF5 file");
     lvox::h5_exporter::export_grid(*data.m_hits, "hits", file);

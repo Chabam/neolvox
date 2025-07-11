@@ -16,6 +16,7 @@ struct Scan
 {
     PointCloudView m_points;
     ScannerOrigin  m_scanner_origin;
+    Bounds         m_bounds;
 
     struct ComputeBeamOrigin
     {
