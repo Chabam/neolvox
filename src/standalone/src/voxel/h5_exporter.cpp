@@ -1,6 +1,5 @@
 #include <H5Fpublic.h>
 #include <H5public.h>
-#include <cstdint>
 #include <filesystem>
 #include <ranges>
 
@@ -57,48 +56,45 @@ auto write_grid_as_coo_matrix_to_h5(
     create_prop_list.setFillValue(h5_data_t, 0);
 
     // Writing indexes
-    {
-        const auto indexes = grid | std::views::enumerate | std::views::keys |
-                             std::views::transform([&grid](Index index) -> Index3D {
-                                 return grid.index_to_index3d(index);
-                             });
+    auto index_with_data = grid | std::views::enumerate |
+                           std::views::filter([&grid](const auto& pair) -> bool {
+                               return grid.is_na(std::get<0>(pair));
+                           }) |
+                           std::views::elements<0>;
+    auto index3d_with_data = index_with_data | std::views::transform([&grid](const Index& index) -> Index3D {
+        return grid.index_to_index3d(index);
+    });
 
-        const std::vector<size_t> xs =
-            indexes | std::views::elements<0> | std::ranges::to<std::vector<size_t>>();
-        const std::vector<size_t> ys =
-            indexes | std::views::elements<1> | std::ranges::to<std::vector<size_t>>();
-        const std::vector<size_t> zs =
-            indexes | std::views::elements<2> | std::ranges::to<std::vector<size_t>>();
+    const std::vector<size_t> xs =
+        index3d_with_data | std::views::elements<0> | std::ranges::to<std::vector<size_t>>();
+    const std::vector<size_t> ys =
+        index3d_with_data | std::views::elements<1> | std::ranges::to<std::vector<size_t>>();
+    const std::vector<size_t> zs =
+        index3d_with_data | std::views::elements<2> | std::ranges::to<std::vector<size_t>>();
+    const std::vector<cell_t> values =
+        index_with_data | std::views::transform([&grid](const Index& index) -> cell_t {
+            return grid.at(index);
+        }) | std::ranges::to<std::vector<cell_t>>();
 
-        const auto  h5_size_t = H5::PredType::NATIVE_HSIZE;
-        H5::DataSet xs_data =
-            plot_group.createDataSet("x", h5_size_t, data_space, create_prop_list);
-        xs_data.write(xs.data(), h5_size_t);
+    const auto  h5_size_t = H5::PredType::NATIVE_HSIZE;
+    H5::DataSet xs_data   = plot_group.createDataSet("x", h5_size_t, data_space, create_prop_list);
+    xs_data.write(xs.data(), h5_size_t);
 
-        H5::DataSet ys_data =
-            plot_group.createDataSet("y", h5_size_t, data_space, create_prop_list);
-        ys_data.write(ys.data(), h5_size_t);
+    H5::DataSet ys_data = plot_group.createDataSet("y", h5_size_t, data_space, create_prop_list);
+    ys_data.write(ys.data(), h5_size_t);
 
-        H5::DataSet zs_data =
-            plot_group.createDataSet("z", h5_size_t, data_space, create_prop_list);
-        zs_data.write(zs.data(), h5_size_t);
-    }
+    H5::DataSet zs_data = plot_group.createDataSet("z", h5_size_t, data_space, create_prop_list);
+    zs_data.write(zs.data(), h5_size_t);
 
-    // Writing values
-    {
-        const auto values = grid | std::views::enumerate | std::views::values |
-                            std::ranges::to<std::vector<cell_t>>();
-
-        H5::DataSet values_data =
-            plot_group.createDataSet("values", h5_data_t, data_space, create_prop_list);
-        values_data.write(values.data(), h5_data_t);
-    }
+    H5::DataSet values_data =
+        plot_group.createDataSet("values", h5_data_t, data_space, create_prop_list);
+    values_data.write(values.data(), h5_data_t);
 
     // Minimum coordinate attribute
-    const std::array<hsize_t,1>  scalar_value_dim{1};
+    const std::array<hsize_t, 1> scalar_value_dim{1};
     H5::DataSpace                scalar_data_space{1, scalar_value_dim.data()};
     const std::array<hsize_t, 1> singular_3d_coord_count = {3};
-    H5::DataSpace singular_3d_coord_data_space{1, singular_3d_coord_count.data()};
+    H5::DataSpace                singular_3d_coord_data_space{1, singular_3d_coord_count.data()};
 
     const auto    h5_voxel_size_t = H5::PredType::NATIVE_DOUBLE;
     H5::Attribute voxel_size_attr =
@@ -116,7 +112,7 @@ auto write_grid_as_coo_matrix_to_h5(
     min_coord_attr.write(h5_voxel_size_t, min_coords.data());
 
     // Grid dimensions
-    const auto h5_grid_dim_t = H5::PredType::NATIVE_UINT64;
+    const auto    h5_grid_dim_t = H5::PredType::NATIVE_UINT64;
     H5::Attribute grid_dims_attr =
         plot_group.createAttribute("Dimensions", h5_grid_dim_t, singular_3d_coord_data_space);
     const std::array<Index, 3> grid_dims = {grid.dim_x(), grid.dim_y(), grid.dim_z()};
