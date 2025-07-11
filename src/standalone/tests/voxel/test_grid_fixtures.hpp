@@ -6,6 +6,8 @@
 
 #include <lvox/voxel/grid.hpp>
 
+// TODO: Remove
+
 template <class GridT, lvox::Index x, lvox::Index y, lvox::Index z, double cell_size>
 struct VoxelGridTestParam
 {
@@ -26,10 +28,7 @@ class VoxelGridTests : public testing::Test
     using grid_t = GridT;
 };
 
-using DenseGrid  = lvox::DenseGrid<std::uint32_t>;
-using SparseGrid = lvox::DenseGrid<std::uint32_t>;
-
-using GridTypes = testing::Types<DenseGrid, SparseGrid>;
+using GridTypes = testing::Types<lvox::GridU32>;
 
 TYPED_TEST_SUITE(VoxelGridTests, GridTypes);
 

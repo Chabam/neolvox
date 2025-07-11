@@ -71,7 +71,7 @@ Point per core  {})",
                     [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
                         const auto [x, y, z] = voxel_hit_info.m_index;
                         data.m_counts.at(x, y, z) += 1;
-                        data.m_lengths.at(x, y, z) += 1;
+                        data.m_lengths.at(x, y, z) += voxel_hit_info.m_distance_in_voxel;
                     },
                     beam_to_point.norm()
                 );
@@ -230,9 +230,11 @@ Cells per core  {})",
         std::vector<std::jthread> threads;
 
         const auto process_cells_with_data =
-            [&logger, &is_under_threshold, &pad_compute_method, &pad_result, scan_count = scans.size()](
-                const ComputeData& data, auto&& idx_range
-            ) -> void {
+            [&logger,
+             &is_under_threshold,
+             &pad_compute_method,
+             &pad_result,
+             scan_count = scans.size()](const ComputeData& data, auto&& idx_range) -> void {
             for (const auto& idx : idx_range)
             {
                 const auto& ray_count = data.m_counts.at(idx);
@@ -240,7 +242,8 @@ Cells per core  {})",
                     continue;
 
                 // Weighted sum of the PAD to avoid the mean afterwards
-                pad_result.at(idx) += pad_compute_method(data, idx) / static_cast<double>(scan_count);
+                pad_result.at(idx) +=
+                    pad_compute_method(data, idx) / static_cast<double>(scan_count);
             }
             logger.debug("Compute PAD job finished");
         };

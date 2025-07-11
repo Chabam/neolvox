@@ -4,8 +4,6 @@
 #include <atomic>
 #include <cmath>
 #include <format>
-#include <shared_mutex>
-#include <mutex>
 #include <vector>
 
 #include <lvox/logger/logger.hpp>
@@ -13,14 +11,6 @@
 
 namespace lvox
 {
-
-template <std::ranges::range ContainerT, typename T>
-struct is_dense_container : std::is_same<ContainerT, std::vector<T>>
-{
-};
-
-template <std::ranges::range ContainerT, typename T>
-using is_dense_container_v = is_dense_container<ContainerT, T>::value;
 
 template <typename T>
 struct contained_type
@@ -37,16 +27,15 @@ struct contained_type<std::atomic<T>>
 template <typename T>
 using contained_type_t = contained_type<T>::type;
 
-template <typename T, std::ranges::range ContainerT>
+template <typename T>
 class Grid
 {
   public:
     using cell_t           = T;
     using const_cell_ref   = const cell_t&;
     using cell_ref         = cell_t&;
-    using container_t      = ContainerT;
-    using iterator_t       = ContainerT::iterator;
-    using const_iterator_t = ContainerT::const_iterator;
+    using iterator_t       = std::vector<cell_t>::iterator;
+    using const_iterator_t = std::vector<cell_t>::const_iterator;
 
     Grid()  = default;
     ~Grid() = default;
@@ -56,7 +45,7 @@ class Grid
         , m_dim_x{Grid::adjust_dim_to_grid(bounds.maxx - bounds.minx, cell_size)}
         , m_dim_y{Grid::adjust_dim_to_grid(bounds.maxy - bounds.miny, cell_size)}
         , m_dim_z{Grid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
-        , m_cells{Grid::intialize_container(m_dim_x * m_dim_y * m_dim_z)}
+        , m_cells{m_dim_x * m_dim_y * m_dim_z, std::allocator<cell_t>{}}
         , m_bounds{
             bounds.minx,
             bounds.miny,
@@ -65,7 +54,6 @@ class Grid
             Grid::adjust_bounds_to_grid(m_dim_y, bounds.miny),
             Grid::adjust_bounds_to_grid(m_dim_z, bounds.minz)
         }
-        , m_cells_access{}
     {
 
         Logger logger{"Grid"};
@@ -93,7 +81,6 @@ class Grid
         , m_dim_z{std::move(other.m_dim_z)}
         , m_cells{std::move(other.m_cells)}
         , m_bounds{std::move(other.m_bounds)}
-        , m_cells_access{}
     {
     }
 
@@ -104,7 +91,6 @@ class Grid
         , m_dim_z{other.m_dim_z}
         , m_cells{other.m_cells}
         , m_bounds{other.m_bounds}
-        , m_cells_access{}
     {
     }
 
@@ -141,31 +127,7 @@ class Grid
     [[nodiscard]]
     auto at(Index index) -> cell_ref
     {
-        if constexpr (is_dense_container<container_t, cell_t>::value)
-        {
-            return m_cells.at(index);
-        }
-        else
-        {
-            {
-                std::shared_lock read_lock{m_cells_access};
-                if (const auto& it = m_cells.find(index); it != m_cells.end())
-                {
-                    return it->second;
-                }
-            }
-
-            {
-                std::unique_lock write_lock{m_cells_access};
-
-                if (const auto& it = m_cells.find(index); it != m_cells.end())
-                {
-                    return it->second;
-                }
-
-                return m_cells.emplace(index, contained_type_t<cell_t>{}).first->second;
-            }
-        }
+        return m_cells.at(index);
     }
 
     [[nodiscard]]
@@ -272,10 +234,7 @@ class Grid
 
     auto is_na(Index i) const -> bool
     {
-        if constexpr (is_dense_container<ContainerT, cell_t>::value)
-            return at(i) == cell_t{};
-        else
-            return !m_cells.contains(i);
+        return at(i) == cell_t{};
     };
 
     auto is_na(Index x, Index y, Index z) const -> bool
@@ -314,9 +273,8 @@ class Grid
     Index                     m_dim_x;
     Index                     m_dim_y;
     Index                     m_dim_z;
-    ContainerT                m_cells;
+    std::vector<cell_t>       m_cells;
     Bounds                    m_bounds;
-    mutable std::shared_mutex m_cells_access;
 
     static auto adjust_dim_to_grid(double distance, double cell_size) -> Index
     {
@@ -326,18 +284,6 @@ class Grid
     auto adjust_bounds_to_grid(Index dim, double min) const -> double
     {
         return min + dim * m_cell_size;
-    }
-
-    static constexpr auto intialize_container(Index size) -> container_t
-    {
-        if constexpr (is_dense_container<container_t, cell_t>::value)
-        {
-            return container_t{size, std::allocator<cell_t>{}};
-        }
-        else
-        {
-            return container_t{};
-        }
     }
 
     static constexpr auto g_grid_loginfo = R"(
@@ -351,20 +297,8 @@ Bounds:
 )";
 };
 
-// Not really used, only in tests
-template <typename T>
-using DenseGrid = Grid<T, std::vector<T>>;
-
-// NOTE: We use `unordered_map` as a "sparse" array.
-// Our keys are literally just array indexes, there's no need to hash them
-// since every index is, by definition, unique.
-using IndexHash = std::identity;
-
-template <typename T>
-using SparseGrid = Grid<T, std::unordered_map<Index, T, IndexHash>>;
-
-using GridU32 = DenseGrid<std::atomic_uint32_t>;
-using GridD   = DenseGrid<std::atomic<double>>;
+using GridU32 = Grid<std::atomic_uint32_t>;
+using GridD   = Grid<std::atomic<double>>;
 
 } // namespace lvox
 
