@@ -6,6 +6,7 @@ add_library(lvox_common)
 target_sources(lvox_common
   PUBLIC
   src/algorithms.cpp
+  src/algorithms/pad_compute_methods.cpp
   src/logger/logger.cpp
   src/scanner/beam.cpp
   src/scanner/scan.cpp

@@ -69,9 +69,7 @@ auto compute_pad(
     const std::vector<Scan>& scans, const PADComputeOptions& options
 ) -> PadResult;
 
-auto compute_scene_bounds(
-    const std::vector<Scan>& scans, const ComputeOptions& options
-) -> lvox::Bounds;
+auto compute_scene_bounds(const std::vector<Scan>& scans) -> lvox::Bounds;
 
 } // namespace algorithms
 
