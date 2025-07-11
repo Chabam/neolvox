@@ -12,6 +12,7 @@
 #include <pdal/PointView.hpp>
 #include <pdal/QuickInfo.hpp>
 #include <pdal/StageFactory.hpp>
+#include <pdal/filters/StreamCallbackFilter.hpp>
 #include <pdal/io/BufferReader.hpp>
 #include <pdal/io/LasReader.hpp>
 
@@ -31,7 +32,7 @@ Options:
    -o, --scan-origin  x y z               Coordinates for the scan position when computing a TLS scan
    -v, --voxel-size   decimal             Coordinates for the scan position when computing a TLS scan
    -h, --help                             Prints this message
-)";
+    )";
 
 auto load_point_cloud_from_file(
     const std::filesystem::path&                        file,
@@ -58,8 +59,8 @@ auto load_point_cloud_from_file(
         options.add(*additional_reader_options);
     }
 
-    pdal::PointTable pts_table;
-    auto             layout = pts_table.layout();
+    pdal::FixedPointTable pts_table{10'000};
+    auto                  layout = pts_table.layout();
     layout->registerDim(dim::X);
     layout->registerDim(dim::Y);
     layout->registerDim(dim::Z);
@@ -79,37 +80,40 @@ auto load_point_cloud_from_file(
     pdal::Stage* file_reader = stage_factory->createStage(driver);
 
     file_reader->setOptions(options);
-    file_reader->prepare(pts_table);
+    const size_t point_count = file_reader->preview().m_pointCount;
 
     logger.info(
         R"(
 Loading file        {}
 Amount of points    {})",
         file.filename().string(),
-        file_reader->preview().m_pointCount
+        point_count
     );
 
-    const auto pts_view_set = file_reader->execute(pts_table);
-    const auto view         = *pts_view_set.begin();
+    pdal::StreamCallbackFilter sc;
+    auto                       output = std::make_unique<lvox::PointCloud>();
+    output->reserve(point_count);
 
-    if (bounds)
-    {
-        view->calculateBounds(*bounds);
-    }
+    const bool calculate_bounds = bounds.has_value();
+    sc.setCallback([calculate_bounds, &bounds, &output](const auto& pt) mutable -> bool {
+        const double x = pt.template getFieldAs<double>(dim::X);
+        const double y = pt.template getFieldAs<double>(dim::Y);
+        const double z = pt.template getFieldAs<double>(dim::Z);
+        output->emplace_back(pt.template getFieldAs<double>(dim::GpsTime), lvox::Point{x, y, z});
 
-    return std::make_unique<lvox::PointCloud>(
-        *view | std::ranges::views::transform([](const auto& pt) -> lvox::TimedPoint {
-            return {
-                pt.template getFieldAs<double>(dim::GpsTime),
-                lvox::Point{
-                    pt.template getFieldAs<double>(dim::X),
-                    pt.template getFieldAs<double>(dim::Y),
-                    pt.template getFieldAs<double>(dim::Z),
-                }
-            };
-        }) |
-        std::ranges::to<lvox::PointCloud>()
-    );
+        if (calculate_bounds)
+        {
+            bounds->get().grow(x, y, z);
+        }
+
+        return true;
+    });
+    sc.setInput(*file_reader);
+    sc.prepare(pts_table);
+
+    sc.execute(pts_table);
+
+    return output;
 }
 
 auto main(int argc, char* argv[]) -> int
@@ -163,6 +167,7 @@ auto main(int argc, char* argv[]) -> int
     }
 
     lvox::Bounds scan_bounds;
+    auto         scan_point_cloud = load_point_cloud_from_file(file, {scan_bounds});
 
     if (is_mls)
     {
@@ -185,8 +190,9 @@ auto main(int argc, char* argv[]) -> int
         reader_opts.add("skip", 1);
         reader_opts.add("separator", " ");
 
-        scanner_origin =
-            std::make_shared<lvox::Trajectory>(load_point_cloud_from_file(traj_file, {}, reader_opts));
+        scanner_origin = std::make_shared<lvox::Trajectory>(
+            load_point_cloud_from_file(traj_file, {}, reader_opts)
+        );
     }
     else
     {
@@ -194,9 +200,7 @@ auto main(int argc, char* argv[]) -> int
     }
 
     std::vector<lvox::Scan> scans;
-    scans.emplace_back(
-        load_point_cloud_from_file(file, {scan_bounds}), scanner_origin, scan_bounds
-    );
+    scans.emplace_back(std::move(scan_point_cloud), scanner_origin, scan_bounds);
 
     const lvox::algorithms::ComputeOptions compute_options{.voxel_size = voxel_size};
     // const lvox::algorithms::PadResult result = lvox::algorithms::compute_pad(
