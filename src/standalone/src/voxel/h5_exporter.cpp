@@ -58,7 +58,7 @@ auto write_grid_as_coo_matrix_to_h5(
     // Writing indexes
     auto index_with_data = grid | std::views::enumerate |
                            std::views::filter([&grid](const auto& pair) -> bool {
-                               return grid.is_na(std::get<0>(pair));
+                               return !grid.is_na(std::get<0>(pair));
                            }) |
                            std::views::elements<0>;
     auto index3d_with_data = index_with_data | std::views::transform([&grid](const Index& index) -> Index3D {
