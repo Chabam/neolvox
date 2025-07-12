@@ -182,7 +182,9 @@ auto grid_traversal(
         if (prev_distance + current_hit.m_distance_in_voxel > max_distance)
             current_hit.m_distance_in_voxel = max_distance - prev_distance;
 
-        callback(current_hit);
+        if (current_hit.m_distance_in_voxel > 0)
+            callback(current_hit);
+
         current_hit.m_index = Index3D{current_voxel_x, current_voxel_y, current_voxel_z};
     } while (can_continue);
 }

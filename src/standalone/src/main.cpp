@@ -207,7 +207,17 @@ auto main(int argc, char* argv[]) -> int
         lvox::algorithms::compute_pad(scans, lvox::algorithms::PADComputeOptions{compute_options});
     logger.info("Writing output HDF5 file");
 
-    lvox::h5_exporter::export_grid(result, "pad", file);
+    for (size_t z = 0; z < result.dim_z(); ++z)
+    {
+        double sum = 0;
+        for (size_t x = 0; x < result.dim_x(); ++x)
+            for (size_t y = 0; y < result.dim_y(); ++y)
+                sum += result.at(x, y, z);
+
+        std::cout << std::format("{}: {}", z, sum) << std::endl;
+    }
+
+    // lvox::h5_exporter::export_grid(result, "pad", file);
     // const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds(scans);
     // lvox::algorithms::ComputeData data{
     //     .m_counts{bounds, compute_options.voxel_size},
