@@ -1,7 +1,6 @@
 #ifndef LVOX_H5_EXPORTER_HPP
 #define LVOX_H5_EXPORTER_HPP
 
-#include <H5Cpp.h>
 #include <filesystem>
 
 #include <lvox/voxel/grid.hpp>
