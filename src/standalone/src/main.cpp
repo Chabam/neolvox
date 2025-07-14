@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <ranges>
+#include <sstream>
 #include <stdexcept>
 
 #include <pdal/Dimension.hpp>
@@ -31,6 +32,7 @@ Options:
    -t, --trajectory   filename            Path to a trajectory file, used for computing an MLS scan
    -o, --scan-origin  x y z               Coordinates for the scan position when computing a TLS scan
    -v, --voxel-size   decimal             Coordinates for the scan position when computing a TLS scan
+   -p, --profile      filename            Outputs to vertical profile of the voxels of the grid to a csv file
    -h, --help                             Prints this message
     )";
 
@@ -43,7 +45,7 @@ auto load_point_cloud_from_file(
     using dim    = pdal::Dimension::Id;
     namespace fs = std::filesystem;
 
-    lvox::Logger logger{"Point cloud reader"};
+    lvox::Logger logger{"Point cloud file reader"};
     if (!fs::exists(file) || !fs::is_regular_file(file))
     {
         throw std::runtime_error{std::format(
@@ -116,6 +118,111 @@ Amount of points    {})",
     return output;
 }
 
+auto output_profile_to_csv(
+    const std::filesystem::path& path, const lvox::algorithms::PadResult& result
+) -> void
+{
+    std::ofstream fstream{path};
+
+    fstream << "Height in meters,PAD\n";
+    for (size_t z = 0; z < result.dim_z(); ++z)
+    {
+        double sum = 0;
+        for (size_t x = 0; x < result.dim_x(); ++x)
+            for (size_t y = 0; y < result.dim_y(); ++y)
+                sum += result.at(x, y, z);
+
+        fstream << std::format("{},{}\n", z * result.cell_size(), sum);
+    }
+
+    fstream.flush();
+}
+
+auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox::Scan>
+{
+    namespace fs = std::filesystem;
+    std::ifstream  fstream{in_file};
+    const fs::path parent_path = in_file.parent_path();
+
+    std::vector<lvox::Scan> scans;
+    while (!fstream.eof())
+    {
+        std::ostringstream point_cloud_file_name;
+        fstream.get(*point_cloud_file_name.rdbuf(), ' ');
+
+        lvox::Bounds         bounds;
+        lvox::PointCloudView point_cloud{load_point_cloud_from_file(
+            fs::path{parent_path / point_cloud_file_name.str()}, {bounds}
+        )};
+
+        std::cout << point_cloud_file_name.str() << std::endl;
+
+        fstream.seekg(std::string{" Z+F "}.size(), std::ios_base::cur);
+
+        double x;
+        double y;
+        double z;
+
+        fstream >> x;
+        fstream >> y;
+        fstream >> z;
+
+        fstream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        scans.emplace_back(std::move(point_cloud), lvox::Point{x, y, z}, bounds);
+    }
+
+    return scans;
+}
+
+auto create_scan_using_pdal(
+    const std::filesystem::path&         file,
+    std::optional<std::filesystem::path> traj_file   = {},
+    std::optional<lvox::Point>           scan_origin = {}
+) -> std::vector<lvox::Scan>
+{
+    lvox::Logger logger{"Point cloud loader"};
+    lvox::Bounds scan_bounds;
+    auto         scan_point_cloud = load_point_cloud_from_file(file, {scan_bounds});
+    std::vector<lvox::Scan> scans;
+
+    lvox::ScannerOrigin scanner_origin;
+
+    if (traj_file)
+    {
+        if (scan_origin && *scan_origin != lvox::Vector::Constant(0.))
+        {
+            logger.warn("Scan origin being set while in MLS mode, ignoring it");
+        }
+
+        logger.info("Loading trajectory file {}", traj_file->string());
+        pdal::Options reader_opts;
+        reader_opts.add(
+            "header",
+            "GpsTime X Y Z Q0 Q1 Q2 Q3 Red Green Blue NormalX NormalY NormalZ Pitch Roll "
+            "Azimuth"
+        );
+        reader_opts.add("skip", 1);
+        reader_opts.add("separator", " ");
+
+        scanner_origin = std::make_shared<lvox::Trajectory>(
+            load_point_cloud_from_file(*traj_file, {}, reader_opts)
+        );
+    }
+    else if (scan_origin)
+    {
+        scanner_origin = *scan_origin;
+    }
+    else
+    {
+        scanner_origin  = lvox::Vector::Constant(0.); // (0,0,0)
+    }
+
+    scans.emplace_back(std::move(scan_point_cloud), scanner_origin, scan_bounds);
+
+    return scans;
+}
+
 auto main(int argc, char* argv[]) -> int
 {
     namespace fs = std::filesystem;
@@ -130,12 +237,16 @@ auto main(int argc, char* argv[]) -> int
         return 1;
     }
 
-    bool        is_mls      = false;
-    double      voxel_size  = 0.1;
-    lvox::Point scan_origin = lvox::Vector::Constant(0.); // (0,0,0)
+    bool        is_mls          = false;
+    bool        outputs_profile = false;
+    double      voxel_size      = 0.1;
+    std::optional<lvox::Point> scan_origin;
 
-    fs::path traj_file;
+
     fs::path file;
+    std::optional<fs::path> traj_file;
+
+    fs::path output_profile_file;
 
     auto arg_it = args.begin();
     while (arg_it != args.end())
@@ -154,6 +265,11 @@ auto main(int argc, char* argv[]) -> int
         {
             scan_origin = {std::stod(*++arg_it), std::stod(*++arg_it), std::stod(*++arg_it)};
         }
+        else if (*arg_it == "-p" || *arg_it == "--profile")
+        {
+            outputs_profile     = true;
+            output_profile_file = *++arg_it;
+        }
         else if (*arg_it == "-h" || *arg_it == "--help")
         {
             std::cout << g_usage_info << std::endl;
@@ -166,55 +282,24 @@ auto main(int argc, char* argv[]) -> int
         ++arg_it;
     }
 
-    lvox::Bounds scan_bounds;
-    auto         scan_point_cloud = load_point_cloud_from_file(file, {scan_bounds});
+    std::vector<lvox::Scan> scans;
 
-    if (is_mls)
+    if (file.extension() == ".in")
     {
-        if (scan_origin != lvox::Vector::Constant(0.))
-        {
-            logger.warn("Scan origin being set while in MLS mode, ignoring it");
-        }
-    }
-
-    lvox::ScannerOrigin scanner_origin;
-
-    if (is_mls)
-    {
-        logger.info("Loading trajectory file {}", traj_file.string());
-        pdal::Options reader_opts;
-        reader_opts.add(
-            "header",
-            "GpsTime X Y Z Q0 Q1 Q2 Q3 Red Green Blue NormalX NormalY NormalZ Pitch Roll Azimuth"
-        );
-        reader_opts.add("skip", 1);
-        reader_opts.add("separator", " ");
-
-        scanner_origin = std::make_shared<lvox::Trajectory>(
-            load_point_cloud_from_file(traj_file, {}, reader_opts)
-        );
+        scans = read_dot_in_file(file);
     }
     else
     {
-        scanner_origin = scan_origin;
+        scans = create_scan_using_pdal(file, traj_file, scan_origin);
     }
-
-    std::vector<lvox::Scan> scans;
-    scans.emplace_back(std::move(scan_point_cloud), scanner_origin, scan_bounds);
 
     const lvox::algorithms::ComputeOptions compute_options{.voxel_size = voxel_size};
     const lvox::algorithms::PadResult      result =
         lvox::algorithms::compute_pad(scans, lvox::algorithms::PADComputeOptions{compute_options});
-    logger.info("Writing output HDF5 file");
 
-    for (size_t z = 0; z < result.dim_z(); ++z)
+    if (outputs_profile)
     {
-        double sum = 0;
-        for (size_t x = 0; x < result.dim_x(); ++x)
-            for (size_t y = 0; y < result.dim_y(); ++y)
-                sum += result.at(x, y, z);
-
-        std::cout << std::format("{}: {}", z, sum) << std::endl;
+        output_profile_to_csv(output_profile_file, result);
     }
 
     // lvox::h5_exporter::export_grid(result, "pad", file);
