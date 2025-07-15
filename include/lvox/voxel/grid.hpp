@@ -255,7 +255,7 @@ class Grid
         {
             i % m_dim_x,
             (i / m_dim_x) % m_dim_y,
-            (i / m_dim_x) / m_dim_z
+            (i / m_dim_x) / m_dim_y
         };
     }
 
