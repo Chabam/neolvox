@@ -26,8 +26,17 @@ auto write_grid_as_coo_matrix_to_h5(
         output = H5::H5File{filename, H5F_ACC_TRUNC};
     }
 
-    const auto    voxel_size       = grid.cell_size();
-    const hsize_t voxels_with_data = std::distance(grid.begin(), grid.end());
+    const auto voxel_size = grid.cell_size();
+    auto index_with_data = grid | std::views::enumerate |
+                           std::views::filter([&grid](const auto& pair) -> bool {
+                               return !grid.is_na(std::get<0>(pair));
+                           }) |
+                           std::views::elements<0>;
+    auto index3d_with_data = index_with_data | std::views::transform([&grid](const Index& index) -> Index3D {
+        return grid.index_to_index3d(index);
+    });
+
+    const hsize_t voxels_with_data = std::ranges::distance(index_with_data);
 
     using h5_dimension_t = std::array<hsize_t, 1>;
     const h5_dimension_t voxel_count_dim{voxels_with_data};
@@ -46,11 +55,10 @@ auto write_grid_as_coo_matrix_to_h5(
     }
     else if constexpr (std::is_same_v<cell_t, uint32_t>)
     {
-        h5_data_t = H5::PredType::NATIVE_INT32;
+        h5_data_t = H5::PredType::NATIVE_UINT32;
     }
 
     H5::Group plot_group = output.createGroup(dataset_name, 6);
-
     H5::DSetCreatPropList create_prop_list{};
     h5_dimension_t        chunk_dims{1000};
     create_prop_list.setChunk(1, chunk_dims.data());
@@ -58,15 +66,6 @@ auto write_grid_as_coo_matrix_to_h5(
     create_prop_list.setFillValue(h5_data_t, 0);
 
     // Writing indexes
-    auto index_with_data = grid | std::views::enumerate |
-                           std::views::filter([&grid](const auto& pair) -> bool {
-                               return !grid.is_na(std::get<0>(pair));
-                           }) |
-                           std::views::elements<0>;
-    auto index3d_with_data = index_with_data | std::views::transform([&grid](const Index& index) -> Index3D {
-        return grid.index_to_index3d(index);
-    });
-
     const auto h5_size_t = H5::PredType::NATIVE_HSIZE;
     {
         const std::vector<size_t> xs =
