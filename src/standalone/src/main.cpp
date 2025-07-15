@@ -1,8 +1,10 @@
 #include <filesystem>
 #include <format>
 #include <functional>
+#include <future>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <ranges>
 #include <sstream>
 #include <stdexcept>
@@ -35,6 +37,8 @@ Options:
    -p, --profile      filename            Outputs to vertical profile of the voxels of the grid to a csv file
    -h, --help                             Prints this message
     )";
+
+std::mutex g_print_guard;
 
 auto load_point_cloud_from_file(
     const std::filesystem::path&                        file,
@@ -82,19 +86,14 @@ auto load_point_cloud_from_file(
     pdal::Stage* file_reader = stage_factory->createStage(driver);
 
     file_reader->setOptions(options);
-    const size_t point_count = file_reader->preview().m_pointCount;
 
-    logger.info(
-        R"(
-Loading file        {}
-Amount of points    {})",
-        file.filename().string(),
-        point_count
-    );
+    {
+        std::lock_guard<std::mutex> lock{g_print_guard};
+        logger.info("Loading file {}", file.filename().string());
+    }
 
     pdal::StreamCallbackFilter sc;
     auto                       output = std::make_unique<lvox::PointCloud>();
-    output->reserve(point_count);
 
     const bool calculate_bounds = bounds.has_value();
     sc.setCallback([calculate_bounds, &bounds, &output](const auto& pt) mutable -> bool {
@@ -144,18 +143,11 @@ auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox:
     std::ifstream  fstream{in_file};
     const fs::path parent_path = in_file.parent_path();
 
-    std::vector<lvox::Scan> scans;
+    std::vector<std::future<lvox::Scan>> scans;
     while (!fstream.eof())
     {
         std::ostringstream point_cloud_file_name;
         fstream.get(*point_cloud_file_name.rdbuf(), ' ');
-
-        lvox::Bounds         bounds;
-        lvox::PointCloudView point_cloud{load_point_cloud_from_file(
-            fs::path{parent_path / point_cloud_file_name.str()}, {bounds}
-        )};
-
-        std::cout << point_cloud_file_name.str() << std::endl;
 
         fstream.seekg(std::string{" Z+F "}.size(), std::ios_base::cur);
 
@@ -169,10 +161,26 @@ auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox:
 
         fstream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-        scans.emplace_back(std::move(point_cloud), lvox::Point{x, y, z}, bounds);
+        scans.emplace_back(std::async(
+            [parent_path, point_cloud_file_name = point_cloud_file_name.str(), x, y, z](
+            ) -> lvox::Scan {
+                lvox::Bounds bounds;
+                return lvox::Scan{
+                    .m_points = lvox::PointCloudView{load_point_cloud_from_file(
+                        fs::path{parent_path / point_cloud_file_name}, {bounds}
+                    )},
+                    .m_scanner_origin{lvox::Point{x, y, z}},
+                    .m_bounds{bounds}
+                };
+            }
+        ));
     }
 
-    return scans;
+    return scans |
+           std::views::transform([](std::future<lvox::Scan>& future) -> lvox::Scan {
+               return future.get();
+           }) |
+           std::ranges::to<std::vector<lvox::Scan>>();
 }
 
 auto create_scan_using_pdal(
@@ -181,9 +189,9 @@ auto create_scan_using_pdal(
     std::optional<lvox::Point>           scan_origin = {}
 ) -> std::vector<lvox::Scan>
 {
-    lvox::Logger logger{"Point cloud loader"};
-    lvox::Bounds scan_bounds;
-    auto         scan_point_cloud = load_point_cloud_from_file(file, {scan_bounds});
+    lvox::Logger            logger{"Point cloud loader"};
+    lvox::Bounds            scan_bounds;
+    auto                    scan_point_cloud = load_point_cloud_from_file(file, {scan_bounds});
     std::vector<lvox::Scan> scans;
 
     lvox::ScannerOrigin scanner_origin;
@@ -215,7 +223,7 @@ auto create_scan_using_pdal(
     }
     else
     {
-        scanner_origin  = lvox::Vector::Constant(0.); // (0,0,0)
+        scanner_origin = lvox::Vector::Constant(0.); // (0,0,0)
     }
 
     scans.emplace_back(std::move(scan_point_cloud), scanner_origin, scan_bounds);
@@ -237,13 +245,12 @@ auto main(int argc, char* argv[]) -> int
         return 1;
     }
 
-    bool        is_mls          = false;
-    bool        outputs_profile = false;
-    double      voxel_size      = 0.1;
+    bool                       is_mls          = false;
+    bool                       outputs_profile = false;
+    double                     voxel_size      = 0.1;
     std::optional<lvox::Point> scan_origin;
 
-
-    fs::path file;
+    fs::path                file;
     std::optional<fs::path> traj_file;
 
     fs::path output_profile_file;
