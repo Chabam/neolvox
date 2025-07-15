@@ -1,7 +1,9 @@
-#include <voxel/test_grid_fixtures.hpp>
+#include <gtest/gtest.h>
+#include <utils/utils.hpp>
+#include <lvox/voxel/grid.hpp>
 #include <pdal/PointView.hpp>
 
-TYPED_TEST(VoxelGridTests, index_of_point)
+TEST(grid, index_of_point)
 {
     pdal::PointTable table;
     const double     dim_x = 4;
@@ -13,7 +15,7 @@ TYPED_TEST(VoxelGridTests, index_of_point)
     lvox::Bounds point_cloud_bounds;
     const double         cell_size = .5;
     view->calculateBounds(point_cloud_bounds);
-    typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};
+    lvox::GridU32 grid{point_cloud_bounds, cell_size};
 
     std::set<std::array<lvox::Index, 3>> seen_idxs;
     const Eigen::Vector3d           vec = Eigen::Vector3d::Constant(-0.5);

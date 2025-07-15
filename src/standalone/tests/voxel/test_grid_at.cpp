@@ -1,6 +1,8 @@
-#include <voxel/test_grid_fixtures.hpp>
+#include <gtest/gtest.h>
+#include <utils/utils.hpp>
+#include <lvox/voxel/grid.hpp>
 
-TYPED_TEST(VoxelGridTests, at)
+TEST(grid, at)
 {
     const double      cell_size = 1.;
     const lvox::Index dim_x     = 10;
@@ -9,7 +11,7 @@ TYPED_TEST(VoxelGridTests, at)
 
     lvox::Bounds bounds = create_bounds(dim_x, dim_y, dim_z);
 
-    typename TestFixture::grid_t grid{bounds, cell_size};
+    lvox::GridU32 grid{bounds, cell_size};
 
     for (lvox::Index x = 0; x < dim_x; x++)
     {

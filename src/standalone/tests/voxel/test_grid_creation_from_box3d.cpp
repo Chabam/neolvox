@@ -1,7 +1,8 @@
-#include <voxel/test_grid_fixtures.hpp>
+#include <gtest/gtest.h>
+#include <utils/utils.hpp>
+#include <lvox/voxel/grid.hpp>
 
-
-TYPED_TEST(VoxelGridTests, creation_from_box3d)
+TEST(grid, creation_from_box3d)
 {
     const double dim_x = 20;
     const double dim_y = 40;
@@ -11,7 +12,7 @@ TYPED_TEST(VoxelGridTests, creation_from_box3d)
 
     {
         const double                       cell_size = 1.;
-        const typename TestFixture::grid_t grid{bounds, cell_size};
+        const lvox::GridU32 grid{bounds, cell_size};
         EXPECT_EQ(dim_x, grid.dim_x());
         EXPECT_EQ(dim_y, grid.dim_y());
         EXPECT_EQ(dim_z, grid.dim_z());
@@ -29,7 +30,7 @@ TYPED_TEST(VoxelGridTests, creation_from_box3d)
     {
 
         const double                       cell_size = .5;
-        const typename TestFixture::grid_t grid{bounds, cell_size};
+        const lvox::GridU32 grid{bounds, cell_size};
         EXPECT_EQ(dim_x * 2, grid.dim_x());
         EXPECT_EQ(dim_y * 2, grid.dim_y());
         EXPECT_EQ(dim_z * 2, grid.dim_z());
@@ -46,7 +47,7 @@ TYPED_TEST(VoxelGridTests, creation_from_box3d)
 
     {
         const double                       cell_size = 15.;
-        const typename TestFixture::grid_t grid{bounds, cell_size};
+        const lvox::GridU32 grid{bounds, cell_size};
         // 20 / 15 = 1.33333 => 2
         EXPECT_EQ(2, grid.dim_x());
         // 40 / 15 = 1.33333 => 3

@@ -1,11 +1,13 @@
-#include <voxel/test_grid_fixtures.hpp>
+#include <gtest/gtest.h>
+#include <utils/utils.hpp>
+#include <lvox/voxel/grid.hpp>
 
 #include <pdal/PointView.hpp>
 
 #include <lvox/scanner/beam.hpp>
 #include <lvox/algorithms/grid_traversal.hpp>
 
-TYPED_TEST(VoxelGridTests, grid_traversal_x_axis)
+TEST(grid, grid_traversal_x_axis)
 {
 
     const double dim_x = 10;
@@ -18,7 +20,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_x_axis)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};
+    lvox::GridU32 grid{point_cloud_bounds, cell_size};
 
     {
         lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
@@ -66,7 +68,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_x_axis)
     }
 }
 
-TYPED_TEST(VoxelGridTests, grid_traversal_y_axis)
+TEST(grid, grid_traversal_y_axis)
 {
 
     const double dim_x = 10;
@@ -79,7 +81,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_y_axis)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};
+    lvox::GridU32 grid{point_cloud_bounds, cell_size};
 
     {
         lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
@@ -127,7 +129,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_y_axis)
     }
 }
 
-TYPED_TEST(VoxelGridTests, grid_traversal_z_axis)
+TEST(grid, grid_traversal_z_axis)
 {
 
     const double dim_x = 10;
@@ -140,7 +142,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_z_axis)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};
+    lvox::GridU32 grid{point_cloud_bounds, cell_size};
     {
         lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
         lvox::Vector dir{0., 0., 1.};
@@ -187,7 +189,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_z_axis)
     }
 }
 
-TYPED_TEST(VoxelGridTests, grid_traversal_diagonals)
+TEST(grid, grid_traversal_diagonals)
 {
 
     const double dim_x = 10;
@@ -200,7 +202,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_diagonals)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};
+    lvox::GridU32 grid{point_cloud_bounds, cell_size};
 
     // Since the line goes from the highest point to the lowest in diagonal, the ray should hit
     // every x, y, z levels.
@@ -283,7 +285,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_diagonals)
     }
 }
 
-TYPED_TEST(VoxelGridTests, grid_traversal_max_distance)
+TEST(grid, grid_traversal_max_distance)
 {
 
     const double dim_x = 10;
@@ -296,7 +298,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_max_distance)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};
+    lvox::GridU32 grid{point_cloud_bounds, cell_size};
 
     {
         lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
@@ -322,7 +324,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_max_distance)
         }
     }
 }
-TYPED_TEST(VoxelGridTests, grid_traversal_distance_in_voxel)
+TEST(grid, grid_traversal_distance_in_voxel)
 {
     const double dim_x = 10;
     const double dim_y = 20;
@@ -334,7 +336,7 @@ TYPED_TEST(VoxelGridTests, grid_traversal_distance_in_voxel)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    typename TestFixture::grid_t grid{point_cloud_bounds, cell_size};
+    lvox::GridU32 grid{point_cloud_bounds, cell_size};
 
     {
         lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};

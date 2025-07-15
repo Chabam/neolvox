@@ -1,6 +1,8 @@
-#include <voxel/test_grid_fixtures.hpp>
+#include <gtest/gtest.h>
+#include <utils/utils.hpp>
+#include <lvox/voxel/grid.hpp>
 
-TYPED_TEST(VoxelGridTests, voxel_bounds_from_point)
+TEST(grid, voxel_bounds_from_point)
 {
     // Very concious choice of an odd number
     const double dim = 9;
@@ -8,7 +10,7 @@ TYPED_TEST(VoxelGridTests, voxel_bounds_from_point)
     lvox::Bounds bounds = create_bounds(dim, dim, dim);
 
     const double                 cell_size = 1.;
-    typename TestFixture::grid_t grid{bounds, cell_size};
+    lvox::GridU32 grid{bounds, cell_size};
 
     const double       middle_point = (dim / 2.);
     const lvox::Bounds middle_voxel_from_dim =

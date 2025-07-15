@@ -251,9 +251,12 @@ class Grid
     [[nodiscard]]
     auto index_to_index3d(Index i) const -> Index3D
     {
-        const auto z      = i / (m_dim_x * m_dim_y);
-        const auto offsetted_i = i - (z * m_dim_x * m_dim_y);
-        return {offsetted_i % m_dim_x, offsetted_i / m_dim_x, z};
+        return
+        {
+            i % m_dim_x,
+            (i / m_dim_x) % m_dim_y,
+            (i / m_dim_x) / m_dim_z
+        };
     }
 
     auto begin() -> iterator_t { return m_cells.begin(); }

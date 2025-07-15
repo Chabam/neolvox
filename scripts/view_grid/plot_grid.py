@@ -3,10 +3,10 @@ import napari
 import sparse
 
 
-file = h5py.File("MLS-PRF133_lvox_out.h5")
+file = h5py.File("PR133_lvox_out.h5")
 dset = file["pad"]
 dims = dset.attrs["Dimensions"]
-dset_m = sparse.COO((dset["values"], (dset["x"], dset["y"], dset["z"])), shape=dims).todense()
+dset_m = sparse.COO((dset["values"], (dset["x"], dset["y"], dset["z"])), shape=(int(dim) for dim in dims)).todense()
 viewer = napari.Viewer(ndisplay=3)
 viewer.add_image(dset_m[:])
 napari.run()

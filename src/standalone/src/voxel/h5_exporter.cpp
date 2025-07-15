@@ -67,30 +67,41 @@ auto write_grid_as_coo_matrix_to_h5(
         return grid.index_to_index3d(index);
     });
 
-    const std::vector<size_t> xs =
-        index3d_with_data | std::views::elements<0> | std::ranges::to<std::vector<size_t>>();
-    const std::vector<size_t> ys =
-        index3d_with_data | std::views::elements<1> | std::ranges::to<std::vector<size_t>>();
-    const std::vector<size_t> zs =
-        index3d_with_data | std::views::elements<2> | std::ranges::to<std::vector<size_t>>();
-    const std::vector<cell_t> values =
-        index_with_data | std::views::transform([&grid](const Index& index) -> cell_t {
-            return grid.at(index);
-        }) | std::ranges::to<std::vector<cell_t>>();
+    const auto h5_size_t = H5::PredType::NATIVE_HSIZE;
+    {
+        const std::vector<size_t> xs =
+            index3d_with_data | std::views::elements<0> | std::ranges::to<std::vector<size_t>>();
 
-    const auto  h5_size_t = H5::PredType::NATIVE_HSIZE;
-    H5::DataSet xs_data   = plot_group.createDataSet("x", h5_size_t, data_space, create_prop_list);
-    xs_data.write(xs.data(), h5_size_t);
+        H5::DataSet xs_data   = plot_group.createDataSet("x", h5_size_t, data_space, create_prop_list);
+        xs_data.write(xs.data(), h5_size_t);
+    }
 
-    H5::DataSet ys_data = plot_group.createDataSet("y", h5_size_t, data_space, create_prop_list);
-    ys_data.write(ys.data(), h5_size_t);
+    {
+        const std::vector<size_t> ys =
+            index3d_with_data | std::views::elements<1> | std::ranges::to<std::vector<size_t>>();
 
-    H5::DataSet zs_data = plot_group.createDataSet("z", h5_size_t, data_space, create_prop_list);
-    zs_data.write(zs.data(), h5_size_t);
+        H5::DataSet ys_data = plot_group.createDataSet("y", h5_size_t, data_space, create_prop_list);
+        ys_data.write(ys.data(), h5_size_t);
+    }
 
-    H5::DataSet values_data =
-        plot_group.createDataSet("values", h5_data_t, data_space, create_prop_list);
-    values_data.write(values.data(), h5_data_t);
+    {
+        const std::vector<size_t> zs =
+            index3d_with_data | std::views::elements<2> | std::ranges::to<std::vector<size_t>>();
+
+        H5::DataSet zs_data = plot_group.createDataSet("z", h5_size_t, data_space, create_prop_list);
+        zs_data.write(zs.data(), h5_size_t);
+    }
+
+    {
+        const std::vector<cell_t> values =
+            index_with_data | std::views::transform([&grid](const Index& index) -> cell_t {
+                return grid.at(index);
+            }) | std::ranges::to<std::vector<cell_t>>();
+
+        H5::DataSet values_data =
+            plot_group.createDataSet("values", h5_data_t, data_space, create_prop_list);
+        values_data.write(values.data(), h5_data_t);
+    }
 
     // Minimum coordinate attribute
     const std::array<hsize_t, 1> scalar_value_dim{1};
@@ -123,29 +134,29 @@ auto write_grid_as_coo_matrix_to_h5(
     output.close();
 }
 
-auto export_grid(
-    const GridD& result, const std::string& dataset, const std::filesystem::path& in_file
-) -> void
-{
+    auto export_grid(
+        const GridD& result, const std::string& dataset, const std::filesystem::path& in_file
+    ) -> void
+    {
 
-    const std::string filename = in_file.filename().string();
-    write_grid_as_coo_matrix_to_h5(
-        std::format("{}_lvox_out.h5", filename.substr(0, filename.find_last_of("."))),
-        dataset,
-        result
-    );
-}
+        const std::string filename = in_file.filename().string();
+        write_grid_as_coo_matrix_to_h5(
+            std::format("{}_lvox_out.h5", filename.substr(0, filename.find_last_of("."))),
+            dataset,
+            result
+        );
+    }
 
-auto export_grid(
-    const GridU32& result, const std::string& dataset, const std::filesystem::path& in_file
-) -> void
-{
-    const std::string filename = in_file.filename().string();
-    write_grid_as_coo_matrix_to_h5(
-        std::format("{}_lvox_out.h5", filename.substr(0, filename.find_last_of("."))),
-        dataset,
-        result
-    );
-}
+    auto export_grid(
+        const GridU32& result, const std::string& dataset, const std::filesystem::path& in_file
+    ) -> void
+    {
+        const std::string filename = in_file.filename().string();
+        write_grid_as_coo_matrix_to_h5(
+            std::format("{}_lvox_out.h5", filename.substr(0, filename.find_last_of("."))),
+            dataset,
+            result
+        );
+    }
 
 } // namespace lvox::h5_exporter
