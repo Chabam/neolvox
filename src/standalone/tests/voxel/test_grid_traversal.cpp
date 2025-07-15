@@ -371,9 +371,8 @@ TEST(grid, grid_traversal_distance_in_voxel)
             },
             1.
         );
-        ASSERT_EQ(2, visited_voxel_distances.size());
+        ASSERT_EQ(1, visited_voxel_distances.size());
         EXPECT_EQ(1, visited_voxel_distances[0]);
-        EXPECT_EQ(0, visited_voxel_distances[1]);
     }
 
     {

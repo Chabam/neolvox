@@ -157,6 +157,7 @@ auto grid_traversal(
         {
             if (t_max.y() < t_max.z())
             {
+                total_traveled_distance = t_max.y();
                 t_max.y() += delta.y();
                 current_voxel_y += step.y();
             }
