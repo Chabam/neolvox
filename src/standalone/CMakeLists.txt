@@ -19,7 +19,8 @@ target_link_libraries(lvox_common
   PUBLIC
   pdalcpp
   Eigen3::Eigen
-  ${HDF5_CXX_LIBRARIES}
+  hdf5::hdf5_cpp
+  hdf5::hdf5
 )
 
 target_include_directories(lvox_common
