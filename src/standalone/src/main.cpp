@@ -31,19 +31,34 @@ constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
 Options:
    ARGS               EXPECTED VALUES     DESCRIPTION
-   -t, --trajectory   filename            Path to a trajectory file, used for computing an MLS scan
-   -o, --scan-origin  x y z               Coordinates for the scan position when computing a TLS scan
-   -v, --voxel-size   decimal             Coordinates for the scan position when computing a TLS scan
-   -p, --profile      filename            Outputs to vertical profile of the voxels of the grid to a csv file
+   -t, --trajectory   filename            Path to a trajectory file, required for
+                                          computing an MLS scan.
+
+   -o, --scan-origin  x y z               Coordinates for the scan position when
+                                          computing a TLS scan [defaults to (0,0,0)]
+
+   -v, --voxel-size   decimal             Size in meters of each voxel elements
+                                          of the grid [defaults to 0.5]
+
+   -p, --profile      filename            Outputs to vertical profile of the voxels
+                                          of the grid to a h5 file
+
+   -j, --jobs         number              A number of parallel jobs to use.
+                                          [defaults to the amount of core]
+
+   -m, --method       BL, CF              The PAD estimator to use. Here's the
+                                          description of each values:
+                                             - BL: Beer-Lambert [default]
+                                             - CF: Contact Frequency
+
    -h, --help                             Prints this message
-    )";
+)";
 
 std::mutex g_print_guard;
 
 auto load_point_cloud_from_file(
     const std::filesystem::path&                        file,
-    std::optional<std::reference_wrapper<lvox::Bounds>> bounds                    = {},
-    std::optional<pdal::Options>                        additional_reader_options = {}
+    std::optional<std::reference_wrapper<lvox::Bounds>> bounds = {}
 ) -> lvox::PointCloudView
 {
     using dim    = pdal::Dimension::Id;
@@ -59,11 +74,6 @@ auto load_point_cloud_from_file(
 
     pdal::Options options;
     options.add("filename", file.string());
-
-    if (additional_reader_options)
-    {
-        options.add(*additional_reader_options);
-    }
 
     pdal::FixedPointTable pts_table{10'000};
     auto                  layout = pts_table.layout();
@@ -176,8 +186,7 @@ auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox:
         ));
     }
 
-    return scans |
-           std::views::transform([](std::future<lvox::Scan>& future) -> lvox::Scan {
+    return scans | std::views::transform([](std::future<lvox::Scan>& future) -> lvox::Scan {
                return future.get();
            }) |
            std::ranges::to<std::vector<lvox::Scan>>();
@@ -204,18 +213,9 @@ auto create_scan_using_pdal(
         }
 
         logger.info("Loading trajectory file {}", traj_file->string());
-        pdal::Options reader_opts;
-        reader_opts.add(
-            "header",
-            "GpsTime X Y Z Q0 Q1 Q2 Q3 Red Green Blue NormalX NormalY NormalZ Pitch Roll "
-            "Azimuth"
-        );
-        reader_opts.add("skip", 1);
-        reader_opts.add("separator", " ");
 
-        scanner_origin = std::make_shared<lvox::Trajectory>(
-            load_point_cloud_from_file(*traj_file, {}, reader_opts)
-        );
+        scanner_origin =
+            std::make_shared<lvox::Trajectory>(load_point_cloud_from_file(*traj_file, {}));
     }
     else if (scan_origin)
     {
@@ -245,9 +245,13 @@ auto main(int argc, char* argv[]) -> int
         return 1;
     }
 
-    bool                       is_mls          = false;
-    bool                       outputs_profile = false;
-    double                     voxel_size      = 0.1;
+    using PADMethod = lvox::algorithms::ComputeOptions::PADMethod;
+
+    bool                       is_mls             = false;
+    bool                       outputs_profile    = false;
+    double                     voxel_size         = 0.5;
+    unsigned int               job_count          = std::thread::hardware_concurrency();
+    PADMethod                  pad_compute_method = PADMethod::BeerLambert;
     std::optional<lvox::Point> scan_origin;
 
     fs::path                file;
@@ -277,6 +281,28 @@ auto main(int argc, char* argv[]) -> int
             outputs_profile     = true;
             output_profile_file = *++arg_it;
         }
+        else if (*arg_it == "-m" || *arg_it == "--method")
+        {
+            const std::string& pad_compute_method_str = *++arg_it;
+            if (pad_compute_method_str == "BL")
+            {
+                pad_compute_method = PADMethod::BeerLambert;
+            }
+            else if (pad_compute_method_str == "CF")
+            {
+                pad_compute_method = PADMethod::ContactFrequency;
+            }
+            else
+            {
+                logger.error("Unkown PAD compute method '{}'", pad_compute_method_str);
+                std::cout << g_usage_info << std::endl;
+                return 1;
+            }
+        }
+        else if (*arg_it == "-j" || *arg_it == "--jobs")
+        {
+
+        }
         else if (*arg_it == "-h" || *arg_it == "--help")
         {
             std::cout << g_usage_info << std::endl;
@@ -300,9 +326,15 @@ auto main(int argc, char* argv[]) -> int
         scans = create_scan_using_pdal(file, traj_file, scan_origin);
     }
 
-    const lvox::algorithms::ComputeOptions compute_options{.voxel_size = voxel_size};
+    const lvox::algorithms::ComputeOptions compute_options
+        {
+            .voxel_size = voxel_size,
+            .job_limit = job_count,
+            .pad_computation_method = pad_compute_method,
+            .theoritical_scanner = {}
+        };
     const lvox::algorithms::PadResult      result =
-        lvox::algorithms::compute_pad(scans, lvox::algorithms::PADComputeOptions{compute_options});
+        lvox::algorithms::compute_pad(scans, compute_options);
     lvox::h5_exporter::export_grid(result, "pad", file);
     // if (outputs_profile)
     // {

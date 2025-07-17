@@ -16,6 +16,17 @@ struct BeerLambert
     static auto operator()(const algorithms::ComputeData&, const Index& index) -> double;
 };
 
+struct ContactFrequency
+{
+    static auto operator()(const algorithms::ComputeData&, const Index& index) -> double;
+};
+
+struct UnequalPathLengthBeerLambert
+{
+    static auto operator()(const algorithms::ComputeData&, const Index& index) -> double;
+};
+
+
 } // namespace pad_compute_methods
 
 } // namespace lvox::algorithms

@@ -1,8 +1,6 @@
 #ifndef LVOX_ALGORITHMS_HPP
 #define LVOX_ALGORITHMS_HPP
 
-#include <thread>
-
 #include <lvox/types.hpp>
 #include <lvox/voxel/grid.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
@@ -18,20 +16,17 @@ namespace algorithms
 
 struct ComputeOptions
 {
-    double          voxel_size        = .5;
-    bool            simulated_scanner = false;
-    unsigned int    job_limit         = std::thread::hardware_concurrency();
-};
+    double          voxel_size;
+    unsigned int    job_limit;
 
-struct PADComputeOptions final : public ComputeOptions
-{
     enum class PADMethod
     {
         BeerLambert,
-        BiasCorrectedMaximumLikelihoodEstimator
-    } pad_computation_method = PADMethod::BeerLambert;
+        ContactFrequency
+    } pad_computation_method;
 
     std::optional<SphericalScanner> theoritical_scanner;
+
 };
 
 using PadResult  = GridD;
@@ -66,7 +61,7 @@ auto compute_theoriticals(
 //   - Compute the PAD values for each voxels using the values from the computed grids
 // - Averages the PAD values from every scans
 auto compute_pad(
-    const std::vector<Scan>& scans, const PADComputeOptions& options
+    const std::vector<Scan>& scans, const ComputeOptions& options
 ) -> PadResult;
 
 auto compute_scene_bounds(const std::vector<Scan>& scans) -> lvox::Bounds;

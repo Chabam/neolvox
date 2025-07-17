@@ -96,7 +96,7 @@ auto compute_theoriticals(
 }
 
 template <typename PadComputeMethod>
-auto compute_pad_impl(const std::vector<lvox::Scan>& scans, const PADComputeOptions& options)
+auto compute_pad_impl(const std::vector<lvox::Scan>& scans, const ComputeOptions& options)
 {
     Logger logger{"LVOX"};
     logger.info("Scan count {}", scans.size());
@@ -157,13 +157,15 @@ auto compute_pad_impl(const std::vector<lvox::Scan>& scans, const PADComputeOpti
     return pad_result;
 }
 
-auto compute_pad(const std::vector<lvox::Scan>& scans, const PADComputeOptions& options)
+auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options)
     -> PadResult
 {
     switch (options.pad_computation_method)
     {
-    case PADComputeOptions::PADMethod::BeerLambert:
+    case ComputeOptions::PADMethod::BeerLambert:
         return compute_pad_impl<pad_compute_methods::BeerLambert>(scans, options);
+    case ComputeOptions::PADMethod::ContactFrequency:
+        return compute_pad_impl<pad_compute_methods::ContactFrequency>(scans, options);
     default:
         throw std::runtime_error{"Unsupported PAD Computation method provided"};
     }
