@@ -1,4 +1,4 @@
-#include <cstddef>
+#include <numbers>
 #include <ranges>
 #include <stdexcept>
 #include <thread>
@@ -17,6 +17,26 @@
 namespace lvox::algorithms
 {
 
+template <typename T>
+struct is_bl : std::is_same<T, algorithms::pad_compute_methods::BeerLambert>
+{
+};
+
+template <typename T>
+struct is_cf : std::is_same<T, algorithms::pad_compute_methods::ContactFrequency>
+{
+};
+
+template <typename T>
+struct is_uplbl : std::is_same<T, algorithms::pad_compute_methods::UnequalPathLengthBeerLambert>
+{
+};
+
+template <typename T>
+struct pad_method_uses_hit_grid : std::conjunction<is_bl<T>, is_cf<T>, is_uplbl<T>>
+{
+};
+
 template <std::ranges::range R, typename F>
 auto compute_in_parallel(const R& objects, ComputeData& data, const F& func, unsigned int job_count)
 {
@@ -30,7 +50,8 @@ auto compute_in_parallel(const R& objects, ComputeData& data, const F& func, uns
     }
 }
 
-auto compute_rays_count_and_length(
+template <typename PadComputeMethod>
+auto compute_rays_count_and_length_impl(
     const Scan& scan, ComputeData& data, const ComputeOptions& options
 ) -> void
 {
@@ -47,7 +68,7 @@ auto compute_rays_count_and_length(
 
             const Vector beam_to_point{scan_origin - pt};
 
-            if (data.m_hits)
+            if constexpr (pad_method_uses_hit_grid<PadComputeMethod>::value)
             {
                 const auto [x, y, z] = data.m_hits->index_of_point(pt);
                 data.m_hits->at(x, y, z) += 1;
@@ -58,8 +79,36 @@ auto compute_rays_count_and_length(
                 Beam{pt, beam_to_point},
                 [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
                     const auto [x, y, z] = voxel_hit_info.m_index;
-                    data.m_counts.at(x, y, z) += 1;
-                    data.m_lengths.at(x, y, z) += voxel_hit_info.m_distance_in_voxel;
+                    if constexpr (is_uplbl<PadComputeMethod>::value)
+                    {
+                        const double length_in_voxel = voxel_hit_info.m_distance_in_voxel;
+                        auto&        count_ref       = data.m_counts.at(x, y, z);
+                        auto&        length_sum_ref  = data.m_lengths.at(x, y, z);
+                        auto&        variance_ref    = data.m_lengths_variance->at(x, y, z);
+
+                        // TODO: make this configurable maybe?
+                        // So far it's based on Computree's NeedleFromDimensions
+                        constexpr double length   = 6.0;
+                        constexpr double diameter = 2.0;
+                        constexpr double attenuation_coeff =
+                            (2. * std::numbers::pi * (length / 100.) * (diameter / 100.) / 2.) / 4.;
+
+                        count_ref += 1;
+                        length_sum_ref +=
+                            -(std::log(1. - length_in_voxel * attenuation_coeff) / attenuation_coeff
+                            );
+
+                        // Best effort for calculating the variance,
+                        // might be off because this line definitely
+                        // represents multiple instructions.
+                        variance_ref +=
+                            std::pow(length_in_voxel - (length_sum_ref / count_ref), 2) / count_ref;
+                    }
+                    else
+                    {
+                        data.m_counts.at(x, y, z) += 1;
+                        data.m_lengths.at(x, y, z) += voxel_hit_info.m_distance_in_voxel;
+                    }
                 },
                 beam_to_point.norm()
             );
@@ -70,11 +119,33 @@ auto compute_rays_count_and_length(
     compute_in_parallel(*scan.m_points, data, trace_points_from_scanner, options.job_limit);
 }
 
+auto compute_rays_count_and_length(
+    const Scan& scan, ComputeData& data, const ComputeOptions& options
+) -> void
+{
+    switch (options.pad_computation_method)
+    {
+    case ComputeOptions::PADMethod::BeerLambert:
+        return compute_rays_count_and_length_impl<pad_compute_methods::BeerLambert>(
+            scan, data, options
+        );
+    case ComputeOptions::PADMethod::ContactFrequency:
+        return compute_rays_count_and_length_impl<pad_compute_methods::ContactFrequency>(
+            scan, data, options
+        );
+    case ComputeOptions::PADMethod::UnequalPathLengthBeerLambert:
+        return compute_rays_count_and_length_impl<
+            pad_compute_methods::UnequalPathLengthBeerLambert>(scan, data, options);
+    default:
+        throw std::runtime_error{"Unsupported PAD Computation method provided"};
+    }
+}
+
 auto compute_theoriticals(
     const std::vector<Beam>& beams, ComputeData& data, const ComputeOptions& options
 ) -> void
 {
-    Logger logger{"Compute theoriticals"};
+    Logger     logger{"Compute theoriticals"};
     const auto compute_rays_from_scanner = [&logger](ComputeData& data, auto&& beams) -> void {
         for (const auto& beam : beams)
         {
@@ -111,13 +182,21 @@ auto compute_pad_impl(const std::vector<lvox::Scan>& scans, const ComputeOptions
         ComputeData data{
             .m_counts  = CountGrid{total_bounds, options.voxel_size},
             .m_lengths = LengthGrid{total_bounds, options.voxel_size},
-            .m_hits    = std::invoke([&]() -> std::optional<CountGrid> {
-                if constexpr (std::is_same_v<PadComputeMethod, pad_compute_methods::BeerLambert>)
+            .m_hits    = std::invoke([&total_bounds, &options]() -> std::optional<CountGrid> {
+                if constexpr (pad_method_uses_hit_grid<PadComputeMethod>::value)
                 {
                     return {CountGrid{total_bounds, options.voxel_size}};
                 }
                 return {};
-            })
+            }),
+            .m_lengths_variance =
+                std::invoke([&total_bounds, &options]() -> std::optional<LengthGrid> {
+                    if constexpr (is_uplbl<PadComputeMethod>::value)
+                    {
+                        return {LengthGrid{total_bounds, options.voxel_size}};
+                    }
+                    return {};
+                })
         };
 
         if (options.theoritical_scanner)
@@ -138,7 +217,7 @@ auto compute_pad_impl(const std::vector<lvox::Scan>& scans, const ComputeOptions
             std::views::keys | std::ranges::to<std::vector<Index>>();
 
         PadComputeMethod pad_compute_method;
-        const auto compute_pad_for_cell =
+        const auto       compute_pad_for_cell =
             [&logger, &pad_result, &pad_compute_method, scan_count = scans.size()](
                 const ComputeData& data, auto&& idx_range
             ) -> void {
@@ -151,14 +230,15 @@ auto compute_pad_impl(const std::vector<lvox::Scan>& scans, const ComputeOptions
             logger.debug("Compute PAD job finished");
         };
 
-        compute_in_parallel(indexes_of_cells_with_data, data, compute_pad_for_cell, options.job_limit);
+        compute_in_parallel(
+            indexes_of_cells_with_data, data, compute_pad_for_cell, options.job_limit
+        );
     }
 
     return pad_result;
 }
 
-auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options)
-    -> PadResult
+auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options) -> PadResult
 {
     switch (options.pad_computation_method)
     {
@@ -166,6 +246,8 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
         return compute_pad_impl<pad_compute_methods::BeerLambert>(scans, options);
     case ComputeOptions::PADMethod::ContactFrequency:
         return compute_pad_impl<pad_compute_methods::ContactFrequency>(scans, options);
+    case ComputeOptions::PADMethod::UnequalPathLengthBeerLambert:
+        return compute_pad_impl<pad_compute_methods::UnequalPathLengthBeerLambert>(scans, options);
     default:
         throw std::runtime_error{"Unsupported PAD Computation method provided"};
     }

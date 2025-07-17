@@ -22,7 +22,8 @@ struct ComputeOptions
     enum class PADMethod
     {
         BeerLambert,
-        ContactFrequency
+        ContactFrequency,
+        UnequalPathLengthBeerLambert
     } pad_computation_method;
 
     std::optional<SphericalScanner> theoritical_scanner;
@@ -35,9 +36,10 @@ using LengthGrid = GridD;
 
 struct ComputeData
 {
-    CountGrid                m_counts;
-    LengthGrid               m_lengths;
-    std::optional<CountGrid> m_hits;
+    CountGrid                 m_counts;
+    LengthGrid                m_lengths;
+    std::optional<CountGrid>  m_hits;
+    std::optional<LengthGrid> m_lengths_variance;
 };
 
 // Compute which voxels the rays have went to in a voxel grid and

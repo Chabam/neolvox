@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <filesystem>
 #include <format>
 #include <functional>
@@ -35,21 +36,23 @@ Options:
                                           computing an MLS scan.
 
    -o, --scan-origin  x y z               Coordinates for the scan position when
-                                          computing a TLS scan [defaults to (0,0,0)]
+                                          computing a TLS scan. [defaults to (0,0,0)]
 
    -v, --voxel-size   decimal             Size in meters of each voxel elements
-                                          of the grid [defaults to 0.5]
+                                          of the grid. [defaults to 0.5]
 
    -p, --profile      filename            Outputs to vertical profile of the voxels
-                                          of the grid to a h5 file
+                                          of the grid to a csv file.
 
    -j, --jobs         number              A number of parallel jobs to use.
                                           [defaults to the amount of core]
 
-   -m, --method       BL, CF              The PAD estimator to use. Here's the
+   -m, --method       BL, CF, ULPBL       The PAD estimator to use. Here's the
                                           description of each values:
                                              - BL: Beer-Lambert [default]
                                              - CF: Contact Frequency
+                                             - ULPBL: Unequal Length Path
+                                               Beer Lambert
 
    -h, --help                             Prints this message
 )";
@@ -283,7 +286,14 @@ auto main(int argc, char* argv[]) -> int
         }
         else if (*arg_it == "-m" || *arg_it == "--method")
         {
-            const std::string& pad_compute_method_str = *++arg_it;
+            std::string pad_compute_method_str = *++arg_it;
+            std::ranges::transform(
+                pad_compute_method_str,
+                pad_compute_method_str.begin(),
+                [](const unsigned char c) {
+                    return std::toupper(c);
+                }
+            );
             if (pad_compute_method_str == "BL")
             {
                 pad_compute_method = PADMethod::BeerLambert;
@@ -291,6 +301,10 @@ auto main(int argc, char* argv[]) -> int
             else if (pad_compute_method_str == "CF")
             {
                 pad_compute_method = PADMethod::ContactFrequency;
+            }
+            else if (pad_compute_method_str == "ULPBL")
+            {
+                pad_compute_method = PADMethod::UnequalPathLengthBeerLambert;
             }
             else
             {
@@ -301,7 +315,6 @@ auto main(int argc, char* argv[]) -> int
         }
         else if (*arg_it == "-j" || *arg_it == "--jobs")
         {
-
         }
         else if (*arg_it == "-h" || *arg_it == "--help")
         {
@@ -326,14 +339,13 @@ auto main(int argc, char* argv[]) -> int
         scans = create_scan_using_pdal(file, traj_file, scan_origin);
     }
 
-    const lvox::algorithms::ComputeOptions compute_options
-        {
-            .voxel_size = voxel_size,
-            .job_limit = job_count,
-            .pad_computation_method = pad_compute_method,
-            .theoritical_scanner = {}
-        };
-    const lvox::algorithms::PadResult      result =
+    const lvox::algorithms::ComputeOptions compute_options{
+        .voxel_size             = voxel_size,
+        .job_limit              = job_count,
+        .pad_computation_method = pad_compute_method,
+        .theoritical_scanner    = {}
+    };
+    const lvox::algorithms::PadResult result =
         lvox::algorithms::compute_pad(scans, compute_options);
     lvox::h5_exporter::export_grid(result, "pad", file);
     // if (outputs_profile)
