@@ -41,6 +41,9 @@ Options:
    -v, --voxel-size   decimal             Size in meters of each voxel elements
                                           of the grid. [defaults to 0.5]
 
+   -g, --grid         filename            Outputs the grid of PAD voxel values to a
+                                          hdf5 file.
+
    -p, --profile      filename            Outputs to vertical profile of the voxels
                                           of the grid to a csv file.
 
@@ -260,7 +263,8 @@ auto main(int argc, char* argv[]) -> int
     fs::path                file;
     std::optional<fs::path> traj_file;
 
-    fs::path output_profile_file;
+    std::optional<fs::path> output_profile_file;
+    std::optional<fs::path> grid_file;
 
     auto arg_it = args.begin();
     while (arg_it != args.end())
@@ -281,9 +285,13 @@ auto main(int argc, char* argv[]) -> int
         }
         else if (*arg_it == "-p" || *arg_it == "--profile")
         {
-            outputs_profile     = true;
             output_profile_file = *++arg_it;
         }
+        else if (*arg_it == "-g" || *arg_it == "--grid")
+        {
+            grid_file = *++arg_it;
+        }
+
         else if (*arg_it == "-m" || *arg_it == "--method")
         {
             std::string pad_compute_method_str = *++arg_it;
@@ -347,11 +355,16 @@ auto main(int argc, char* argv[]) -> int
     };
     const lvox::algorithms::PadResult result =
         lvox::algorithms::compute_pad(scans, compute_options);
-    lvox::h5_exporter::export_grid(result, "pad", file);
-    // if (outputs_profile)
-    // {
-    //     output_profile_to_csv(output_profile_file, result);
-    // }
+
+    if (grid_file)
+    {
+        lvox::h5_exporter::export_grid(result, "pad", *grid_file);
+    }
+
+    if (output_profile_file)
+    {
+        output_profile_to_csv(*output_profile_file, result);
+    }
 
     // const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds(scans);
     // lvox::algorithms::ComputeData data{

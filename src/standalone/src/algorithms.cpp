@@ -33,7 +33,7 @@ struct is_uplbl : std::is_same<T, algorithms::pad_compute_methods::UnequalPathLe
 };
 
 template <typename T>
-struct pad_method_uses_hit_grid : std::conjunction<is_bl<T>, is_cf<T>, is_uplbl<T>>
+struct pad_method_uses_hit_grid : std::disjunction<is_bl<T>, is_cf<T>, is_uplbl<T>>
 {
 };
 
@@ -87,22 +87,22 @@ auto compute_rays_count_and_length_impl(
                         auto&        variance_ref    = data.m_lengths_variance->at(x, y, z);
 
                         // TODO: make this configurable maybe?
-                        // So far it's based on Computree's NeedleFromDimensions
-                        constexpr double length   = 6.0;
-                        constexpr double diameter = 2.0;
+                        // So far it's based on Computree's NeedleFromDimension
+                        constexpr double elem_length   = 0.06;
+                        constexpr double elem_diameter = 0.02;
                         constexpr double attenuation_coeff =
-                            (2. * std::numbers::pi * (length / 100.) * (diameter / 100.) / 2.) / 4.;
+                            (2. * std::numbers::pi * elem_length * elem_diameter) / 4.;
+
+                        const double attenuated_length = -(std::log(1. - attenuation_coeff * length_in_voxel) / attenuation_coeff);
 
                         count_ref += 1;
-                        length_sum_ref +=
-                            -(std::log(1. - length_in_voxel * attenuation_coeff) / attenuation_coeff
-                            );
+                        length_sum_ref += attenuated_length ;
 
                         // Best effort for calculating the variance,
                         // might be off because this line definitely
                         // represents multiple instructions.
                         variance_ref +=
-                            std::pow(length_in_voxel - (length_sum_ref / count_ref), 2) / count_ref;
+                            std::pow(attenuated_length - (length_sum_ref / count_ref), 2) / count_ref;
                     }
                     else
                     {

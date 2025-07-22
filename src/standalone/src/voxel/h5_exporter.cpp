@@ -71,7 +71,7 @@ auto write_grid_as_coo_matrix_to_h5(
     }
 
     H5::DSetCreatPropList create_prop_list{};
-    h5_dimension_t        chunk_dims{2 << 13};
+    h5_dimension_t        chunk_dims{std::min(static_cast<hsize_t>(2 << 13), voxels_with_data)};
     create_prop_list.setChunk(1, chunk_dims.data());
 
     const auto get_or_create_dataset =
@@ -166,28 +166,17 @@ auto write_grid_as_coo_matrix_to_h5(
 }
 
 auto export_grid(
-    const GridD& result, const std::string& dataset, const std::filesystem::path& in_file
+    const GridD& result, const std::string& dataset, const std::filesystem::path& file
 ) -> void
 {
-
-    const std::string filename = in_file.filename().string();
-    write_grid_as_coo_matrix_to_h5(
-        std::format("{}_lvox_out.h5", filename.substr(0, filename.find_last_of("."))),
-        dataset,
-        result
-    );
+    write_grid_as_coo_matrix_to_h5(file, dataset, result);
 }
 
 auto export_grid(
-    const GridU32& result, const std::string& dataset, const std::filesystem::path& in_file
+    const GridU32& result, const std::string& dataset, const std::filesystem::path& file
 ) -> void
 {
-    const std::string filename = in_file.filename().string();
-    write_grid_as_coo_matrix_to_h5(
-        std::format("{}_lvox_out.h5", filename.substr(0, filename.find_last_of("."))),
-        dataset,
-        result
-    );
+    write_grid_as_coo_matrix_to_h5(file, dataset, result);
 }
 
 } // namespace lvox::h5_exporter

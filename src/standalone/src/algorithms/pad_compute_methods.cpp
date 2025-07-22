@@ -74,16 +74,43 @@ auto UnequalPathLengthBeerLambert::operator()(const ComputeData& data, const Ind
 
     if (RDI < 1.)
     {
-        const double I     = 1. - RDI;
-        attenuation_coeff = std::log(I) - (1. / (2 * ray_count * I));
+        const double inv_RDI     = 1. - RDI;
+        attenuation_coeff = std::log(inv_RDI) - (1. / (2 * ray_count * inv_RDI));
     }
-    else if (RDI >= 1.)
+    else // RDI == 1.
     {
         attenuation_coeff = std::log(2 * ray_count + 2) / mean_ray_length;
     }
 
-    return (1. / G(attenuation_coeff)) *
-           (1. - std::sqrt(1. - 2 * unequal_path_ratio * attenuation_coeff));
+    const double res = (1. / G(attenuation_coeff)) *
+                       (1. - std::sqrt(1. - 2 * unequal_path_ratio * attenuation_coeff));
+
+    if (std::isnan(res))
+    {
+        std::cout << std::format(
+                         R"(
+hits                = {}
+ray_count           = {}
+RDI                 = {}
+ray_length          = {}
+mean_ray_length     = {}
+ray_length_variance = {}
+unequal_path_ratio  = {}
+attenuation_coeff   = {}
+)",
+                         hits,
+                         ray_count,
+                         RDI,
+                         ray_length,
+                         mean_ray_length,
+                         ray_length_variance,
+                         unequal_path_ratio,
+                         attenuation_coeff
+                     )
+        << std::endl;
+        return 0.;
+    }
+    return res;
 }
 
 } // namespace lvox::algorithms::pad_compute_methods
