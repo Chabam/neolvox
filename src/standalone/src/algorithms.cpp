@@ -1,3 +1,4 @@
+#include <atomic>
 #include <numbers>
 #include <ranges>
 #include <stdexcept>
@@ -71,7 +72,7 @@ auto compute_rays_count_and_length_impl(
             if constexpr (pad_method_uses_hit_grid<PadComputeMethod>::value)
             {
                 const auto [x, y, z] = data.m_hits->index_of_point(pt);
-                data.m_hits->at(x, y, z) += 1;
+                data.m_hits->at(x, y, z).fetch_add(1, std::memory_order_relaxed);
             }
 
             grid_traversal(
@@ -106,8 +107,8 @@ auto compute_rays_count_and_length_impl(
                     }
                     else
                     {
-                        data.m_counts.at(x, y, z) += 1;
-                        data.m_lengths.at(x, y, z) += voxel_hit_info.m_distance_in_voxel;
+                        data.m_counts.at(x, y, z).fetch_add(1, std::memory_order_relaxed);
+                        data.m_lengths.at(x, y, z).fetch_add(voxel_hit_info.m_distance_in_voxel, std::memory_order_relaxed);
                     }
                 },
                 beam_to_point.norm()
@@ -154,8 +155,8 @@ auto compute_theoriticals(
                 beam,
                 [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
                     const auto [x, y, z] = voxel_hit_info.m_index;
-                    data.m_counts.at(x, y, z) += 1;
-                    data.m_lengths.at(x, y, z) += voxel_hit_info.m_distance_in_voxel;
+                    data.m_counts.at(x, y, z).fetch_add(1, std::memory_order_relaxed);
+                    data.m_lengths.at(x, y, z).fetch_add(voxel_hit_info.m_distance_in_voxel, std::memory_order_relaxed);
                 }
             );
         }
@@ -224,8 +225,10 @@ auto compute_pad_impl(const std::vector<lvox::Scan>& scans, const ComputeOptions
             for (const auto& idx : idx_range)
             {
                 // Weighted sum of the PAD to avoid doing the average afterwards
-                pad_result.at(idx) +=
-                    pad_compute_method(data, idx) / static_cast<double>(scan_count);
+                pad_result.at(idx).fetch_add(
+                    pad_compute_method(data, idx) / static_cast<double>(scan_count),
+                    std::memory_order_relaxed
+                );
             }
             logger.debug("Compute PAD job finished");
         };
