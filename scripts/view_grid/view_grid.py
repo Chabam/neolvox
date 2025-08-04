@@ -3,8 +3,8 @@ import napari
 import sparse
 
 
-file = h5py.File("PR133_lvox_out.h5")
-dset = file["counts"]
+file = h5py.File("test.h5")
+dset = file["pad"]
 dims = dset.attrs["Dimensions"]
 dset_m = sparse.COO((dset["values"], (dset["x"], dset["y"], dset["z"])), shape=dims).todense()
 viewer = napari.Viewer(ndisplay=3)
