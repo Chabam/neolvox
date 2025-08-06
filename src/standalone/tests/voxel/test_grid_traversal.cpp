@@ -28,8 +28,7 @@ TEST(grid, grid_traversal_x_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
@@ -50,8 +49,7 @@ TEST(grid, grid_traversal_x_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
@@ -89,8 +87,7 @@ TEST(grid, grid_traversal_y_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
@@ -111,8 +108,7 @@ TEST(grid, grid_traversal_y_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
@@ -149,8 +145,7 @@ TEST(grid, grid_traversal_z_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
@@ -171,8 +166,7 @@ TEST(grid, grid_traversal_z_axis)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
@@ -213,8 +207,7 @@ TEST(grid, grid_traversal_diagonals)
         lvox::Beam   beam{min, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
@@ -252,8 +245,7 @@ TEST(grid, grid_traversal_diagonals)
         lvox::Beam   beam{max, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
@@ -306,8 +298,7 @@ TEST(grid, grid_traversal_max_distance)
         lvox::Beam   beam{pos, dir};
 
         std::vector<lvox::Index3D> visited_voxel_idxs;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_idxs.push_back(hit.m_index);
@@ -344,8 +335,7 @@ TEST(grid, grid_traversal_distance_in_voxel)
         lvox::Beam   beam{pos, dir};
 
         std::vector<double> visited_voxel_distances;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_distances](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_distances.push_back(hit.m_distance_in_voxel);
@@ -363,8 +353,7 @@ TEST(grid, grid_traversal_distance_in_voxel)
         lvox::Beam   beam{pos, dir};
 
         std::vector<double> visited_voxel_distances;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_distances](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_distances.push_back(hit.m_distance_in_voxel);
@@ -381,8 +370,7 @@ TEST(grid, grid_traversal_distance_in_voxel)
         lvox::Beam   beam{pos, dir};
 
         std::vector<double> visited_voxel_distances;
-        lvox::algorithms::grid_traversal(
-            grid,
+        lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_distances](const lvox::algorithms::VoxelHitInfo& hit) mutable {
                 visited_voxel_distances.push_back(hit.m_distance_in_voxel);

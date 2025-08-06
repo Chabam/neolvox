@@ -60,6 +60,7 @@ auto compute_rays_count_and_length_impl(
 
     const auto trace_points_from_scanner = [&logger,
                                             &scan](ComputeData& data, auto&& points) -> void {
+        auto grid_traveral = GridTraversalVoxelRounding{data.m_counts};
         for (const auto& timed_point : points)
         {
             const double gps_time = timed_point.m_gps_time;
@@ -75,8 +76,7 @@ auto compute_rays_count_and_length_impl(
                 data.m_hits->at(x, y, z).fetch_add(1, std::memory_order_relaxed);
             }
 
-            grid_traversal(
-                data.m_counts,
+            grid_traveral(
                 Beam{pt, beam_to_point},
                 [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
                     const auto [x, y, z] = voxel_hit_info.m_index;
@@ -94,21 +94,26 @@ auto compute_rays_count_and_length_impl(
                         constexpr double attenuation_coeff =
                             (2. * std::numbers::pi * elem_length * elem_diameter) / 4.;
 
-                        const double attenuated_length = -(std::log(1. - attenuation_coeff * length_in_voxel) / attenuation_coeff);
+                        const double attenuated_length =
+                            -(std::log(1. - attenuation_coeff * length_in_voxel) /
+                              attenuation_coeff);
 
                         count_ref += 1;
-                        length_sum_ref += attenuated_length ;
+                        length_sum_ref += attenuated_length;
 
                         // Best effort for calculating the variance,
                         // might be off because this line definitely
                         // represents multiple instructions.
                         variance_ref +=
-                            std::pow(attenuated_length - (length_sum_ref / count_ref), 2) / count_ref;
+                            std::pow(attenuated_length - (length_sum_ref / count_ref), 2) /
+                            count_ref;
                     }
                     else
                     {
                         data.m_counts.at(x, y, z).fetch_add(1, std::memory_order_relaxed);
-                        data.m_lengths.at(x, y, z).fetch_add(voxel_hit_info.m_distance_in_voxel, std::memory_order_relaxed);
+                        data.m_lengths.at(x, y, z).fetch_add(
+                            voxel_hit_info.m_distance_in_voxel, std::memory_order_relaxed
+                        );
                     }
                 },
                 beam_to_point.norm()
@@ -148,17 +153,16 @@ auto compute_theoriticals(
 {
     Logger     logger{"Compute theoriticals"};
     const auto compute_rays_from_scanner = [&logger](ComputeData& data, auto&& beams) -> void {
+        auto grid_traveral = GridTraversalVoxelRounding{data.m_counts};
         for (const auto& beam : beams)
         {
-            grid_traversal(
-                data.m_counts,
-                beam,
-                [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
-                    const auto [x, y, z] = voxel_hit_info.m_index;
-                    data.m_counts.at(x, y, z).fetch_add(1, std::memory_order_relaxed);
-                    data.m_lengths.at(x, y, z).fetch_add(voxel_hit_info.m_distance_in_voxel, std::memory_order_relaxed);
-                }
-            );
+            grid_traveral(beam, [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
+                const auto [x, y, z] = voxel_hit_info.m_index;
+                data.m_counts.at(x, y, z).fetch_add(1, std::memory_order_relaxed);
+                data.m_lengths.at(x, y, z).fetch_add(
+                    voxel_hit_info.m_distance_in_voxel, std::memory_order_relaxed
+                );
+            });
         }
 
         logger.debug("thread finished");
