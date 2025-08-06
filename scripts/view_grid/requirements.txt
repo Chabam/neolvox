@@ -1,0 +1,4 @@
+numpy
+napari[pyqt6,optional]
+h5py
+sparse

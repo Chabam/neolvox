@@ -1,0 +1,28 @@
+BasedOnStyle: Microsoft
+Standard: c++20
+ColumnLimit: 100
+AllowShortLambdasOnASingleLine: Empty
+AllowAllArgumentsOnNextLine: true
+AlignAfterOpenBracket: BlockIndent
+AlignConsecutiveDeclarations: AcrossComments
+AlignConsecutiveAssignments: AcrossComments
+BinPackParameters: false
+BinPackArguments: false
+BreakConstructorInitializers: BeforeComma
+BreakTemplateDeclarations: Yes
+PointerAlignment: Left
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:           '^<lvox/'
+    Priority:        2
+    SortPriority:    2
+    CaseSensitive:   true
+  - Regex:           '^<pdal/'
+    Priority:        1
+    SortPriority:    1
+    CaseSensitive:   true
+  - Regex:           '^<'
+    Priority:        0
+    SortPriority:    0
+    CaseSensitive:   true
+AllowShortFunctionsOnASingleLine: InlineOnly

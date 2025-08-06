@@ -1,0 +1,5 @@
+numpy
+h5py
+sparse
+matplotlib
+PyQt5
