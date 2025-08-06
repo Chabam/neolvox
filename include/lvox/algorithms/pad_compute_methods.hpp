@@ -2,30 +2,45 @@
 #define LVOX_PAD_COMPUTE_METHODS
 
 #include <lvox/types.hpp>
+#include <lvox/voxel/grid.hpp>
 
 namespace lvox::algorithms
 {
 
-struct ComputeData;
+struct ComputeOptions;
 
 namespace pad_compute_methods
 {
 
 struct BeerLambert
 {
-    static auto operator()(const algorithms::ComputeData&, const Index& index) -> double;
+    BeerLambert(const Bounds& bounds, const ComputeOptions& options);
+
+    GridU32 m_hits;
+    GridU32 m_counts;
+    GridD m_lengths;
 };
 
 struct ContactFrequency
 {
-    static auto operator()(const algorithms::ComputeData&, const Index& index) -> double;
+    ContactFrequency(const Bounds& bounds, const ComputeOptions& options);
+
+    GridU32 m_hits;
+    GridU32 m_counts;
+    GridD m_lengths;
 };
 
 struct UnequalPathLengthBeerLambert
 {
-    static auto operator()(const algorithms::ComputeData&, const Index& index) -> double;
+    UnequalPathLengthBeerLambert(const Bounds& bounds, const ComputeOptions& options);
+
+    GridU32 m_hits;
+    GridU32 m_counts;
+    GridD m_effective_lengths;
+    GridD m_effective_lengths_variance;
 };
 
+using PadComputeMethod = std::variant<BeerLambert, ContactFrequency, UnequalPathLengthBeerLambert>;
 
 } // namespace pad_compute_methods
 
