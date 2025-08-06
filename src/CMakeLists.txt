@@ -1,5 +1,5 @@
 if (LVOX_COMPUTREE_BINDINGS)
-    add_subdirectory(computree)
+    add_subdirectory(computree/lvox)
 endif()
 
 if (LVOX_STANDALONE)
