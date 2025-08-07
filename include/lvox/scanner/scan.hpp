@@ -14,9 +14,10 @@ using ScannerOrigin  = std::variant<Point, std::shared_ptr<Trajectory>>;
 
 struct Scan
 {
-    PointCloudView m_points;
-    ScannerOrigin  m_scanner_origin;
-    Bounds         m_bounds;
+    PointCloudView                m_points;
+    ScannerOrigin                 m_scanner_origin;
+    Bounds                        m_bounds;
+    std::optional<PointCloudView> m_blank_shots;
 
     struct ComputeBeamOrigin
     {

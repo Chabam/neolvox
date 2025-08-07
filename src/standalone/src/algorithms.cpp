@@ -90,13 +90,13 @@ auto compute_rays_count_and_length(
             const Point  scan_origin =
                 std::visit(Scan::ComputeBeamOrigin{timed_point.m_gps_time}, scan.m_scanner_origin);
 
-            const Vector beam_to_point{scan_origin - pt};
+            const Vector beam_to_point{pt - scan_origin};
 
             const auto [x, y, z] = data.m_hits.index_of_point(pt);
             data.m_hits.at(x, y, z).fetch_add(1, std::memory_order_relaxed);
 
             grid_traveral(
-                Beam{pt, beam_to_point},
+                Beam{scan_origin, beam_to_point},
                 [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
                     const auto [x, y, z] = voxel_hit_info.m_index;
                     std::visit(
@@ -117,15 +117,24 @@ auto compute_rays_count_and_length(
 }
 
 auto compute_theoriticals(
-    const std::vector<Beam>& beams, ComputeData& data, const ComputeOptions& options
+    const Scan& scan, ComputeData& data, const ComputeOptions& options
 ) -> void
 {
     Logger     logger{"Compute theoriticals"};
-    const auto compute_rays_from_scanner = [&logger](ComputeData& data, auto&& beams) -> void {
+    const auto compute_rays_from_scanner = [&logger, &scan](ComputeData& data, auto&& blanks) -> void {
         auto grid_traveral = GridTraversalVoxelRounding{data.m_counts};
-        for (const auto& beam : beams)
+        for (const auto& timed_point : blanks)
         {
-            grid_traveral(beam, [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
+            const double gps_time = timed_point.m_gps_time;
+            const Point& pt       = timed_point.m_point;
+            const Point  scan_origin =
+                std::visit(Scan::ComputeBeamOrigin{timed_point.m_gps_time}, scan.m_scanner_origin);
+
+            const Vector beam_to_point{pt - scan_origin};
+
+            grid_traveral(
+                Beam{scan_origin, beam_to_point},
+                [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
                 const auto [x, y, z] = voxel_hit_info.m_index;
                 std::visit(
                     ComputeDistance{
@@ -140,7 +149,7 @@ auto compute_theoriticals(
         logger.debug("thread finished");
     };
 
-    compute_in_parallel(beams, data, compute_rays_from_scanner, options.m_job_limit);
+    compute_in_parallel(**scan.m_blank_shots, data, compute_rays_from_scanner, options.m_job_limit);
 }
 
 struct CreateLengthGrids
@@ -192,10 +201,10 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
             )
         };
 
-        if (options.m_theoritical_scanner)
+        if (options.m_compute_theoriticals && scan.m_blank_shots)
         {
             logger.info("Compute theoriticals {}/{}", scan_num + 1, scans.size());
-            compute_theoriticals(options.m_theoritical_scanner->get_beams(), data, options);
+            compute_theoriticals(scan, data, options);
         }
 
         logger.info("Compute ray counts and length {}/{}", scan_num + 1, scans.size());

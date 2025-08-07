@@ -9,6 +9,7 @@
 #include <ranges>
 #include <sstream>
 #include <stdexcept>
+#include <variant>
 
 #include <pdal/Dimension.hpp>
 #include <pdal/Options.hpp>
@@ -21,13 +22,12 @@
 #include <pdal/io/LasReader.hpp>
 
 #include <lvox/algorithms/algorithms.hpp>
+#include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
-#include <lvox/voxel/h5_exporter.hpp>
-
-#include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/scanner/trajectory.hpp>
 #include <lvox/types.hpp>
+#include <lvox/voxel/h5_exporter.hpp>
 
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
@@ -63,10 +63,16 @@ Options:
 
 std::mutex g_print_guard;
 
+struct PointCloudWithTheoriticalShots
+{
+    lvox::PointCloudView                m_point_cloud;
+    std::optional<lvox::PointCloudView> m_blank_shots;
+};
+
 auto load_point_cloud_from_file(
     const std::filesystem::path&                        file,
     std::optional<std::reference_wrapper<lvox::Bounds>> bounds = {}
-) -> lvox::PointCloudView
+) -> PointCloudWithTheoriticalShots
 {
     using dim    = pdal::Dimension::Id;
     namespace fs = std::filesystem;
@@ -88,6 +94,7 @@ auto load_point_cloud_from_file(
     layout->registerDim(dim::Y);
     layout->registerDim(dim::Z);
     layout->registerDim(dim::GpsTime);
+    layout->registerDim(dim::Classification);
 
     auto stage_factory = std::make_unique<pdal::StageFactory>();
 
@@ -109,29 +116,47 @@ auto load_point_cloud_from_file(
         logger.info("Loading file {}", file.filename().string());
     }
 
+    PointCloudWithTheoriticalShots out;
+    out.m_point_cloud = std::make_unique<lvox::PointCloud>();
+
+    const bool                 calculate_bounds = bounds.has_value();
     pdal::StreamCallbackFilter sc;
-    auto                       output = std::make_unique<lvox::PointCloud>();
+    sc.setCallback([calculate_bounds, &bounds, &out](const auto& pt) mutable -> bool {
+        const double x    = pt.template getFieldAs<double>(dim::X);
+        const double y    = pt.template getFieldAs<double>(dim::Y);
+        const double z    = pt.template getFieldAs<double>(dim::Z);
+        const int    clss = pt.template getFieldAs<int>(dim::Classification);
 
-    const bool calculate_bounds = bounds.has_value();
-    sc.setCallback([calculate_bounds, &bounds, &output](const auto& pt) mutable -> bool {
-        const double x = pt.template getFieldAs<double>(dim::X);
-        const double y = pt.template getFieldAs<double>(dim::Y);
-        const double z = pt.template getFieldAs<double>(dim::Z);
-        output->emplace_back(pt.template getFieldAs<double>(dim::GpsTime), lvox::Point{x, y, z});
-
-        if (calculate_bounds)
+        if (clss == 0)
         {
-            bounds->get().grow(x, y, z);
+            if (!out.m_blank_shots)
+            {
+                out.m_blank_shots = std::make_unique<lvox::PointCloud>();
+            }
+            (*out.m_blank_shots)
+                ->emplace_back(pt.template getFieldAs<double>(dim::GpsTime), lvox::Point{x, y, z});
+        }
+        else
+        {
+            out.m_point_cloud->emplace_back(
+                pt.template getFieldAs<double>(dim::GpsTime), lvox::Point{x, y, z}
+            );
+
+            if (calculate_bounds)
+            {
+                bounds->get().grow(x, y, z);
+            }
         }
 
         return true;
     });
+
     sc.setInput(*file_reader);
     sc.prepare(pts_table);
 
     sc.execute(pts_table);
 
-    return output;
+    return out;
 }
 
 auto output_profile_to_csv(
@@ -178,19 +203,24 @@ auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox:
 
         fstream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-        scans.emplace_back(std::async(
-            [parent_path, point_cloud_file_name = point_cloud_file_name.str(), x, y, z](
-            ) -> lvox::Scan {
-                lvox::Bounds bounds;
-                return lvox::Scan{
-                    .m_points = lvox::PointCloudView{load_point_cloud_from_file(
+        scans.emplace_back(
+            std::async(
+                [parent_path, point_cloud_file_name = point_cloud_file_name.str(), x, y, z]()
+                    -> lvox::Scan {
+                    lvox::Bounds bounds;
+
+                    auto point_cloud_from_file = load_point_cloud_from_file(
                         fs::path{parent_path / point_cloud_file_name}, {bounds}
-                    )},
-                    .m_scanner_origin{lvox::Point{x, y, z}},
-                    .m_bounds{bounds}
-                };
-            }
-        ));
+                    );
+                    return lvox::Scan{
+                        .m_points = std::move(point_cloud_from_file.m_point_cloud),
+                        .m_scanner_origin{lvox::Point{x, y, z}},
+                        .m_bounds{bounds},
+                        .m_blank_shots{std::move(point_cloud_from_file.m_blank_shots)}
+                    };
+                }
+            )
+        );
     }
 
     return scans | std::views::transform([](std::future<lvox::Scan>& future) -> lvox::Scan {
@@ -222,7 +252,7 @@ auto create_scan_using_pdal(
         logger.info("Loading trajectory file {}", traj_file->string());
 
         scanner_origin =
-            std::make_shared<lvox::Trajectory>(load_point_cloud_from_file(*traj_file, {}));
+            std::make_shared<lvox::Trajectory>(load_point_cloud_from_file(*traj_file, {}).m_point_cloud);
     }
     else if (scan_origin)
     {
@@ -233,7 +263,12 @@ auto create_scan_using_pdal(
         scanner_origin = lvox::Vector::Constant(0.); // (0,0,0)
     }
 
-    scans.emplace_back(std::move(scan_point_cloud), scanner_origin, scan_bounds);
+    scans.emplace_back(
+        std::move(scan_point_cloud.m_point_cloud),
+        scanner_origin,
+        scan_bounds,
+        std::move(scan_point_cloud.m_blank_shots)
+    );
 
     return scans;
 }
@@ -252,16 +287,17 @@ auto main(int argc, char* argv[]) -> int
         return 1;
     }
 
-    namespace pe = lvox::algorithms::pad_estimators;
-    using PADEstimator        = pe::PADEstimator;
+    namespace pe       = lvox::algorithms::pad_estimators;
+    using PADEstimator = pe::PADEstimator;
 
-    bool                       is_mls          = false;
-    bool                       outputs_profile = false;
-    double                     voxel_size      = 0.5;
-    unsigned int               job_count       = std::thread::hardware_concurrency();
-    PADEstimator               pad_estimator   = pe::BeerLambert{};
+    bool         is_mls               = false;
+    bool         outputs_profile      = false;
+    double       voxel_size           = 0.5;
+    unsigned int job_count            = std::thread::hardware_concurrency();
+    PADEstimator pad_estimator        = pe::BeerLambert{};
+    bool         compute_theoriticals = false;
+
     std::optional<lvox::Point> scan_origin;
-
     fs::path                file;
     std::optional<fs::path> traj_file;
 
@@ -298,9 +334,7 @@ auto main(int argc, char* argv[]) -> int
         {
             std::string pad_compute_method_str = *++arg_it;
             std::ranges::transform(
-                pad_compute_method_str,
-                pad_compute_method_str.begin(),
-                [](const unsigned char c) {
+                pad_compute_method_str, pad_compute_method_str.begin(), [](const unsigned char c) {
                     return std::toupper(c);
                 }
             );
@@ -325,11 +359,16 @@ auto main(int argc, char* argv[]) -> int
         }
         else if (*arg_it == "-j" || *arg_it == "--jobs")
         {
+            job_count = std::stoi(*++arg_it);
         }
         else if (*arg_it == "-h" || *arg_it == "--help")
         {
             std::cout << g_usage_info << std::endl;
             return 0;
+        }
+        else if (*arg_it == "-b" || *arg_it == "--blanks")
+        {
+            compute_theoriticals = true;
         }
         else
         {
@@ -350,10 +389,10 @@ auto main(int argc, char* argv[]) -> int
     }
 
     const lvox::algorithms::ComputeOptions compute_options{
-        .m_voxel_size          = voxel_size,
-        .m_job_limit           = job_count,
-        .m_pad_estimator       = pad_estimator,
-        .m_theoritical_scanner = {}
+        .m_voxel_size           = voxel_size,
+        .m_job_limit            = job_count,
+        .m_pad_estimator        = pad_estimator,
+        .m_compute_theoriticals = compute_theoriticals
     };
     const lvox::algorithms::PadResult result =
         lvox::algorithms::compute_pad(scans, compute_options);

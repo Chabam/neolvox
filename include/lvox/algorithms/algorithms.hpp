@@ -17,10 +17,10 @@ namespace algorithms
 
 struct ComputeOptions
 {
-    double                          m_voxel_size;
-    unsigned int                    m_job_limit;
-    pad_estimators::PADEstimator    m_pad_estimator;
-    std::optional<SphericalScanner> m_theoritical_scanner;
+    double                       m_voxel_size;
+    unsigned int                 m_job_limit;
+    pad_estimators::PADEstimator m_pad_estimator;
+    bool                         m_compute_theoriticals;
 };
 
 using PadResult  = GridD;
@@ -50,7 +50,7 @@ auto compute_rays_count_and_length(
 
 // Compute the rays count and length from a virtual scanner
 auto compute_theoriticals(
-    const std::vector<Beam>& scan, ComputeData& data, const ComputeOptions& options
+    const Scan& scan, ComputeData& data, const ComputeOptions& options
 ) -> void;
 
 //  Wrapper for the whole PAD computation. Does the following:

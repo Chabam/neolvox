@@ -20,10 +20,10 @@ def main():
 
     dset_m = sparse.COO((dset["values"], (dset["x"], dset["y"], dset["z"])), shape=dims).todense()
 
-    profile = numpy.sum(dset_m, axis=(0, 1))
+    profile = numpy.average(dset_m, axis=(0, 1))
     figure, axis = plt.subplots()
     axis.plot(profile, range(dims[2]))
-    axis.set(xlabel="pad", ylabel="z level", title="pad values")
+    axis.set(xlabel="pad", ylabel="z level", title=args.file_name + " pad values")
     axis.grid()
 
     plt.show()
