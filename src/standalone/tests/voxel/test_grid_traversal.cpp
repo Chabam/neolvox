@@ -315,7 +315,8 @@ TEST(grid, grid_traversal_max_distance)
         }
     }
 }
-TEST(grid, grid_traversal_distance_in_voxel)
+
+TEST(grid, grid_traversal_exact_distance_in_voxel)
 {
     const double dim_x = 10;
     const double dim_y = 20;
@@ -379,5 +380,73 @@ TEST(grid, grid_traversal_distance_in_voxel)
         );
         ASSERT_EQ(1, visited_voxel_distances.size());
         EXPECT_EQ(0.5, visited_voxel_distances[0]);
+    }
+}
+
+TEST(grid, grid_traversal_rounding_distance_in_voxel)
+{
+    const double dim_x = 10;
+    const double dim_y = 20;
+    const double dim_z = 30;
+
+    pdal::PointTable table;
+    auto             view = generate_cubic_point_cloud(table, dim_x, dim_y, dim_z);
+
+    const double cell_size = 1.;
+    lvox::Bounds point_cloud_bounds;
+    view->calculateBounds(point_cloud_bounds);
+    lvox::GridU32 grid{point_cloud_bounds, cell_size};
+
+    {
+        lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
+        lvox::Vector dir{1., 0., 0.};
+        lvox::Beam   beam{pos, dir};
+
+        std::vector<double> visited_voxel_distances;
+        lvox::algorithms::GridTraversalVoxelRounding<lvox::GridU32>{grid}(
+            beam,
+            [&visited_voxel_distances](const lvox::algorithms::VoxelHitInfo& hit) mutable {
+                visited_voxel_distances.push_back(hit.m_distance_in_voxel);
+            },
+            1.5
+        );
+        ASSERT_EQ(2, visited_voxel_distances.size());
+        EXPECT_EQ(1, visited_voxel_distances[0]);
+        EXPECT_EQ(1, visited_voxel_distances[1]);
+    }
+
+    {
+        lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
+        lvox::Vector dir{1., 0., 0.};
+        lvox::Beam   beam{pos, dir};
+
+        std::vector<double> visited_voxel_distances;
+        lvox::algorithms::GridTraversalVoxelRounding<lvox::GridU32>{grid}(
+            beam,
+            [&visited_voxel_distances](const lvox::algorithms::VoxelHitInfo& hit) mutable {
+                visited_voxel_distances.push_back(hit.m_distance_in_voxel);
+            },
+            1.
+        );
+        ASSERT_EQ(2, visited_voxel_distances.size());
+        EXPECT_EQ(1, visited_voxel_distances[0]);
+        EXPECT_EQ(1, visited_voxel_distances[1]);
+    }
+
+    {
+        lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
+        lvox::Vector dir{1., 0., 0.};
+        lvox::Beam   beam{pos, dir};
+
+        std::vector<double> visited_voxel_distances;
+        lvox::algorithms::GridTraversalVoxelRounding<lvox::GridU32>{grid}(
+            beam,
+            [&visited_voxel_distances](const lvox::algorithms::VoxelHitInfo& hit) mutable {
+                visited_voxel_distances.push_back(hit.m_distance_in_voxel);
+            },
+            0.5
+        );
+        ASSERT_EQ(1, visited_voxel_distances.size());
+        EXPECT_EQ(1., visited_voxel_distances[0]);
     }
 }
