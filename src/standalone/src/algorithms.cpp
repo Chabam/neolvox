@@ -1,7 +1,9 @@
 #include <atomic>
+#include <limits>
 #include <numbers>
 #include <ranges>
 #include <thread>
+#include <variant>
 
 #include <pdal/Dimension.hpp>
 #include <pdal/PointView.hpp>
@@ -13,6 +15,8 @@
 #include <lvox/scanner/beam.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/voxel/grid.hpp>
+
+#include "lvox/scanner/trajectory.hpp"
 
 namespace lvox::algorithms
 {
@@ -75,12 +79,11 @@ struct ComputeDistance
     std::uint32_t       m_current_count;
 };
 
-auto compute_rays_count_and_length(
-    const Scan& scan, ComputeData& data, const ComputeOptions& options
+template <bool limit_ray_length>
+auto compute_rays_count_and_length_impl(
+    const Scan& scan, ComputeData& data, const ComputeOptions& options, Logger logger
 ) -> void
 {
-    Logger logger{"Compute ray counts and length"};
-
     const auto ray_trace = [&logger, &scan](ComputeData& data, auto&& points) -> void {
         auto grid_traveral = GridTraversalVoxelRounding{data.m_counts};
         for (const auto& timed_point : points)
@@ -92,8 +95,12 @@ auto compute_rays_count_and_length(
 
             const Vector beam_to_point{pt - scan_origin};
 
-            const auto [x, y, z] = data.m_hits.index_of_point(pt);
-            data.m_hits.at(x, y, z).fetch_add(1, std::memory_order_relaxed);
+            double max_distance = std::numeric_limits<double>::infinity();
+
+            if constexpr (limit_ray_length)
+            {
+                max_distance = beam_to_point.norm();
+            }
 
             grid_traveral(
                 Beam{scan_origin, beam_to_point},
@@ -107,7 +114,7 @@ auto compute_rays_count_and_length(
                         data.m_lengths
                     );
                 },
-                beam_to_point.norm()
+                max_distance
             );
         }
 
@@ -116,40 +123,33 @@ auto compute_rays_count_and_length(
     compute_in_parallel(*scan.m_points, data, ray_trace, options.m_job_limit);
 }
 
-auto compute_theoriticals(
+auto compute_rays_count_and_length(
     const Scan& scan, ComputeData& data, const ComputeOptions& options
 ) -> void
 {
-    Logger     logger{"Compute theoriticals"};
-    const auto compute_rays_from_scanner = [&logger, &scan](ComputeData& data, auto&& blanks) -> void {
+    constexpr bool limit_ray_length = true;
+    compute_rays_count_and_length_impl<limit_ray_length>(scan, data, options, Logger{"Compute Rays count and length"});
+}
+
+auto compute_theoriticals(const Scan& scan, ComputeData& data, const ComputeOptions& options)
+    -> void
+{
+    constexpr bool limit_ray_length = false;
+    compute_rays_count_and_length_impl<limit_ray_length>(scan, data, options, Logger{"Compute theoriticals"});
+}
+
+auto compute_hits(const Scan& scan, ComputeData& data, const ComputeOptions& options) -> void
+{
+    Logger logger{"Compute hits"};
+    const auto count_hits = [&logger, &scan](ComputeData& data, auto&& points) -> void {
         auto grid_traveral = GridTraversalVoxelRounding{data.m_counts};
-        for (const auto& timed_point : blanks)
+        for (const auto& timed_point : points)
         {
-            const double gps_time = timed_point.m_gps_time;
-            const Point& pt       = timed_point.m_point;
-            const Point  scan_origin =
-                std::visit(Scan::ComputeBeamOrigin{timed_point.m_gps_time}, scan.m_scanner_origin);
-
-            const Vector beam_to_point{pt - scan_origin};
-
-            grid_traveral(
-                Beam{scan_origin, beam_to_point},
-                [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
-                const auto [x, y, z] = voxel_hit_info.m_index;
-                std::visit(
-                    ComputeDistance{
-                        voxel_hit_info,
-                        data.m_counts.at(x, y, z).fetch_add(1, std::memory_order_relaxed)
-                    },
-                    data.m_lengths
-                );
-            });
+            const auto [x, y, z] = data.m_hits.index_of_point(timed_point.m_point);
+            data.m_hits.at(x, y, z).fetch_add(1, std::memory_order_relaxed);
         }
-
-        logger.debug("thread finished");
     };
-
-    compute_in_parallel(**scan.m_blank_shots, data, compute_rays_from_scanner, options.m_job_limit);
+    compute_in_parallel(*scan.m_points, data, count_hits, options.m_job_limit);
 }
 
 struct CreateLengthGrids
@@ -196,8 +196,7 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
             .m_counts  = CountGrid{total_bounds, options.m_voxel_size},
             .m_hits    = CountGrid{total_bounds, options.m_voxel_size},
             .m_lengths = std::visit(
-                CreateLengthGrids{total_bounds, options.m_voxel_size},
-                options.m_pad_estimator
+                CreateLengthGrids{total_bounds, options.m_voxel_size}, options.m_pad_estimator
             )
         };
 
@@ -207,8 +206,9 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
             compute_theoriticals(scan, data, options);
         }
 
+        logger.info("Compute hits {}/{}", scan_num + 1, scans.size());
+        compute_hits(scan, data, options);
         logger.info("Compute ray counts and length {}/{}", scan_num + 1, scans.size());
-
         compute_rays_count_and_length(scan, data, options);
 
         // TODO: Make the treshold configurable
