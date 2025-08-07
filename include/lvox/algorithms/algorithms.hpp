@@ -4,6 +4,7 @@
 #include <lvox/types.hpp>
 #include <lvox/voxel/grid.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
+#include <lvox/algorithms/pad_estimators.hpp>
 
 namespace lvox
 {
@@ -16,30 +17,29 @@ namespace algorithms
 
 struct ComputeOptions
 {
-    double          voxel_size;
-    unsigned int    job_limit;
-
-    enum class PADMethod
-    {
-        BeerLambert,
-        ContactFrequency,
-        UnequalPathLengthBeerLambert
-    } pad_computation_method;
-
-    std::optional<SphericalScanner> theoritical_scanner;
-
+    double                          m_voxel_size;
+    unsigned int                    m_job_limit;
+    pad_estimators::PADEstimator    m_pad_estimator;
+    std::optional<SphericalScanner> m_theoritical_scanner;
 };
 
 using PadResult  = GridD;
 using CountGrid  = GridU32;
 using LengthGrid = GridD;
 
+struct EffectiveLengthsWithVariance
+{
+    LengthGrid m_effective_lengths;
+    LengthGrid m_effective_lengths_variance;
+};
+
+using DistanceGrids = std::variant<LengthGrid, EffectiveLengthsWithVariance>;
+
 struct ComputeData
 {
-    CountGrid                 m_counts;
-    LengthGrid                m_lengths;
-    std::optional<CountGrid>  m_hits;
-    std::optional<LengthGrid> m_lengths_variance;
+    CountGrid     m_counts;
+    CountGrid     m_hits;
+    DistanceGrids m_lengths;
 };
 
 // Compute which voxels the rays have went to in a voxel grid and

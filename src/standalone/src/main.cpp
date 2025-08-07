@@ -25,8 +25,9 @@
 #include <lvox/scanner/spherical_scanner.hpp>
 #include <lvox/voxel/h5_exporter.hpp>
 
-#include "lvox/scanner/trajectory.hpp"
-#include "lvox/types.hpp"
+#include <lvox/algorithms/pad_estimators.hpp>
+#include <lvox/scanner/trajectory.hpp>
+#include <lvox/types.hpp>
 
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
@@ -251,13 +252,14 @@ auto main(int argc, char* argv[]) -> int
         return 1;
     }
 
-    using PADMethod = lvox::algorithms::ComputeOptions::PADMethod;
+    namespace pe = lvox::algorithms::pad_estimators;
+    using PADEstimator        = pe::PADEstimator;
 
-    bool                       is_mls             = false;
-    bool                       outputs_profile    = false;
-    double                     voxel_size         = 0.5;
-    unsigned int               job_count          = std::thread::hardware_concurrency();
-    PADMethod                  pad_compute_method = PADMethod::BeerLambert;
+    bool                       is_mls          = false;
+    bool                       outputs_profile = false;
+    double                     voxel_size      = 0.5;
+    unsigned int               job_count       = std::thread::hardware_concurrency();
+    PADEstimator               pad_estimator   = pe::BeerLambert{};
     std::optional<lvox::Point> scan_origin;
 
     fs::path                file;
@@ -304,15 +306,15 @@ auto main(int argc, char* argv[]) -> int
             );
             if (pad_compute_method_str == "BL")
             {
-                pad_compute_method = PADMethod::BeerLambert;
+                pad_estimator = pe::BeerLambert{};
             }
             else if (pad_compute_method_str == "CF")
             {
-                pad_compute_method = PADMethod::ContactFrequency;
+                pad_estimator = pe::ContactFrequency{};
             }
             else if (pad_compute_method_str == "ULPBL")
             {
-                pad_compute_method = PADMethod::UnequalPathLengthBeerLambert;
+                pad_estimator = pe::UnequalPathLengthBeerLambert{};
             }
             else
             {
@@ -348,10 +350,10 @@ auto main(int argc, char* argv[]) -> int
     }
 
     const lvox::algorithms::ComputeOptions compute_options{
-        .voxel_size             = voxel_size,
-        .job_limit              = job_count,
-        .pad_computation_method = pad_compute_method,
-        .theoritical_scanner    = {}
+        .m_voxel_size          = voxel_size,
+        .m_job_limit           = job_count,
+        .m_pad_estimator       = pad_estimator,
+        .m_theoritical_scanner = {}
     };
     const lvox::algorithms::PadResult result =
         lvox::algorithms::compute_pad(scans, compute_options);
