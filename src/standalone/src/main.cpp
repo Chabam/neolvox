@@ -33,7 +33,7 @@ constexpr auto g_usage_info =
 Options:
    ARGS               EXPECTED VALUES     DESCRIPTION
    -t, --trajectory   filename            Path to a trajectory file, required for
-                                          computing an MLS scan.
+                                          computing an MLS scan. [none by default]
 
    -o, --scan-origin  x y z               Coordinates for the scan position when
                                           computing a TLS scan. [defaults to (0,0,0)]
@@ -42,10 +42,17 @@ Options:
                                           of the grid. [defaults to 0.5]
 
    -g, --grid         filename            Outputs the grid of PAD voxel values to a
-                                          hdf5 file.
+                                          hdf5 file. [defaults to out.h5]
+
+   -b, --blanks       none                Wheter or not to use points classified with
+                                          flag 0 as reference for "blank shots". These
+                                          can used alongside virtual scene to measure
+                                          the impact of rays that didn't touch anything
+                                          on PAD estimations. [disabled by defaults]
 
    -p, --profile      filename            Outputs to vertical profile of the voxels
                                           of the grid to a csv file.
+                                          [disabled by defaults]
 
    -j, --jobs         number              A number of parallel jobs to use.
                                           [defaults to the amount of core]
@@ -61,6 +68,7 @@ Options:
 )";
 
 namespace lvox_pe = lvox::algorithms::pad_estimators;
+namespace fs      = std::filesystem;
 
 bool                       g_is_mls               = false;
 bool                       g_outputs_profile      = false;
@@ -70,6 +78,11 @@ lvox_pe::PADEstimator      g_pad_estimator        = lvox_pe::BeerLambert{};
 bool                       g_compute_theoriticals = false;
 std::optional<lvox::Point> g_scan_origin          = {};
 std::mutex                 g_print_guard          = {};
+fs::path                   g_file;
+std::optional<fs::path>    g_traj_file            = {};
+std::optional<fs::path>    g_output_profile_file  = {};
+fs::path                   g_grid_file            = "out.h5";
+
 
 struct PointCloudWithTheoriticalShots
 {
@@ -83,7 +96,6 @@ auto load_point_cloud_from_file(
 ) -> PointCloudWithTheoriticalShots
 {
     using dim    = pdal::Dimension::Id;
-    namespace fs = std::filesystem;
 
     lvox::Logger logger{"Point cloud file reader"};
     if (!fs::exists(file) || !fs::is_regular_file(file))
@@ -284,8 +296,6 @@ auto create_scan_using_pdal(
 
 auto main(int argc, char* argv[]) -> int
 {
-    namespace fs = std::filesystem;
-
     std::vector<std::string> args{argv + 1, argv + argc};
     lvox::Logger             logger{"LVOX"};
 
@@ -296,12 +306,6 @@ auto main(int argc, char* argv[]) -> int
         return 1;
     }
 
-    fs::path                   file;
-    std::optional<fs::path>    traj_file;
-
-    std::optional<fs::path> output_profile_file;
-    std::optional<fs::path> grid_file;
-
     auto arg_it = args.begin();
     while (arg_it != args.end())
     {
@@ -309,7 +313,7 @@ auto main(int argc, char* argv[]) -> int
         if (*arg_it == "-t" || *arg_it == "--trajectory")
         {
             g_is_mls    = true;
-            traj_file = *++arg_it;
+            g_traj_file = *++arg_it;
         }
         else if (*arg_it == "-v" || *arg_it == "--voxel-size")
         {
@@ -321,11 +325,11 @@ auto main(int argc, char* argv[]) -> int
         }
         else if (*arg_it == "-p" || *arg_it == "--profile")
         {
-            output_profile_file = *++arg_it;
+            g_output_profile_file = *++arg_it;
         }
         else if (*arg_it == "-g" || *arg_it == "--grid")
         {
-            grid_file = *++arg_it;
+            g_grid_file = *++arg_it;
         }
 
         else if (*arg_it == "-m" || *arg_it == "--method")
@@ -370,20 +374,20 @@ auto main(int argc, char* argv[]) -> int
         }
         else
         {
-            file = *arg_it;
+            g_file = *arg_it;
         }
         ++arg_it;
     }
 
     std::vector<lvox::Scan> scans;
 
-    if (file.extension() == ".in")
+    if (g_file.extension() == ".in")
     {
-        scans = read_dot_in_file(file);
+        scans = read_dot_in_file(g_file);
     }
     else
     {
-        scans = create_scan_using_pdal(file, traj_file, g_scan_origin);
+        scans = create_scan_using_pdal(g_file, g_traj_file, g_scan_origin);
     }
 
     const lvox::algorithms::ComputeOptions compute_options{
@@ -395,14 +399,11 @@ auto main(int argc, char* argv[]) -> int
     const lvox::algorithms::PadResult result =
         lvox::algorithms::compute_pad(scans, compute_options);
 
-    if (grid_file)
-    {
-        lvox::h5_exporter::export_grid(result, "pad", *grid_file);
-    }
+    lvox::h5_exporter::export_grid(result, "pad", g_grid_file);
 
-    if (output_profile_file)
+    if (g_output_profile_file)
     {
-        output_profile_to_csv(*output_profile_file, result);
+        output_profile_to_csv(*g_output_profile_file, result);
     }
 
     // const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds(scans);
