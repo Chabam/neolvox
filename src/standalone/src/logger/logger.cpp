@@ -13,6 +13,11 @@ Logger::Logger(const std::string& category, std::ostream& ostream)
 {
 }
 
+auto Logger::set_global_level(Level lowest_level) -> void
+{
+    g_lowest_enabled_level = lowest_level;
+}
+
 auto Logger::level_to_text(Level level) -> const char*
 {
     switch (level)

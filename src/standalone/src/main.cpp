@@ -243,7 +243,7 @@ auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox:
         );
     }
 
-    return scans |std::views::transform([](std::future<lvox::Scan>& future) -> lvox::Scan {
+    return scans | std::views::transform([](std::future<lvox::Scan>& future) -> lvox::Scan {
                return future.get();
            }) |
            std::ranges::to<std::vector<lvox::Scan>>();
