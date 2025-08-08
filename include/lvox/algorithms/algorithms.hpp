@@ -29,6 +29,7 @@ using LengthGrid = GridD;
 
 struct EffectiveLengthsWithVariance
 {
+    EffectiveLengthsWithVariance(const Bounds& bounds, double voxel_size);
     LengthGrid m_effective_lengths;
     LengthGrid m_effective_lengths_variance;
 };

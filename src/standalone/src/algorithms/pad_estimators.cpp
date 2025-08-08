@@ -1,31 +1,22 @@
-#include <atomic>
-
-#include <lvox/algorithms/compute_pad_visitor.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/algorithms/algorithms.hpp>
 
-namespace lvox::algorithms
+namespace lvox::algorithms::pad_estimators
 {
 
-ComputePADVisitor::ComputePADVisitor(const ComputeData& data, Index index)
-    : m_data{data},
-      m_index{index}
+auto beer_lambert(const ComputeData& data, Index index) -> double
 {
-}
-
-auto ComputePADVisitor::operator()(pe::BeerLambert) const -> double
-{
-    if (m_data.m_hits.is_na(m_index))
+    if (data.m_hits.is_na(index))
         return 0.;
 
     const auto G = [](double val) -> double {
         return 0.5 * val;
     };
 
-    const double hits            = m_data.m_hits.at(m_index);
-    const double ray_count       = m_data.m_counts.at(m_index);
+    const double hits            = data.m_hits.at(index);
+    const double ray_count       = data.m_counts.at(index);
     const double RDI             = hits / static_cast<double>(ray_count);
-    const double ray_length      = std::get<LengthGrid>(m_data.m_lengths).at(m_index);
+    const double ray_length      = std::get<LengthGrid>(data.m_lengths).at(index);
     const double mean_ray_length = ray_length / ray_count;
 
     if (RDI >= 1.)
@@ -34,19 +25,19 @@ auto ComputePADVisitor::operator()(pe::BeerLambert) const -> double
     return -(std::log(1. - RDI) / G(mean_ray_length));
 }
 
-auto ComputePADVisitor::operator()(pe::ContactFrequency) const -> double
+auto contact_frequency(const ComputeData& data, Index index) -> double
 {
-    if (m_data.m_hits.is_na(m_index))
+    if (data.m_hits.is_na(index))
         return 0.;
 
     const auto G = [](double val) -> double {
         return 0.5 * val;
     };
 
-    const double hits       = m_data.m_hits.at(m_index);
-    const double ray_count  = m_data.m_counts.at(m_index);
+    const double hits       = data.m_hits.at(index);
+    const double ray_count  = data.m_counts.at(index);
     const double RDI        = hits / static_cast<double>(ray_count);
-    const double ray_length = std::get<LengthGrid>(m_data.m_lengths).at(m_index);
+    const double ray_length = std::get<LengthGrid>(data.m_lengths).at(index);
 
     if (RDI >= 1.)
         return 0.;
@@ -54,23 +45,23 @@ auto ComputePADVisitor::operator()(pe::ContactFrequency) const -> double
     return RDI / G(ray_length);
 }
 
-auto ComputePADVisitor::operator()(pe::UnequalPathLengthBeerLambert) const -> double
+auto unequal_path_length_beer_lambert(const ComputeData& data, Index index) -> double
 {
-    if (m_data.m_hits.is_na(m_index))
+    if (data.m_hits.is_na(index))
         return 0.;
 
     const auto G = [](double val) -> double {
         return 0.5 * val;
     };
 
-    const double                        hits      = m_data.m_hits.at(m_index);
-    const double                        ray_count = m_data.m_counts.at(m_index);
+    const double                        hits      = data.m_hits.at(index);
+    const double                        ray_count = data.m_counts.at(index);
     const double                        RDI       = hits / static_cast<double>(ray_count);
     const EffectiveLengthsWithVariance& lengths_and_var =
-        std::get<EffectiveLengthsWithVariance>(m_data.m_lengths);
-    const double ray_length          = lengths_and_var.m_effective_lengths.at(m_index);
+        std::get<EffectiveLengthsWithVariance>(data.m_lengths);
+    const double ray_length          = lengths_and_var.m_effective_lengths.at(index);
     const double mean_ray_length     = ray_length / ray_count;
-    const double ray_length_variance = lengths_and_var.m_effective_lengths_variance.at(m_index);
+    const double ray_length_variance = lengths_and_var.m_effective_lengths_variance.at(index);
     const double unequal_path_ratio  = ray_length_variance / mean_ray_length;
 
     double attenuation_coeff;

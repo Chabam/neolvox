@@ -9,7 +9,6 @@
 #include <ranges>
 #include <sstream>
 #include <stdexcept>
-#include <variant>
 
 #include <pdal/Dimension.hpp>
 #include <pdal/Options.hpp>
@@ -61,7 +60,16 @@ Options:
    -h, --help                             Prints this message
 )";
 
-std::mutex g_print_guard;
+namespace lvox_pe = lvox::algorithms::pad_estimators;
+
+bool                       g_is_mls               = false;
+bool                       g_outputs_profile      = false;
+double                     g_voxel_size           = 0.5;
+unsigned int               g_job_count            = std::thread::hardware_concurrency();
+lvox_pe::PADEstimator      g_pad_estimator        = lvox_pe::BeerLambert{};
+bool                       g_compute_theoriticals = false;
+std::optional<lvox::Point> g_scan_origin          = {};
+std::mutex                 g_print_guard          = {};
 
 struct PointCloudWithTheoriticalShots
 {
@@ -127,7 +135,7 @@ auto load_point_cloud_from_file(
         const double z    = pt.template getFieldAs<double>(dim::Z);
         const int    clss = pt.template getFieldAs<int>(dim::Classification);
 
-        if (clss == 0)
+        if (g_compute_theoriticals && clss == 0)
         {
             if (!out.m_blank_shots)
             {
@@ -223,7 +231,7 @@ auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox:
         );
     }
 
-    return scans | std::views::transform([](std::future<lvox::Scan>& future) -> lvox::Scan {
+    return scans |std::views::transform([](std::future<lvox::Scan>& future) -> lvox::Scan {
                return future.get();
            }) |
            std::ranges::to<std::vector<lvox::Scan>>();
@@ -251,16 +259,17 @@ auto create_scan_using_pdal(
 
         logger.info("Loading trajectory file {}", traj_file->string());
 
-        scanner_origin =
-            std::make_shared<lvox::Trajectory>(load_point_cloud_from_file(*traj_file, {}).m_point_cloud);
+        scanner_origin = std::make_shared<lvox::Trajectory>(
+            load_point_cloud_from_file(*traj_file, {}).m_point_cloud
+        );
     }
     else if (scan_origin)
     {
         scanner_origin = *scan_origin;
     }
-    else
+    else // Defaulting to (0,0,0)
     {
-        scanner_origin = lvox::Vector::Constant(0.); // (0,0,0)
+        scanner_origin = lvox::Vector::Constant(0.);
     }
 
     scans.emplace_back(
@@ -287,19 +296,8 @@ auto main(int argc, char* argv[]) -> int
         return 1;
     }
 
-    namespace pe       = lvox::algorithms::pad_estimators;
-    using PADEstimator = pe::PADEstimator;
-
-    bool         is_mls               = false;
-    bool         outputs_profile      = false;
-    double       voxel_size           = 0.5;
-    unsigned int job_count            = std::thread::hardware_concurrency();
-    PADEstimator pad_estimator        = pe::BeerLambert{};
-    bool         compute_theoriticals = false;
-
-    std::optional<lvox::Point> scan_origin;
-    fs::path                file;
-    std::optional<fs::path> traj_file;
+    fs::path                   file;
+    std::optional<fs::path>    traj_file;
 
     std::optional<fs::path> output_profile_file;
     std::optional<fs::path> grid_file;
@@ -310,16 +308,16 @@ auto main(int argc, char* argv[]) -> int
         // TODO: handle this better? Or just make it PDAL plugin
         if (*arg_it == "-t" || *arg_it == "--trajectory")
         {
-            is_mls    = true;
+            g_is_mls    = true;
             traj_file = *++arg_it;
         }
         else if (*arg_it == "-v" || *arg_it == "--voxel-size")
         {
-            voxel_size = std::stod(*++arg_it);
+            g_voxel_size = std::stod(*++arg_it);
         }
         else if (*arg_it == "-o" || *arg_it == "--scan-origin")
         {
-            scan_origin = {std::stod(*++arg_it), std::stod(*++arg_it), std::stod(*++arg_it)};
+            g_scan_origin = {std::stod(*++arg_it), std::stod(*++arg_it), std::stod(*++arg_it)};
         }
         else if (*arg_it == "-p" || *arg_it == "--profile")
         {
@@ -340,15 +338,15 @@ auto main(int argc, char* argv[]) -> int
             );
             if (pad_compute_method_str == "BL")
             {
-                pad_estimator = pe::BeerLambert{};
+                g_pad_estimator = lvox_pe::BeerLambert{};
             }
             else if (pad_compute_method_str == "CF")
             {
-                pad_estimator = pe::ContactFrequency{};
+                g_pad_estimator = lvox_pe::ContactFrequency{};
             }
             else if (pad_compute_method_str == "ULPBL")
             {
-                pad_estimator = pe::UnequalPathLengthBeerLambert{};
+                g_pad_estimator = lvox_pe::UnequalPathLengthBeerLambert{};
             }
             else
             {
@@ -359,7 +357,7 @@ auto main(int argc, char* argv[]) -> int
         }
         else if (*arg_it == "-j" || *arg_it == "--jobs")
         {
-            job_count = std::stoi(*++arg_it);
+            g_job_count = std::stoi(*++arg_it);
         }
         else if (*arg_it == "-h" || *arg_it == "--help")
         {
@@ -368,7 +366,7 @@ auto main(int argc, char* argv[]) -> int
         }
         else if (*arg_it == "-b" || *arg_it == "--blanks")
         {
-            compute_theoriticals = true;
+            g_compute_theoriticals = true;
         }
         else
         {
@@ -385,14 +383,14 @@ auto main(int argc, char* argv[]) -> int
     }
     else
     {
-        scans = create_scan_using_pdal(file, traj_file, scan_origin);
+        scans = create_scan_using_pdal(file, traj_file, g_scan_origin);
     }
 
     const lvox::algorithms::ComputeOptions compute_options{
-        .m_voxel_size           = voxel_size,
-        .m_job_limit            = job_count,
-        .m_pad_estimator        = pad_estimator,
-        .m_compute_theoriticals = compute_theoriticals
+        .m_voxel_size           = g_voxel_size,
+        .m_job_limit            = g_job_count,
+        .m_pad_estimator        = g_pad_estimator,
+        .m_compute_theoriticals = g_compute_theoriticals
     };
     const lvox::algorithms::PadResult result =
         lvox::algorithms::compute_pad(scans, compute_options);
