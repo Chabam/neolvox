@@ -3,7 +3,7 @@
 
 namespace LVOX_Grid3DPrivate
 {
-  float safeGetValueFromMap(const std::map<Index, float>& map, Index index)
+  float safeGetValueFromMap(const std::map<size_t, float>& map, size_t index)
   {
     try
     {

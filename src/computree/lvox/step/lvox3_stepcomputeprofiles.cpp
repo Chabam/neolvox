@@ -287,13 +287,13 @@ void LVOX3_StepComputeProfiles::compute()
 
                 Vector3SizeT gridDim(inGrid->xdim(), inGrid->ydim(), inGrid->zdim());
 
-                Index genDim = gridDim.dot(axeGen.cast<Index>());
-                Index ordonneeDim = gridDim.dot(axeOrdonnee.cast<Index>());
-                Index abscisseDim = gridDim.dot(axeAbscisse.cast<Index>());
+                size_t genDim = gridDim.dot(axeGen.cast<size_t>());
+                size_t ordonneeDim = gridDim.dot(axeOrdonnee.cast<size_t>());
+                size_t abscisseDim = gridDim.dot(axeAbscisse.cast<size_t>());
 
-                Index* col = NULL;
-                Index* lin = NULL;
-                Index* level = NULL;
+                size_t* col = NULL;
+                size_t* lin = NULL;
+                size_t* level = NULL;
 
                 bool ok;
                 double NAValue = inGrid->NAAsString().toDouble(&ok);
@@ -346,12 +346,12 @@ void LVOX3_StepComputeProfiles::compute()
 
                 CT_Profile<double>* outProfile;
 
-                for (Index currentProfileIndex = startEndStepGen(0); currentProfileIndex < startEndStepGen(1); currentProfileIndex += startEndStepGen(2))
+                for (size_t currentProfileIndex = startEndStepGen(0); currentProfileIndex < startEndStepGen(1); currentProfileIndex += startEndStepGen(2))
                 {
                     outProfile = createProfile(inGrid, currentProfileIndex, axeGen, axeOrdonnee, NAValue);
 
-                    Index begin = currentProfileIndex;
-                    Index end = qMin(startEndStepGen(1), begin + startEndStepGen(2));
+                    size_t begin = currentProfileIndex;
+                    size_t end = qMin(startEndStepGen(1), begin + startEndStepGen(2));
                     int nbVoxelsInSpot = 0;//nb voxels # 0
                     for(indexGenAbscisseOrdonnee(0) = begin; indexGenAbscisseOrdonnee(0) < end; indexGenAbscisseOrdonnee(0) += 1)
                     {
@@ -359,7 +359,7 @@ void LVOX3_StepComputeProfiles::compute()
                         {
                             for (indexGenAbscisseOrdonnee(2) = startEndStepOrdonnee(0); indexGenAbscisseOrdonnee(2) < startEndStepOrdonnee(1); indexGenAbscisseOrdonnee(2) += startEndStepOrdonnee(2))
                             {
-                                Index index;
+                                size_t index;
                                 inGrid->index(*col, *lin, *level, index);
                                 double value = inGrid->valueAtIndexAsDouble(index);
                                 if(value != lvox::ErrorOrWarningCode::Sky){
@@ -400,7 +400,7 @@ void LVOX3_StepComputeProfiles::compute()
 
 //Creates the density profile of the inGrid + personnalized information
 CT_Profile<double>* LVOX3_StepComputeProfiles::createProfile(const CT_AbstractGrid3D* grid,
-                                                             const Index& currentIndex,
+                                                             const size_t& currentIndex,
                                                              const Eigen::Vector3i& axeNormal,
                                                              const Eigen::Vector3i& axeOrdonnee,
                                                              double NAValue) const
@@ -412,7 +412,7 @@ CT_Profile<double>* LVOX3_StepComputeProfiles::createProfile(const CT_AbstractGr
     finalMin.y() = gridMin.y() + (axeNormal.cast<double>().y()*(((double)currentIndex)*resolution));
     finalMin.z() = gridMin.z() + (axeNormal.cast<double>().z()*(((double)currentIndex)*resolution));
 
-    Index profileSize = Vector3SizeT(grid->xdim(), grid->ydim(), grid->zdim()).dot(axeOrdonnee.cast<Index>());
+    size_t profileSize = Vector3SizeT(grid->xdim(), grid->ydim(), grid->zdim()).dot(axeOrdonnee.cast<size_t>());
 
     // TODO : add an orientation vector to the class CT_Profile !
     return new CT_Profile<double>(finalMin.x(),
@@ -443,7 +443,7 @@ void LVOX3_StepComputeProfiles::addProfile(CT_Profile<double> *profile, CT_Stand
 }
 
 //set the start and end in voxels of each axis
-void LVOX3_StepComputeProfiles::setStartEnd(Index min, Index max, LVOX3_StepComputeProfiles::Vector3SizeT &startEndStep, const Index &dim, bool minAndMaxInPourcent)
+void LVOX3_StepComputeProfiles::setStartEnd(size_t min, size_t max, LVOX3_StepComputeProfiles::Vector3SizeT &startEndStep, const size_t &dim, bool minAndMaxInPourcent)
 {
     if(minAndMaxInPourcent) {
         min = (dim*min)/100;
@@ -455,15 +455,15 @@ void LVOX3_StepComputeProfiles::setStartEnd(Index min, Index max, LVOX3_StepComp
 }
 
 //Sets the voxel value of each step
-void LVOX3_StepComputeProfiles::setStep(Index step, LVOX3_StepComputeProfiles::Vector3SizeT &startEndStep, bool stepInPourcent)
+void LVOX3_StepComputeProfiles::setStep(size_t step, LVOX3_StepComputeProfiles::Vector3SizeT &startEndStep, bool stepInPourcent)
 {
-    Index dim = startEndStep(1)-startEndStep(0);
+    size_t dim = startEndStep(1)-startEndStep(0);
 
     if(stepInPourcent) {
         step = (dim*step)/100;
     }
 
-    startEndStep(2) = qMax((Index)1, qMin(startEndStep(1)-startEndStep(0), step));
+    startEndStep(2) = qMax((size_t)1, qMin(startEndStep(1)-startEndStep(0), step));
 }
 
 //Changes the user entered values for axis limits from coordinates to voxels (to remove user calculation)

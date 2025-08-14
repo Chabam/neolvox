@@ -7,7 +7,7 @@
 LVOX3_Grid3DPropagationAlgorithm::LVOX3_Grid3DPropagationAlgorithm(const CT_AbstractGrid3D* grid,
                                                                    const VisitorCollection& list,
                                                                    const double &radius,
-                                                                   const Index &startCellIndex) : m_visitors(list)
+                                                                   const size_t &startCellIndex) : m_visitors(list)
 {
     m_grid = (CT_AbstractGrid3D*)grid;
     m_gridTools = new LVOX3_GridTools(grid);
@@ -25,9 +25,9 @@ void LVOX3_Grid3DPropagationAlgorithm::startCompute()
     startFromCell(m_startCellIndex);
 }
 
-void LVOX3_Grid3DPropagationAlgorithm::startFromCell(const Index& index)
+void LVOX3_Grid3DPropagationAlgorithm::startFromCell(const size_t& index)
 {
-    Index col, lin, level;
+    size_t col, lin, level;
     Eigen::Vector3d cellCenter;
 
     m_gridTools->computeColLinLevelForIndex(index, col, lin, level);
@@ -53,16 +53,16 @@ void LVOX3_Grid3DPropagationAlgorithm::startFromCell(const Index& index)
     m_visited.clear();
 }
 
-void LVOX3_Grid3DPropagationAlgorithm::recursiveComputeCell(const Index &cellIndex,
-                                                            const Index& col,
-                                                            const Index& lin,
-                                                            const Index& level,
+void LVOX3_Grid3DPropagationAlgorithm::recursiveComputeCell(const size_t &cellIndex,
+                                                            const size_t& col,
+                                                            const size_t& lin,
+                                                            const size_t& level,
                                                             const Eigen::Vector3d &firstCellCenter,
                                                             QStack<StackVar>& stack)
 {
-    const Index maxCol = m_grid->xdim()-1;
-    const Index maxLin = m_grid->ydim()-1;
-    const Index maxLevel = m_grid->zdim()-1;
+    const size_t maxCol = m_grid->xdim()-1;
+    const size_t maxLin = m_grid->ydim()-1;
+    const size_t maxLevel = m_grid->zdim()-1;
 
     Eigen::Vector3d newCellCenter;
 
@@ -103,10 +103,10 @@ void LVOX3_Grid3DPropagationAlgorithm::recursiveComputeCell(const Index &cellInd
     }
 }
 
-void LVOX3_Grid3DPropagationAlgorithm::enqueueCell(const Index& col, const Index& lin,
-		const Index& level, QStack<StackVar> &stack)
+void LVOX3_Grid3DPropagationAlgorithm::enqueueCell(const size_t& col, const size_t& lin,
+		const size_t& level, QStack<StackVar> &stack)
  {
-	Index newIndice = 0;
+	size_t newIndice = 0;
 	m_gridTools->computeGridIndexForColLinLevel(col, lin, level, newIndice);
 	if (!m_visited.contains(newIndice)) {
 		m_visited.insert(newIndice);
