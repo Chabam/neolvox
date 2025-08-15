@@ -31,12 +31,14 @@ jobs:
           vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
           vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
           runVcpkgInstall: true
-          runVcpkgFormatString: "install --clean-after-build hdf5 pdal eigen3 gtest benchmark"
+          runVcpkgFormatString: "[`install`, `--clean-after-build`, `hdf5`, `pdal`, `eigen3`, `gtest`, `benchmark`]"
           doNotUpdateVcpkg: true
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: apt-get update -y && apt-get install -y libpdal-dev libhdf5-dev libeigen3-dev libgtest-dev libbenchmark-dev
+        run: |
+             sudo apt-get update -y
+             sudo apt-get install -y libpdal-dev libhdf5-dev libeigen3-dev libgtest-dev libbenchmark-dev
 
 
       - name: Run CMake with Ninja
