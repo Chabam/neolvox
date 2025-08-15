@@ -44,11 +44,11 @@ jobs:
              sudo apt-get install -y libpdal-dev libhdf5-dev libeigen3-dev libgtest-dev libbenchmark-dev
 
 
-      - name: Run CMake with Ninja
+      - name: CMake generate project
         uses: lukka/run-cmake@v10
         with:
           configurePreset: '${{ matrix.configurePreset }}'
 
-      - name: List $RUNNER_WORKSPACE after build
-        run: find $RUNNER_WORKSPACE
-        shell: bash
+      - name: CMake generate project
+        uses: lukka/run-cmake@v10
+        run: cmake --build build/
