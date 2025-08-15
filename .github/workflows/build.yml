@@ -37,10 +37,11 @@ jobs:
         run: vcpkg.exe install --clean-after-build hdf5 pdal eigen3 gtest benchmark
 
       - name: Install Linux dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
         if: runner.os == 'Linux'
-        run: |
-             sudo apt-get update -y
-             sudo apt-get install -y libpdal-dev libhdf5-dev libeigen3-dev libgtest-dev libbenchmark-dev
+        with:
+          packages: libpdal-dev libhdf5-dev libeigen3-dev libgtest-dev libbenchmark-dev
+          version: 1.0
 
 
       - name: CMake generate project
@@ -48,6 +49,5 @@ jobs:
         with:
           configurePreset: '${{ matrix.configurePreset }}'
 
-      - name: CMake generate project
-        uses: lukka/run-cmake@v10
-        run: cmake --build build/
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build
