@@ -8,7 +8,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # Ubuntu-latest doesn't have PDAL for some reason
+        os: [ubuntu-22.04, windows-latest]
         include:
           - os: windows-latest
             vcpkgCommitId: 'f993fc42532591aeb07328bbe0add868b0629d0f'
@@ -30,9 +31,11 @@ jobs:
         with:
           vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
           vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
-          runVcpkgInstall: true
-          runVcpkgFormatString: "[`install`, `--clean-after-build`, `hdf5`, `pdal`, `eigen3`, `gtest`, `benchmark`]"
           doNotUpdateVcpkg: true
+
+      - name: Install vcpkg dependencies
+        if: runner.os == 'Windows'
+        run: vcpkg.exe install --clean-after-build hdf5 pdal eigen3 gtest benchmark
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
