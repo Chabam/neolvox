@@ -9,15 +9,16 @@ jobs:
       fail-fast: false
       matrix:
         # Ubuntu-latest doesn't have PDAL for some reason
-        os: [ubuntu-22.04, windows-latest]
+        os: [ubuntu-latest, windows-latest]
         include:
           - os: windows-latest
-            vcpkgCommitId: 'f993fc42532591aeb07328bbe0add868b0629d0f'
             configurePreset: 'windows-standalone'
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             configurePreset: 'linux-standalone'
     steps:
       - uses: actions/checkout@v3
+        with:
+            submodules: true
 
       - uses: lukka/get-cmake@latest
       - name: List $RUNNER_WORKSPACE before build
@@ -28,16 +29,16 @@ jobs:
         if: runner.os == 'Windows'
         uses: lukka/run-vcpkg@v11
         id: runvcpkg
-        with:
-          vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
-          doNotUpdateVcpkg: true
 
       - name: Install vcpkg dependencies
         if: runner.os == 'Windows'
         run: vcpkg.exe install --clean-after-build hdf5 pdal eigen3 gtest benchmark
 
       - name: Install Linux dependencies
-        uses: awalsh128/cache-apt-pkgs-action@latest
+      - run: |
+          sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
+          sudo apt-get update
+      - uses: awalsh128/cache-apt-pkgs-action@latest
         if: runner.os == 'Linux'
         with:
           packages: libpdal-dev libhdf5-dev libeigen3-dev libgtest-dev libbenchmark-dev
