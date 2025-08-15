@@ -62,6 +62,10 @@ endif()
 
 
 if (WIN32)
+
+  target_compile_definitions(lvox_common PRIVATE NOMINMAX)
+  target_compile_definitions(lvox PRIVATE NOMINMAX)
+
   install(FILES
     $<TARGET_RUNTIME_DLLS:lvox>
     DESTINATION bin

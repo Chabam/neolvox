@@ -14,17 +14,17 @@ namespace lvox::h5_exporter
 
 template <typename GridType>
 auto write_grid_as_coo_matrix_to_h5(
-    const std::string& filename, const std::string& dataset_name, const GridType& grid
+    const std::filesystem::path& filename, const std::string& dataset_name, const GridType& grid
 ) -> void
 {
     H5::H5File file;
     if (std::filesystem::exists(filename))
     {
-        file = H5::H5File{filename, H5F_ACC_RDWR};
+        file = H5::H5File{filename.string(), H5F_ACC_RDWR};
     }
     else
     {
-        file = H5::H5File{filename, H5F_ACC_TRUNC};
+        file = H5::H5File{filename.string(), H5F_ACC_TRUNC};
     }
 
     const auto voxel_size      = grid.cell_size();

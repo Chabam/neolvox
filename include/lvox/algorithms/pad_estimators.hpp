@@ -1,6 +1,8 @@
 #ifndef LVOX_PAD_ESTIMATORS
 #define LVOX_PAD_ESTIMATORS
 
+#include <variant>
+
 #include <lvox/types.hpp>
 
 namespace lvox::algorithms
