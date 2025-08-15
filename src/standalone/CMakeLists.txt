@@ -59,3 +59,36 @@ set_target_properties(lvox
 if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()
+
+
+if (WIN32)
+  install(FILES
+    $<TARGET_RUNTIME_DLLS:lvox>
+    DESTINATION bin
+  )
+endif()
+
+
+include(InstallRequiredSystemLibraries)
+include(GNUInstallDirs)
+
+set(CMAKE_INSTALL_RPATH $ORIGIN $ORIGIN/${CMAKE_INSTALL_BINDIR})
+
+set(CMAKE_INSTALL_LIBDIR lib)
+set(CPACK_PACKAGE_NAME "Neolvox")
+set(CPACK_PACKAGE_VENDOR "Félix Chabot")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "An application that computes PAD for lidar scans in forests")
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+
+include(CPack)
+
+cpack_add_component(lvox DEPENDS lvox_common)
+
+install(TARGETS
+  lvox
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
