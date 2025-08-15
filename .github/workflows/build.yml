@@ -14,7 +14,7 @@ jobs:
           - os: windows-latest
             vcpkgCommitId: 'f993fc42532591aeb07328bbe0add868b0629d0f'
             configurePreset: 'windows-standalone'
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             configurePreset: 'linux-standalone'
     steps:
       - uses: actions/checkout@v3
