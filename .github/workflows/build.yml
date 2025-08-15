@@ -1,0 +1,49 @@
+name: build
+on: [workflow_dispatch]
+
+jobs:
+  job:
+    name: ${{ matrix.os }}-${{ github.workflow }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: windows-latest
+            vcpkgCommitId: 'f993fc42532591aeb07328bbe0add868b0629d0f'
+            configurePreset: 'windows-standalone'
+          - os: ubuntu-latest
+            configurePreset: 'linux-standalone'
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: lukka/get-cmake@latest
+      - name: List $RUNNER_WORKSPACE before build
+        run: find $RUNNER_WORKSPACE
+        shell: bash
+
+      - name: Setup vcpkg
+        if: runner.os == 'Windows'
+        uses: lukka/run-vcpkg@v11
+        id: runvcpkg
+        with:
+          vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
+          vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
+          runVcpkgInstall: true
+          runVcpkgFormatString: "install --clean-after-build hdf5 pdal eigen3 gtest benchmark"
+          doNotUpdateVcpkg: true
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: apt-get update -y && apt-get install -y libpdal-dev libhdf5-dev libeigen3-dev libgtest-dev libbenchmark-dev
+
+
+      - name: Run CMake with Ninja
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: '${{ matrix.configurePreset }}'
+
+      - name: List $RUNNER_WORKSPACE after build
+        run: find $RUNNER_WORKSPACE
+        shell: bash
