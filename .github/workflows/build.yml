@@ -8,7 +8,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Ubuntu-latest doesn't have PDAL for some reason
         os: [ubuntu-latest, windows-latest]
         include:
           - os: windows-latest
@@ -34,11 +33,14 @@ jobs:
         if: runner.os == 'Windows'
         run: vcpkg.exe install --clean-after-build hdf5 pdal eigen3 gtest benchmark
 
-      - name: Install Linux dependencies
-      - run: |
+      - name: Linux setup PPA for pdal
+        if: runner.os == 'Linux'
+        run: |
           sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
           sudo apt-get update
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+
+      - name: Install Linux dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
         if: runner.os == 'Linux'
         with:
           packages: libpdal-dev libhdf5-dev libeigen3-dev libgtest-dev libbenchmark-dev
