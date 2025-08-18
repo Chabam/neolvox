@@ -61,7 +61,7 @@ Options:
                                           description of each values:
                                              - BL: Beer-Lambert [default]
                                              - CF: Contact Frequency
-                                             - ULPBL: Unequal Length Path
+                                             - UPLBL: Unequal Path Length
                                                Beer Lambert
 
    -h, --help                             Prints this message
@@ -348,7 +348,7 @@ auto main(int argc, char* argv[]) -> int
             {
                 g_pad_estimator = lvox_pe::ContactFrequency{};
             }
-            else if (pad_compute_method_str == "ULPBL")
+            else if (pad_compute_method_str == "UPLBL")
             {
                 g_pad_estimator = lvox_pe::UnequalPathLengthBeerLambert{};
             }

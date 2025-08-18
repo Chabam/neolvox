@@ -31,23 +31,13 @@ auto compute_in_parallel(const R& objects, ComputeData& data, const F& func, uns
     }
 }
 
-auto compute_effective_lengths(const VoxelHitInfo& voxel_hit_info, LengthGrid& lengths) -> void
-{
-    const auto [x, y, z] = voxel_hit_info.m_index;
-    lengths.at(x, y, z).fetch_add(voxel_hit_info.m_distance_in_voxel, std::memory_order_relaxed);
-}
-
-auto compute_free_lengths(
-    const VoxelHitInfo&  voxel_hit_info,
-    CountGrid::cell_ref& count_ref,
-    EffectiveLengthsWithVariance& lengths_and_variance
+auto compute_lengths_variance(
+    double              length_in_voxel,
+    LengthGrid::cell_t& variance_ref,
+    double              previous_lengths,
+    unsigned int        previous_count
 ) -> void
 {
-    const auto [x, y, z]         = voxel_hit_info.m_index;
-    const double length_in_voxel = voxel_hit_info.m_distance_in_voxel;
-    auto&        length_sum_ref  = lengths_and_variance.m_effective_lengths.at(x, y, z);
-    auto&        variance_ref    = lengths_and_variance.m_effective_lengths_variance.at(x, y, z);
-
     // TODO: make this configurable maybe?
     // So far it's based on Computree's NeedleFromDimension
     constexpr double elem_length       = 0.06;
@@ -57,15 +47,19 @@ auto compute_free_lengths(
     const double attenuated_length =
         -(std::log(1. - attenuation_coeff * length_in_voxel) / attenuation_coeff);
 
-    length_sum_ref.fetch_add(attenuated_length, std::memory_order_relaxed);
+    // No variance possible if the count is not big enough
+    if (previous_count < 2)
+        return;
 
-    // Best effort for calculating the variance,
-    // might be off because this line definitely
-    // represents multiple instructions.
-    variance_ref.fetch_add(
-        std::pow(attenuated_length - (length_sum_ref / count_ref), 2) / count_ref,
-        std::memory_order_relaxed
-    );
+    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+    const double previous_mean = previous_lengths / previous_count;
+    const double delta         = length_in_voxel - previous_mean;
+    const double new_count     = previous_count + 1;
+    const double new_mean      = previous_mean + (delta / new_count);
+    const double delta_2       = length_in_voxel - new_mean;
+
+    // -1 on the count here because we are computing a variance sample.
+    variance_ref.fetch_add((delta * delta_2) / (new_count - 1), std::memory_order_relaxed);
 }
 
 template <bool limit_ray_length, typename PadEstimator>
@@ -94,20 +88,20 @@ auto compute_rays_count_and_length_impl(
             grid_traveral(
                 Beam{scan_origin, beam_to_point},
                 [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
-                    const auto [x, y, z] = voxel_hit_info.m_index;
+                    const auto [x, y, z]        = voxel_hit_info.m_index;
+                    const auto previous_lengths = data.m_lengths.at(x, y, z).fetch_add(
+                        voxel_hit_info.m_distance_in_voxel, std::memory_order_relaxed
+                    );
+                    const auto previous_count =
+                        data.m_counts.at(x, y, z).fetch_add(1, std::memory_order_relaxed);
+
                     if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
                     {
-                        compute_effective_lengths(
-                            voxel_hit_info, std::get<LengthGrid>(data.m_lengths)
-                        );
-                        data.m_counts.at(x, y, z).fetch_add(1, std::memory_order_relaxed);
-                    }
-                    else
-                    {
-                        compute_free_lengths(
-                            voxel_hit_info,
-                            data.m_counts.at(x, y, z),
-                            std::get<EffectiveLengthsWithVariance>(data.m_lengths)
+                        compute_lengths_variance(
+                            voxel_hit_info.m_distance_in_voxel,
+                            data.m_lengths_variance->at(x, y, z),
+                            previous_lengths,
+                            previous_count
                         );
                     }
                 },
@@ -118,12 +112,6 @@ auto compute_rays_count_and_length_impl(
         logger.debug("thread finished");
     };
     compute_in_parallel(*scan.m_points, data, ray_trace, options.m_job_limit);
-}
-
-EffectiveLengthsWithVariance::EffectiveLengthsWithVariance(const Bounds& bounds, double voxel_size)
-    : m_effective_lengths{bounds, voxel_size},
-      m_effective_lengths_variance{bounds, voxel_size}
-{
 }
 
 auto compute_rays_count_and_length(
@@ -178,24 +166,22 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
 
     PadResult pad_result{total_bounds, options.m_voxel_size};
 
+    const bool uses_variance = std::holds_alternative<pe::UnequalPathLengthBeerLambert>(
+        options.m_pad_estimator
+    );
+
     for (const auto [scan_num, scan] : std::views::enumerate(scans))
     {
         ComputeData data{
-            .m_counts = CountGrid{total_bounds, options.m_voxel_size},
-            .m_hits   = CountGrid{total_bounds, options.m_voxel_size},
-            .m_lengths =
-                std::visit([&total_bounds, &options](auto&& chosen_estimator) -> DistanceGrids {
-                    using T = std::decay_t<decltype(chosen_estimator)>;
-                    if constexpr (pe::estimator_uses_effective_lengths<T>::value)
-                    {
-                        return LengthGrid{total_bounds, options.m_voxel_size};
-                    }
-                    else
-                    {
-                        return EffectiveLengthsWithVariance{total_bounds, options.m_voxel_size};
-                    }
-                }, options.m_pad_estimator)
+            .m_counts  = CountGrid{total_bounds, options.m_voxel_size},
+            .m_hits    = CountGrid{total_bounds, options.m_voxel_size},
+            .m_lengths = LengthGrid{total_bounds, options.m_voxel_size}
         };
+
+        if (uses_variance)
+        {
+            data.m_lengths_variance = LengthGrid{total_bounds, options.m_voxel_size};
+        }
 
         if (options.m_compute_theoriticals && scan.m_blank_shots)
         {

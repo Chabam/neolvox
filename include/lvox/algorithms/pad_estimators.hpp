@@ -27,7 +27,7 @@ template <typename T>
 struct is_uplbl : std::is_same<T, UnequalPathLengthBeerLambert> {};
 
 template <typename T>
-struct estimator_uses_effective_lengths : std::disjunction<is_bl<T>, is_cf<T>> {};
+struct estimator_uses_effective_lengths : is_uplbl<T> {};
 
 using PADEstimator = std::variant<BeerLambert, ContactFrequency, UnequalPathLengthBeerLambert>;
 

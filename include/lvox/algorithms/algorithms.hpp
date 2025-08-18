@@ -27,20 +27,12 @@ using PadResult  = GridD;
 using CountGrid  = GridU32;
 using LengthGrid = GridD;
 
-struct EffectiveLengthsWithVariance
-{
-    EffectiveLengthsWithVariance(const Bounds& bounds, double voxel_size);
-    LengthGrid m_effective_lengths;
-    LengthGrid m_effective_lengths_variance;
-};
-
-using DistanceGrids = std::variant<LengthGrid, EffectiveLengthsWithVariance>;
-
 struct ComputeData
 {
-    CountGrid     m_counts;
-    CountGrid     m_hits;
-    DistanceGrids m_lengths;
+    CountGrid                 m_counts;
+    CountGrid                 m_hits;
+    LengthGrid                m_lengths;
+    std::optional<LengthGrid> m_lengths_variance;
 };
 
 // Compute which voxels the rays have went to in a voxel grid and
