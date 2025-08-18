@@ -67,8 +67,18 @@ auto compute_rays_count_and_length_impl(
     const Scan& scan, ComputeData& data, const ComputeOptions& options, Logger logger
 ) -> void
 {
-    const auto ray_trace = [&logger, &scan](ComputeData& data, auto&& points) -> void {
-        auto grid_traveral = GridTraversalVoxelRounding{data.m_counts};
+    auto grid_traversal = std::invoke([&data]() {
+        if constexpr (pe::is_uplbl<PadEstimator>::value)
+        {
+            return GridTraversalExactDistance{data.m_counts};
+        }
+        else
+        {
+            return GridTraversalVoxelRounding{data.m_counts};
+        }
+    });
+
+    const auto ray_trace = [&logger, &scan, &grid_traversal](ComputeData& data, auto&& points) -> void {
         for (const auto& timed_point : points)
         {
             const double gps_time = timed_point.m_gps_time;
@@ -85,7 +95,7 @@ auto compute_rays_count_and_length_impl(
                 max_distance = beam_to_point.norm();
             }
 
-            grid_traveral(
+            grid_traversal(
                 Beam{scan_origin, beam_to_point},
                 [&data](const VoxelHitInfo& voxel_hit_info) mutable -> void {
                     const auto [x, y, z]        = voxel_hit_info.m_index;
