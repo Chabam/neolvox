@@ -1,7 +1,7 @@
 #ifndef LVOX_ALGORITHMS_HPP
 #define LVOX_ALGORITHMS_HPP
 
-#include <unordered_set>
+#include <algorithm>
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
 #include <lvox/types.hpp>
@@ -31,6 +31,36 @@ struct PadComputeData
     double       m_length_variance;
 };
 
+struct Voxels
+{
+    auto insert(std::pair<Index3D, PadComputeData> value) -> void
+    {
+        auto lower = std::lower_bound(
+            m_values.begin(), m_values.end(), value.first, [this](const auto& lhs, const auto& rhs) -> bool {
+                const auto to_flat_index = [this](const Index3D& idx) {
+                    const auto [x, y, z] = idx;
+                    return x + y * m_grid.dim_x() + z * m_grid.dim_x() * m_grid.dim_y();
+                };
+
+                return to_flat_index(lhs.first) < to_flat_index(rhs);
+            }
+        );
+
+        if (lower == m_values.end())
+        {
+            m_values.push_back(value);
+            return;
+        }
+
+        auto& existing_voxel = lower->second;
+        existing_voxel.m_count += value.second.m_count;
+        existing_voxel.m_lengths += value.second.m_lengths;
+    }
+
+    std::vector<std::pair<Index3D, PadComputeData>> m_values;
+    Grid m_grid;
+};
+
 struct Index3DHash
 {
     auto operator()(const Index3D& index) const -> size_t
@@ -43,7 +73,7 @@ struct Index3DHash
 };
 
 
-using VisitedVoxels = std::unordered_map<Index3D, PadComputeData, Index3DHash>;
+using VisitedVoxels = Voxels;
 using Hits          = std::unordered_map<Index3D, unsigned int, Index3DHash>;
 using PadResult     = std::unordered_map<Index3D, double, Index3DHash>;
 

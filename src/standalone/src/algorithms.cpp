@@ -96,20 +96,10 @@ auto compute_rays_count_and_length_impl(
             const auto traced_voxels =
                 grid_traversal(Beam{scan_origin, beam_to_point}, max_distance);
 
-            // for (auto&& voxel : traced_voxels)
-            // {
-            //     auto it = visited_voxels.find(voxel.m_index);
-            //     if (it != visited_voxels.end())
-            //     {
-            //         auto& existing_voxel = it->second;
-            //         existing_voxel.m_count += 1;
-            //         existing_voxel.m_lengths += voxel.m_distance_in_voxel;
-            //     }
-            //     else
-            //     {
-            //         visited_voxels[voxel.m_index] = PadComputeData{1, voxel.m_distance_in_voxel, 0};
-            //     }
-            // }
+            for (auto&& voxel : traced_voxels)
+            {
+                visited_voxels.insert({voxel.m_index, PadComputeData{1, voxel.m_distance_in_voxel, 0}});
+            }
         }
 
         logger.debug("thread finished");
@@ -127,19 +117,9 @@ auto compute_rays_count_and_length_impl(
     VisitedVoxels visited_voxels;
     for (auto&& res : std::move(all_visited_voxels))
     {
-        for (auto&& [idx, voxel] : res.get())
+        for (auto&& visited_voxel : res.get().m_values)
         {
-            auto it = visited_voxels.find(idx);
-            if (it != visited_voxels.end())
-            {
-                auto& existing_voxel = it->second;
-                existing_voxel.m_count += voxel.m_count;
-                existing_voxel.m_lengths += voxel.m_lengths;
-            }
-            else
-            {
-                visited_voxels.emplace(idx, std::move(voxel));
-            }
+            visited_voxels.insert(visited_voxel);
         }
     }
 
