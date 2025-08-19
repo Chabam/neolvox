@@ -179,25 +179,25 @@ auto load_point_cloud_from_file(
     return out;
 }
 
-auto output_profile_to_csv(
-    const std::filesystem::path& path, const lvox::algorithms::PadResult& result
-) -> void
-{
-    std::ofstream fstream{path};
+// auto output_profile_to_csv(
+//     const std::filesystem::path& path, const lvox::algorithms::PadResult& result
+// ) -> void
+// {
+//     std::ofstream fstream{path};
 
-    fstream << "Height in meters,PAD\n";
-    for (size_t z = 0; z < result.dim_z(); ++z)
-    {
-        double sum = 0;
-        for (size_t x = 0; x < result.dim_x(); ++x)
-            for (size_t y = 0; y < result.dim_y(); ++y)
-                sum += result.at(x, y, z);
+//     fstream << "Height in meters,PAD\n";
+//     for (size_t z = 0; z < result.dim_z(); ++z)
+//     {
+//         double sum = 0;
+//         for (size_t x = 0; x < result.dim_x(); ++x)
+//             for (size_t y = 0; y < result.dim_y(); ++y)
+//                 sum += result.at(x, y, z);
 
-        fstream << std::format("{},{}\n", z * result.cell_size(), sum);
-    }
+//         fstream << std::format("{},{}\n", z * result.cell_size(), sum);
+//     }
 
-    fstream.flush();
-}
+//     fstream.flush();
+// }
 
 auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox::Scan>
 {
@@ -396,27 +396,22 @@ auto main(int argc, char* argv[]) -> int
         .m_pad_estimator        = g_pad_estimator,
         .m_compute_theoriticals = g_compute_theoriticals
     };
-    const lvox::algorithms::PadResult result =
-        lvox::algorithms::compute_pad(scans, compute_options);
+    // const lvox::algorithms::PadResult result =
+    //     lvox::algorithms::compute_pad(scans, compute_options);
 
-    lvox::h5_exporter::export_grid(result, "pad", g_grid_file);
+    // lvox::h5_exporter::export_grid(result, "pad", g_grid_file);
 
-    if (g_output_profile_file)
-    {
-        output_profile_to_csv(*g_output_profile_file, result);
-    }
-
-    // const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds(scans);
-    // lvox::algorithms::ComputeData data{
-    //     .m_counts{bounds, compute_options.voxel_size},
-    //     .m_lengths{bounds, compute_options.voxel_size},
-    //     .m_hits{{bounds, compute_options.voxel_size}},
-    // };
-
-    // for (const auto& scan : scans)
+    // if (g_output_profile_file)
     // {
-    //     lvox::algorithms::compute_rays_count_and_length(scan, data, compute_options);
+    //     output_profile_to_csv(*g_output_profile_file, result);
     // }
+
+    const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds(scans);
+
+    for (const auto& scan : scans)
+    {
+        lvox::algorithms::compute_rays_count_and_length(lvox::Grid{bounds, compute_options.m_voxel_size}, scan, compute_options);
+    }
 
     // logger.info("Writing output HDF5 file");
     // lvox::h5_exporter::export_grid(*data.m_hits, "hits", file);

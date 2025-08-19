@@ -12,48 +12,25 @@
 namespace lvox
 {
 
-template <typename T>
-struct contained_type
-{
-    using type = T;
-};
-
-template <typename T>
-struct contained_type<std::atomic<T>>
-{
-    using type = T;
-};
-
-template <typename T>
-using contained_type_t = contained_type<T>::type;
-
-template <typename T>
 class Grid
 {
   public:
-    using cell_t           = T;
-    using const_cell_ref   = const cell_t&;
-    using cell_ref         = cell_t&;
-    using iterator_t       = std::vector<cell_t>::iterator;
-    using const_iterator_t = std::vector<cell_t>::const_iterator;
-
     Grid()  = default;
     ~Grid() = default;
 
     Grid(const Bounds& bounds, double cell_size)
         : m_cell_size{cell_size}
-        , m_dim_x{Grid::adjust_dim_to_grid(bounds.maxx - bounds.minx, cell_size)}
-        , m_dim_y{Grid::adjust_dim_to_grid(bounds.maxy - bounds.miny, cell_size)}
-        , m_dim_z{Grid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
-        , m_cells{m_dim_x * m_dim_y * m_dim_z, std::allocator<cell_t>{}}
-        , m_bounds{
-            bounds.minx,
-            bounds.miny,
-            bounds.minz,
-            Grid::adjust_bounds_to_grid(m_dim_x, bounds.minx),
-            Grid::adjust_bounds_to_grid(m_dim_y, bounds.miny),
-            Grid::adjust_bounds_to_grid(m_dim_z, bounds.minz)
-        }
+          , m_dim_x{Grid::adjust_dim_to_grid(bounds.maxx - bounds.minx, cell_size)}
+          , m_dim_y{Grid::adjust_dim_to_grid(bounds.maxy - bounds.miny, cell_size)}
+          , m_dim_z{Grid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
+          , m_bounds{
+              bounds.minx,
+              bounds.miny,
+              bounds.minz,
+              Grid::adjust_bounds_to_grid(m_dim_x, bounds.minx),
+              Grid::adjust_bounds_to_grid(m_dim_y, bounds.miny),
+              Grid::adjust_bounds_to_grid(m_dim_z, bounds.minz)
+          }
     {
 
         Logger logger{"Grid"};
@@ -76,21 +53,19 @@ class Grid
 
     Grid(Grid&& other)
         : m_cell_size{std::move(other.m_cell_size)}
-        , m_dim_x{std::move(other.m_dim_x)}
-        , m_dim_y{std::move(other.m_dim_y)}
-        , m_dim_z{std::move(other.m_dim_z)}
-        , m_cells{std::move(other.m_cells)}
-        , m_bounds{std::move(other.m_bounds)}
+          , m_dim_x{std::move(other.m_dim_x)}
+          , m_dim_y{std::move(other.m_dim_y)}
+          , m_dim_z{std::move(other.m_dim_z)}
+          , m_bounds{std::move(other.m_bounds)}
     {
     }
 
     Grid(const Grid& other)
         : m_cell_size{other.m_cell_size}
-        , m_dim_x{other.m_dim_x}
-        , m_dim_y{other.m_dim_y}
-        , m_dim_z{other.m_dim_z}
-        , m_cells{other.m_cells}
-        , m_bounds{other.m_bounds}
+          , m_dim_x{other.m_dim_x}
+          , m_dim_y{other.m_dim_y}
+          , m_dim_z{other.m_dim_z}
+          , m_bounds{other.m_bounds}
     {
     }
 
@@ -100,7 +75,6 @@ class Grid
         m_dim_x     = std::move(other.m_dim_x);
         m_dim_y     = std::move(other.m_dim_y);
         m_dim_z     = std::move(other.m_dim_z);
-        m_cells     = std::move(other.m_cells);
         m_bounds    = std::move(other.m_bounds);
 
         return *this;
@@ -112,34 +86,9 @@ class Grid
         m_dim_x     = other.m_dim_x;
         m_dim_y     = other.m_dim_y;
         m_dim_z     = other.m_dim_z;
-        m_cells     = other.m_cells;
         m_bounds    = other.m_bounds;
 
         return *this;
-    }
-
-    [[nodiscard]]
-    auto at(Index index) const -> const_cell_ref
-    {
-        return m_cells.at(index);
-    }
-
-    [[nodiscard]]
-    auto at(Index index) -> cell_ref
-    {
-        return m_cells.at(index);
-    }
-
-    [[nodiscard]]
-    auto at(Index x, Index y, Index z) const -> const_cell_ref
-    {
-        return at(index3d_to_index(x, y, z));
-    }
-
-    [[nodiscard]]
-    auto at(Index x, Index y, Index z) -> cell_ref
-    {
-        return at(index3d_to_index(x, y, z));
     }
 
     // NOTE: no bounds check!
@@ -183,11 +132,11 @@ class Grid
 
         const auto coords_to_index =
             [cell_size = m_cell_size](double min, double max, double coord) -> Index {
-            const double result = std::floor((coord - min) / cell_size);
-            if (coord == max)
-                return result - 1;
-            return result;
-        };
+                const double result = std::floor((coord - min) / cell_size);
+                if (coord == max)
+                    return result - 1;
+                return result;
+            };
 
         return {
             coords_to_index(m_bounds.minx, m_bounds.maxx, x),
@@ -232,51 +181,11 @@ class Grid
         return m_bounds;
     }
 
-    auto is_na(Index i) const -> bool
-    {
-        return at(i) == cell_t{};
-    };
-
-    auto is_na(Index x, Index y, Index z) const -> bool
-    {
-        return is_na(index3d_to_index(x, y, z));
-    };
-
-    [[nodiscard]]
-    auto index3d_to_index(Index x, Index y, Index z) const -> Index
-    {
-        return x + (y * m_dim_x) + (z * m_dim_x * m_dim_y);
-    }
-
-    [[nodiscard]]
-    auto index_to_index3d(Index i) const -> Index3D
-    {
-        return
-        {
-            i % m_dim_x,
-            (i / m_dim_x) % m_dim_y,
-            (i / m_dim_x) / m_dim_y
-        };
-    }
-
-    auto begin() -> iterator_t { return m_cells.begin(); }
-
-    auto end() -> iterator_t { return m_cells.end(); }
-
-    auto cbegin() const -> const_iterator_t { return m_cells.cbegin(); }
-
-    auto cend() const -> const_iterator_t { return m_cells.cend(); }
-
-    auto begin() const -> const_iterator_t { return m_cells.begin(); }
-
-    auto end() const -> const_iterator_t { return m_cells.end(); }
-
   private:
     double                    m_cell_size;
     Index                     m_dim_x;
     Index                     m_dim_y;
     Index                     m_dim_z;
-    std::vector<cell_t>       m_cells;
     Bounds                    m_bounds;
 
     static auto adjust_dim_to_grid(double distance, double cell_size) -> Index
@@ -297,11 +206,8 @@ Bounds:
     x: {}, {}
     y: {}, {}
     z: {}, {}
-)";
+    )";
 };
-
-using GridU32 = Grid<std::atomic_uint32_t>;
-using GridD   = Grid<std::atomic<double>>;
 
 } // namespace lvox
 

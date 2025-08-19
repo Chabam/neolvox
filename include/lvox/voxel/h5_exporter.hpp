@@ -12,12 +12,12 @@ namespace h5_exporter
 {
 
 auto export_grid(
-    const lvox::GridU32& result, const std::string& dataset, const std::filesystem::path& file
+    const lvox::Grid& result, const std::string& dataset, const std::filesystem::path& file
 ) -> void;
 
-auto export_grid(
-    const lvox::GridD& result, const std::string& dataset, const std::filesystem::path& file
-) -> void;
+// auto export_grid(
+//     const lvox::Grid& result, const std::string& dataset, const std::filesystem::path& file
+// ) -> void;
 
 } // namespace h5_exporter
 
