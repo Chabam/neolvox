@@ -21,7 +21,7 @@ class VisitedVoxels
 
     VisitedVoxels(const Grid& grid)
         : m_voxels{}
-        , m_grid(grid)
+        , m_grid{grid}
     {
     }
 

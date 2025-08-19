@@ -396,8 +396,10 @@ auto main(int argc, char* argv[]) -> int
         .m_pad_estimator        = g_pad_estimator,
         .m_compute_theoriticals = g_compute_theoriticals
     };
-    // const lvox::algorithms::PadResult result =
-    //     lvox::algorithms::compute_pad(scans, compute_options);
+    const lvox::algorithms::PadResult result =
+        lvox::algorithms::compute_pad(scans, compute_options);
+
+    logger.info("{}", std::distance(result.begin(), result.end()));
 
     // lvox::h5_exporter::export_grid(result, "pad", g_grid_file);
 
@@ -405,13 +407,6 @@ auto main(int argc, char* argv[]) -> int
     // {
     //     output_profile_to_csv(*g_output_profile_file, result);
     // }
-
-    const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds(scans);
-
-    for (const auto& scan : scans)
-    {
-        lvox::algorithms::compute_rays_count_and_length(lvox::Grid{bounds, compute_options.m_voxel_size}, scan, compute_options);
-    }
 
     // logger.info("Writing output HDF5 file");
     // lvox::h5_exporter::export_grid(*data.m_hits, "hits", file);

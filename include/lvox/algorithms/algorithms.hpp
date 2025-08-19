@@ -25,29 +25,23 @@ struct ComputeOptions
     bool                         m_compute_theoriticals;
 };
 
+using LengthWithVariance = std::pair<double, double>;
+using LengthData = std::variant<double, LengthWithVariance>;
+
 struct PadComputeData
 {
-    PadComputeData(double length)
-        : m_count{1}
-        , m_lengths{length}
-        , m_length_variance{0}
-    {}
+    PadComputeData() = default;
+    PadComputeData(double length);
+    PadComputeData(LengthWithVariance length);
 
-    unsigned int m_count;
-    double       m_lengths;
-    double       m_length_variance;
+    size_t m_hits;
+    size_t m_counts;
+    LengthData m_lengths;
 
-    auto operator+=(const PadComputeData& rhs) -> PadComputeData&
-    {
-        m_count += rhs.m_count;
-        m_lengths += rhs.m_lengths;
-        m_length_variance += rhs.m_length_variance;
-        return *this;
-    }
+    auto operator+=(const PadComputeData& rhs) -> PadComputeData&;
 };
 
-using VoxelsCountAndLength = VisitedVoxels<PadComputeData>;
-using Hits          = VisitedVoxels<Index>;
+using VoxelsPadInfo = VisitedVoxels<PadComputeData>;
 using PadResult     = VisitedVoxels<double>;
 
 // Compute which voxels the rays have went to in a voxel grid and
@@ -55,10 +49,7 @@ using PadResult     = VisitedVoxels<double>;
 [[nodiscard]]
 auto compute_rays_count_and_length(
     const Grid& grid, const Scan& scan, const ComputeOptions& options
-) -> VoxelsCountAndLength;
-
-[[nodiscard]]
-auto compute_hits(const Grid& grid, const Scan& scan, const ComputeOptions& options) -> Hits;
+) -> VoxelsPadInfo;
 
 //  Wrapper for the whole PAD computation. Does the following:
 //

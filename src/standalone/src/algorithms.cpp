@@ -17,6 +17,44 @@
 namespace lvox::algorithms
 {
 
+PadComputeData::PadComputeData(double length)
+    : m_hits{0}
+    , m_counts{1}
+    , m_lengths{length}
+{}
+
+
+PadComputeData::PadComputeData(LengthWithVariance length)
+    : m_hits{0}
+    , m_counts{1}
+    , m_lengths{length}
+{}
+
+auto PadComputeData::operator+=(const PadComputeData& rhs) -> PadComputeData&
+{
+    m_counts += rhs.m_counts;
+
+    std::visit(
+        [&rhs](auto& length) mutable -> void {
+            using T = std::decay_t<decltype(length)>;
+            if constexpr (std::is_same<T, double>::value)
+            {
+                length += std::get<double>(rhs.m_lengths);
+            }
+            else
+            {
+                auto [new_length, new_variance]  = std::get<LengthWithVariance>(rhs.m_lengths);
+                auto& [cur_length, cur_variance] = length;
+                cur_length += new_length;
+                cur_variance += new_variance;
+            }
+        },
+        m_lengths
+    );
+
+    return *this;
+}
+
 template <std::ranges::range R, typename F, typename VisitedVoxelsT>
 auto parallel_compute_then_merge(
     const R& objects, unsigned int job_count, const F& func, VisitedVoxelsT& out
@@ -25,19 +63,19 @@ auto parallel_compute_then_merge(
     const size_t object_count     = std::distance(std::begin(objects), std::end(objects));
     const size_t objects_per_core = std::ceil(static_cast<float>(object_count) / job_count);
 
-    std::vector<std::future<VisitedVoxelsT>> all_hits;
+    std::vector<std::future<VisitedVoxelsT>> all_res;
     for (auto chunk : objects | std::views::chunk(objects_per_core))
     {
-        all_hits.emplace_back(std::async(func, std::move(chunk)));
+        all_res.emplace_back(std::async(func, std::move(chunk)));
     }
 
-    for (auto&& res : std::move(all_hits))
+    for (auto&& res : std::move(all_res))
     {
-        for (auto&& hit : res.get())
+        for (auto&& val : res.get())
         {
-            auto [ref, inserted] = out.try_insert(hit);
+            auto [ref, inserted] = out.try_insert(val);
             if (!inserted)
-                ref += hit.second;
+                ref += val.second;
         }
     }
 }
@@ -75,10 +113,10 @@ auto parallel_compute_then_merge(
 //     variance_ref.fetch_add((delta * delta_2) / (new_count - 1), std::memory_order_relaxed);
 // }
 
-template <bool limit_ray_length, typename PadEstimator>
+template <bool limit_ray_length, bool compute_hits, typename PadEstimator>
 auto compute_rays_count_and_length_impl(
     const Grid& grid, const Scan& scan, const ComputeOptions& options, Logger logger
-) -> VoxelsCountAndLength
+) -> VoxelsPadInfo
 {
     auto grid_traversal = std::invoke([&grid]() {
         if constexpr (pe::is_uplbl<PadEstimator>::value)
@@ -87,8 +125,8 @@ auto compute_rays_count_and_length_impl(
             return GridTraversalVoxelRounding{grid};
     });
 
-    const auto ray_trace = [&](auto&& points) -> VoxelsCountAndLength {
-        VoxelsCountAndLength visited_voxels{grid};
+    const auto ray_trace = [&](auto&& points) -> VoxelsPadInfo {
+        VoxelsPadInfo visited_voxels{grid};
         for (const auto& timed_point : points)
         {
             const double gps_time = timed_point.m_gps_time;
@@ -99,6 +137,18 @@ auto compute_rays_count_and_length_impl(
             const Vector beam_to_point{pt - scan_origin};
 
             double max_distance = std::numeric_limits<double>::infinity();
+
+            if constexpr (compute_hits)
+            {
+                const auto idx = grid.index_of_point(timed_point.m_point);
+
+                PadComputeData hit_voxel;
+                hit_voxel.m_hits = 1;
+
+                auto [ref, inserted] = visited_voxels.try_insert(idx, hit_voxel);
+                if (!inserted)
+                    ref.m_hits += 1;
+            }
 
             if constexpr (limit_ray_length)
             {
@@ -122,21 +172,22 @@ auto compute_rays_count_and_length_impl(
         return visited_voxels;
     };
 
-    VoxelsCountAndLength counts_and_lengths{grid};
+    VoxelsPadInfo counts_and_lengths{grid};
     parallel_compute_then_merge(*scan.m_points, options.m_job_limit, ray_trace, counts_and_lengths);
     return counts_and_lengths;
 }
 
 auto compute_rays_count_and_length(
     const Grid& grid, const Scan& scan, const ComputeOptions& options
-) -> VoxelsCountAndLength
+) -> VoxelsPadInfo
 {
     constexpr bool limit_ray_length = true;
+    constexpr bool compute_hits = true;
     Logger         logger{"Compute Rays count and length"};
     return std::visit(
-        [&](auto&& chosen_estimator) -> VoxelsCountAndLength {
+        [&](auto&& chosen_estimator) -> VoxelsPadInfo {
             using T = std::decay_t<decltype(chosen_estimator)>;
-            return compute_rays_count_and_length_impl<limit_ray_length, T>(
+            return compute_rays_count_and_length_impl<limit_ray_length, compute_hits, T>(
                 grid, scan, options, logger
             );
         },
@@ -145,40 +196,20 @@ auto compute_rays_count_and_length(
 }
 
 auto compute_theoriticals(const Grid& grid, const Scan& scan, const ComputeOptions& options)
-    -> VoxelsCountAndLength
+    -> VoxelsPadInfo
 {
     constexpr bool limit_ray_length = false;
+    constexpr bool compute_hits = false;
     Logger         logger{"Compute theoriticals"};
     return std::visit(
-        [&](auto&& chosen_estimator) -> VoxelsCountAndLength {
+        [&](auto&& chosen_estimator) -> VoxelsPadInfo {
             using T = std::decay_t<decltype(chosen_estimator)>;
-            return compute_rays_count_and_length_impl<limit_ray_length, T>(
+            return compute_rays_count_and_length_impl<limit_ray_length, compute_hits, T>(
                 grid, scan, options, logger
             );
         },
         options.m_pad_estimator
     );
-}
-
-auto compute_hits(const Grid& grid, const Scan& scan, const ComputeOptions& options) -> Hits
-{
-    Logger     logger{"Compute hits"};
-    const auto count_hits = [&grid, &logger, &scan](auto&& points) -> Hits {
-        Hits hits{grid};
-        for (const auto& timed_point : points)
-        {
-            const auto idx = grid.index_of_point(timed_point.m_point);
-
-            auto [ref, inserted] = hits.try_insert(idx, 1);
-            if (!inserted)
-                ++ref;
-        }
-        return hits;
-    };
-
-    Hits hits{grid};
-    parallel_compute_then_merge(*scan.m_points, options.m_job_limit, count_hits, hits);
-    return hits;
 }
 
 auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options) -> PadResult
@@ -201,19 +232,17 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
             compute_theoriticals(grid, scan, options);
         }
 
-        logger.info("Compute hits {}/{}", scan_num + 1, scans.size());
-        Hits hits = compute_hits(grid, scan, options);
         logger.info("Compute ray counts and length {}/{}", scan_num + 1, scans.size());
-        VoxelsCountAndLength voxels = compute_rays_count_and_length(grid, scan, options);
+        VoxelsPadInfo voxels = compute_rays_count_and_length(grid, scan, options);
 
         // TODO: Make the treshold configurable
         auto voxels_with_data =
-            voxels | std::views::filter([](const VoxelsCountAndLength::value_pair& pair) {
-                return pair.second.m_count >= 5;
-            });
+            voxels | std::views::filter([](const VoxelsPadInfo::value_pair& pair) {
+                return pair.second.m_counts >= 5;
+            }) | std::ranges::to<std::vector>();
 
         const auto compute_pad_for_cell = [&options, scan_count = scans.size()](
-                                              const VoxelsCountAndLength::value_pair& pair
+            const VoxelsPadInfo::value_pair& pair
         ) -> PadResult::value_pair {
             const auto& [idx, data] = pair;
             const auto pad_estimation = [&data](auto&& chosen_estimator) -> double {
@@ -232,7 +261,24 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
             return {idx, std::visit(pad_estimation, options.m_pad_estimator) / scan_count};
         };
 
-        std::transform(std::execution::par_unseq, voxels_with_data.begin(), voxels_with_data.end(), voxels_with_data.begin(), compute_pad_for_cell);
+
+        std::vector<PadResult::value_pair> computed_pad_values{voxels_with_data.size()};
+
+        std::transform(
+            std::execution::par_unseq,
+            voxels_with_data.begin(),
+            voxels_with_data.end(),
+            computed_pad_values.begin(),
+            compute_pad_for_cell
+        );
+
+        for (auto&& [idx, pad_value] : computed_pad_values)
+        {
+            auto [ref, inserted] = pad_result.try_insert(idx, pad_value);
+
+            if (!inserted)
+                ref += pad_value;
+        }
     }
 
     return pad_result;
@@ -243,9 +289,7 @@ auto compute_scene_bounds(const std::vector<lvox::Scan>& scans) -> lvox::Bounds
     Bounds total_bounds;
 
     for (const auto& scan : scans)
-    {
         total_bounds.grow(scan.m_bounds);
-    }
 
     return total_bounds;
 }
