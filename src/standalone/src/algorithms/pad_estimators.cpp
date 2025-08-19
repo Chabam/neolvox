@@ -4,7 +4,7 @@
 namespace lvox::algorithms::pad_estimators
 {
 
-auto beer_lambert(Index index) -> double
+auto beer_lambert(const PadComputeData& data) -> double
 {
     // if (data.m_hits.is_na(index))
     //     return 0.;
@@ -26,7 +26,7 @@ auto beer_lambert(Index index) -> double
     return 0;
 }
 
-auto contact_frequency(Index index) -> double
+auto contact_frequency(const PadComputeData& data) -> double
 {
     // if (data.m_hits.is_na(index))
     //     return 0.;
@@ -47,7 +47,7 @@ auto contact_frequency(Index index) -> double
     return 0;
 }
 
-auto unequal_path_length_beer_lambert(Index index) -> double
+auto unequal_path_length_beer_lambert(const PadComputeData& data) -> double
 {
  //    if (data.m_hits.is_na(index))
 //         return 0.;

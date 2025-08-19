@@ -5,13 +5,14 @@
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
 #include <lvox/types.hpp>
-#include <lvox/voxel/grid.hpp>
+#include <lvox/voxel/visited_voxels.hpp>
 
 namespace lvox
 {
 
 class Scan;
 class Beam;
+class Grid;
 
 namespace algorithms
 {
@@ -26,63 +27,35 @@ struct ComputeOptions
 
 struct PadComputeData
 {
+    PadComputeData(double length)
+        : m_count{1}
+        , m_lengths{length}
+        , m_length_variance{0}
+    {}
+
     unsigned int m_count;
     double       m_lengths;
     double       m_length_variance;
-};
 
-struct Voxels
-{
-    auto insert(std::pair<Index3D, PadComputeData> value) -> void
+    auto operator+=(const PadComputeData& rhs) -> PadComputeData&
     {
-        auto lower = std::lower_bound(
-            m_values.begin(), m_values.end(), value.first, [this](const auto& lhs, const auto& rhs) -> bool {
-                const auto to_flat_index = [this](const Index3D& idx) {
-                    const auto [x, y, z] = idx;
-                    return x + y * m_grid.dim_x() + z * m_grid.dim_x() * m_grid.dim_y();
-                };
-
-                return to_flat_index(lhs.first) < to_flat_index(rhs);
-            }
-        );
-
-        if (lower == m_values.end())
-        {
-            m_values.push_back(value);
-            return;
-        }
-
-        auto& existing_voxel = lower->second;
-        existing_voxel.m_count += value.second.m_count;
-        existing_voxel.m_lengths += value.second.m_lengths;
-    }
-
-    std::vector<std::pair<Index3D, PadComputeData>> m_values;
-    Grid m_grid;
-};
-
-struct Index3DHash
-{
-    auto operator()(const Index3D& index) const -> size_t
-    {
-        auto [x, y, z] = index;
-        const auto hash = std::hash<Index>{};
-
-        return hash(x) + hash(y) + hash(z);
+        m_count += rhs.m_count;
+        m_lengths += rhs.m_lengths;
+        m_length_variance += rhs.m_length_variance;
+        return *this;
     }
 };
 
-
-using VisitedVoxels = Voxels;
-using Hits          = std::unordered_map<Index3D, unsigned int, Index3DHash>;
-using PadResult     = std::unordered_map<Index3D, double, Index3DHash>;
+using VoxelsCountAndLength = VisitedVoxels<PadComputeData>;
+using Hits          = VisitedVoxels<Index>;
+using PadResult     = VisitedVoxels<double>;
 
 // Compute which voxels the rays have went to in a voxel grid and
 // computes the length that the rays travelled inside each of them.
 [[nodiscard]]
 auto compute_rays_count_and_length(
     const Grid& grid, const Scan& scan, const ComputeOptions& options
-) -> VisitedVoxels;
+) -> VoxelsCountAndLength;
 
 [[nodiscard]]
 auto compute_hits(const Grid& grid, const Scan& scan, const ComputeOptions& options) -> Hits;

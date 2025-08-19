@@ -8,6 +8,8 @@
 namespace lvox::algorithms
 {
 
+struct PadComputeData;
+
 namespace pad_estimators
 {
 
@@ -29,9 +31,9 @@ struct estimator_uses_effective_lengths : is_uplbl<T> {};
 
 using PADEstimator = std::variant<BeerLambert, ContactFrequency, UnequalPathLengthBeerLambert>;
 
-auto beer_lambert(Index index) -> double;
-auto contact_frequency(Index index) -> double;
-auto unequal_path_length_beer_lambert(Index index) -> double;
+auto beer_lambert(const PadComputeData& data) -> double;
+auto contact_frequency(const PadComputeData& data) -> double;
+auto unequal_path_length_beer_lambert(const PadComputeData& data) -> double;
 
 } // namespace pad_estimators
 
