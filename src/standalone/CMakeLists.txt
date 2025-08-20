@@ -6,13 +6,13 @@ add_library(lvox_common)
 target_sources(lvox_common
   PUBLIC
   src/algorithms.cpp
-  src/algorithms/pad_estimators.cpp
   src/logger/logger.cpp
   src/scanner/beam.cpp
   src/scanner/scan.cpp
   src/scanner/spherical_scanner.cpp
   src/scanner/trajectory.cpp
   src/voxel/h5_exporter.cpp
+  src/voxel/voxels_metrics.cpp
 )
 
 target_link_libraries(lvox_common

@@ -131,7 +131,7 @@ class Grid
         }
 
         const auto coords_to_index =
-            [cell_size = m_cell_size](double min, double max, double coord) -> Index {
+            [cell_size = m_cell_size](double min, double max, double coord) -> unsigned int {
                 const double result = std::floor((coord - min) / cell_size);
                 if (coord == max)
                     return result - 1;

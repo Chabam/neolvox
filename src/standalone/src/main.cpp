@@ -27,6 +27,7 @@
 #include <lvox/scanner/trajectory.hpp>
 #include <lvox/types.hpp>
 #include <lvox/voxel/h5_exporter.hpp>
+#include "lvox/voxel/voxels_metrics.hpp"
 
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
@@ -396,10 +397,8 @@ auto main(int argc, char* argv[]) -> int
         .m_pad_estimator        = g_pad_estimator,
         .m_compute_theoriticals = g_compute_theoriticals
     };
-    const lvox::algorithms::PadResult result =
+    const lvox::VoxelsMetrics result =
         lvox::algorithms::compute_pad(scans, compute_options);
-
-    logger.info("{}", std::distance(result.begin(), result.end()));
 
     // lvox::h5_exporter::export_grid(result, "pad", g_grid_file);
 
