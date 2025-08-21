@@ -22,12 +22,12 @@
 
 #include <lvox/algorithms/algorithms.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
+#include <lvox/logger/logger.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
 #include <lvox/scanner/trajectory.hpp>
 #include <lvox/types.hpp>
-#include <lvox/voxel/h5_exporter.hpp>
-#include "lvox/voxel/voxels_metrics.hpp"
+#include <lvox/voxel/grid.hpp>
 
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
@@ -50,10 +50,6 @@ Options:
                                           can used alongside virtual scene to measure
                                           the impact of rays that didn't touch anything
                                           on PAD estimations. [disabled by defaults]
-
-   -p, --profile      filename            Outputs to vertical profile of the voxels
-                                          of the grid to a csv file.
-                                          [disabled by defaults]
 
    -j, --jobs         number              A number of parallel jobs to use.
                                           [defaults to the amount of core]
@@ -80,10 +76,8 @@ bool                       g_compute_theoriticals = false;
 std::optional<lvox::Point> g_scan_origin          = {};
 std::mutex                 g_print_guard          = {};
 fs::path                   g_file;
-std::optional<fs::path>    g_traj_file            = {};
-std::optional<fs::path>    g_output_profile_file  = {};
-fs::path                   g_grid_file            = "out.h5";
-
+std::optional<fs::path>    g_traj_file           = {};
+fs::path                   g_grid_file           = "out.h5";
 
 struct PointCloudWithTheoriticalShots
 {
@@ -96,7 +90,7 @@ auto load_point_cloud_from_file(
     std::optional<std::reference_wrapper<lvox::Bounds>> bounds = {}
 ) -> PointCloudWithTheoriticalShots
 {
-    using dim    = pdal::Dimension::Id;
+    using dim = pdal::Dimension::Id;
 
     lvox::Logger logger{"Point cloud file reader"};
     if (!fs::exists(file) || !fs::is_regular_file(file))
@@ -179,26 +173,6 @@ auto load_point_cloud_from_file(
 
     return out;
 }
-
-// auto output_profile_to_csv(
-//     const std::filesystem::path& path, const lvox::algorithms::PadResult& result
-// ) -> void
-// {
-//     std::ofstream fstream{path};
-
-//     fstream << "Height in meters,PAD\n";
-//     for (size_t z = 0; z < result.dim_z(); ++z)
-//     {
-//         double sum = 0;
-//         for (size_t x = 0; x < result.dim_x(); ++x)
-//             for (size_t y = 0; y < result.dim_y(); ++y)
-//                 sum += result.at(x, y, z);
-
-//         fstream << std::format("{},{}\n", z * result.cell_size(), sum);
-//     }
-
-//     fstream.flush();
-// }
 
 auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox::Scan>
 {
@@ -324,10 +298,6 @@ auto main(int argc, char* argv[]) -> int
         {
             g_scan_origin = {std::stod(*++arg_it), std::stod(*++arg_it), std::stod(*++arg_it)};
         }
-        else if (*arg_it == "-p" || *arg_it == "--profile")
-        {
-            g_output_profile_file = *++arg_it;
-        }
         else if (*arg_it == "-g" || *arg_it == "--grid")
         {
             g_grid_file = *++arg_it;
@@ -397,18 +367,7 @@ auto main(int argc, char* argv[]) -> int
         .m_pad_estimator        = g_pad_estimator,
         .m_compute_theoriticals = g_compute_theoriticals
     };
-    const lvox::VoxelsMetrics result =
-        lvox::algorithms::compute_pad(scans, compute_options);
+    const lvox::Grid result = lvox::algorithms::compute_pad(scans, compute_options);
 
-    // lvox::h5_exporter::export_grid(result, "pad", g_grid_file);
-
-    // if (g_output_profile_file)
-    // {
-    //     output_profile_to_csv(*g_output_profile_file, result);
-    // }
-
-    // logger.info("Writing output HDF5 file");
-    // lvox::h5_exporter::export_grid(*data.m_hits, "hits", file);
-    // lvox::h5_exporter::export_grid(data.m_counts, "counts", file);
-    //     lvox::h5_exporter::export_grid(data.m_lengths, "lengths", file);
+    result.export_as_coo_to_h5("lvox computation values", g_grid_file);
 }

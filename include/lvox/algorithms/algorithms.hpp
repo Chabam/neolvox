@@ -26,10 +26,9 @@ struct ComputeOptions
 
 // Compute which voxels the rays have went to in a voxel grid and
 // computes the length that the rays travelled inside each of them.
-[[nodiscard]]
 auto compute_rays_count_and_length(
-    const Grid& grid, const Scan& scan, const ComputeOptions& options
-) -> VoxelsMetrics;
+    Grid& grid, const Scan& scan, const ComputeOptions& options
+) -> void;
 
 //  Wrapper for the whole PAD computation. Does the following:
 //
@@ -41,7 +40,7 @@ auto compute_rays_count_and_length(
 //   - Compute the PAD values for each voxels using the values from the computed grids
 // - Averages the PAD values from every scans
 [[nodiscard]]
-auto compute_pad(const std::vector<Scan>& scans, const ComputeOptions& options) -> VoxelsMetrics;
+auto compute_pad(const std::vector<Scan>& scans, const ComputeOptions& options) -> Grid;
 
 [[nodiscard]]
 auto compute_scene_bounds(const std::vector<Scan>& scans) -> lvox::Bounds;

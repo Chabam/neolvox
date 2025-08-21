@@ -34,10 +34,12 @@ struct GridTraversal
 {
     GridTraversal(const Grid& grid) : m_grid{grid} {};
 
+    template <typename HitCallback>
     auto operator()(
         const Beam& beam,
+        HitCallback&& callback,
         const double  max_distance = std::numeric_limits<double>::infinity()
-    ) -> std::vector<VoxelHitInfo>
+    ) -> void
     {
 
         Logger logger{"Grid traversal"};
@@ -140,8 +142,6 @@ struct GridTraversal
             delta.z()
         );
 
-        std::vector<VoxelHitInfo> visited_voxels;
-
         double       total_traveled_distance = 0.;
         VoxelHitInfo current_hit{
             .m_index             = Index3D{current_voxel_x, current_voxel_y, current_voxel_z},
@@ -202,12 +202,10 @@ struct GridTraversal
             }
 
             if (current_hit.m_distance_in_voxel > 0)
-                visited_voxels.push_back(current_hit);
+                callback(current_hit);
 
             current_hit.m_index = Index3D{current_voxel_x, current_voxel_y, current_voxel_z};
         } while (can_continue);
-
-        return visited_voxels;
     }
 
     const Grid& m_grid;

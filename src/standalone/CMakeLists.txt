@@ -8,11 +8,10 @@ target_sources(lvox_common
   src/algorithms.cpp
   src/logger/logger.cpp
   src/scanner/beam.cpp
+  src/voxel/grid.cpp
   src/scanner/scan.cpp
   src/scanner/spherical_scanner.cpp
   src/scanner/trajectory.cpp
-  src/voxel/h5_exporter.cpp
-  src/voxel/voxels_metrics.cpp
 )
 
 target_link_libraries(lvox_common
