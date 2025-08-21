@@ -19,15 +19,15 @@ namespace lvox::algorithms
 {
 
 
-template <std::ranges::range R, typename F, typename VisitedVoxelsT>
+template <std::ranges::range R, typename F>
 auto parallel_compute_then_merge(
-    const R& objects, unsigned int job_count, const F& func, VisitedVoxelsT& out
+    const R& objects, unsigned int job_count, const F& func, VoxelsMetrics& out
 ) -> void
 {
     const size_t object_count     = std::distance(std::begin(objects), std::end(objects));
     const size_t objects_per_core = std::ceil(static_cast<float>(object_count) / job_count);
 
-    std::vector<std::future<VisitedVoxelsT>> all_res;
+    std::vector<std::future<VoxelsMetrics>> all_res;
     for (auto chunk : objects | std::views::chunk(objects_per_core))
     {
         all_res.emplace_back(std::async(func, std::move(chunk)));
@@ -185,6 +185,7 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
         logger.info("Compute ray counts and length {}/{}", scan_num + 1, scans.size());
         VoxelsMetrics voxels = compute_rays_count_and_length(grid, scan, options);
 
+        logger.info("Estimating PAD {}/{}", scan_num + 1, scans.size());
         std::visit(
             [&voxels](auto&& chosen_estimator) -> void {
                 voxels.compute_pad(chosen_estimator);
