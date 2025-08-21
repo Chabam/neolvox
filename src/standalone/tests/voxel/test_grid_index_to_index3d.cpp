@@ -16,10 +16,10 @@ TEST(grid, index_to_index3d)
 
     lvox::GridU32 grid{bounds, voxel_size};
 
-    std::set<lvox::Index3D> idxs;
+    std::set<size_t3D> idxs;
     for (size_t i = 0; i < grid.cell_count(); ++i)
     {
-        const lvox::Index3D idx3d = grid.index_to_index3d(i);
+        const size_t3D idx3d = grid.index_to_index3d(i);
         const auto [x, y, z] = idx3d;
         ASSERT_GE(dim_x, x);
         ASSERT_GE(dim_y, y);

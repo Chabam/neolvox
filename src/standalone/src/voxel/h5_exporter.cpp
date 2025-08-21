@@ -34,7 +34,7 @@ namespace lvox::h5_exporter
 //                                  }) |
 //                                  std::views::elements<0>;
 //     auto index3d_with_data =
-//         index_with_data | std::views::transform([&grid](const Index& index) -> Index3D {
+//         index_with_data | std::views::transform([&grid](const size_t& index) -> Index3D {
 //             return grid.index_to_index3d(index);
 //         });
 
@@ -114,7 +114,7 @@ namespace lvox::h5_exporter
 
 //     {
 //         const std::vector<cell_t> values =
-//             index_with_data | std::views::transform([&grid](const Index& index) -> cell_t {
+//             index_with_data | std::views::transform([&grid](const size_t& index) -> cell_t {
 //                 return grid.at(index);
 //             }) |
 //             std::ranges::to<std::vector<cell_t>>();
@@ -159,7 +159,7 @@ namespace lvox::h5_exporter
 //     const auto    h5_grid_dim_t = H5::PredType::NATIVE_UINT64;
 //     H5::Attribute grid_dims_attr =
 //         get_or_create_attribute("Dimensions", h5_grid_dim_t, singular_3d_coord_data_space);
-//     const std::array<Index, 3> grid_dims = {grid.dim_x(), grid.dim_y(), grid.dim_z()};
+//     const std::array<size_t, 3> grid_dims = {grid.dim_x(), grid.dim_y(), grid.dim_z()};
 //     grid_dims_attr.write(h5_grid_dim_t, grid_dims.data());
 
 //     file.close();

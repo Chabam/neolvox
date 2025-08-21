@@ -93,7 +93,7 @@ class Grid
 
     // NOTE: no bounds check!
     [[nodiscard]]
-    auto voxel_bounds(Index idx_x, Index idx_y, Index idx_z) const -> Bounds
+    auto voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> Bounds
     {
         const double min_x = m_bounds.minx + idx_x * m_cell_size;
         const double min_y = m_bounds.miny + idx_y * m_cell_size;
@@ -152,25 +152,25 @@ class Grid
     }
 
     [[nodiscard]]
-    auto cell_count() const -> Index
+    auto cell_count() const -> size_t
     {
         return dim_x() * dim_y() * dim_z();
     }
 
     [[nodiscard]]
-    auto dim_x() const -> Index
+    auto dim_x() const -> size_t
     {
         return m_dim_x;
     }
 
     [[nodiscard]]
-    auto dim_y() const -> Index
+    auto dim_y() const -> size_t
     {
         return m_dim_y;
     }
 
     [[nodiscard]]
-    auto dim_z() const -> Index
+    auto dim_z() const -> size_t
     {
         return m_dim_z;
     }
@@ -183,17 +183,17 @@ class Grid
 
   private:
     double                    m_cell_size;
-    Index                     m_dim_x;
-    Index                     m_dim_y;
-    Index                     m_dim_z;
+    size_t                     m_dim_x;
+    size_t                     m_dim_y;
+    size_t                     m_dim_z;
     Bounds                    m_bounds;
 
-    static auto adjust_dim_to_grid(double distance, double cell_size) -> Index
+    static auto adjust_dim_to_grid(double distance, double cell_size) -> size_t
     {
-        return static_cast<Index>(std::ceil(distance / cell_size));
+        return static_cast<size_t>(std::ceil(distance / cell_size));
     }
 
-    auto adjust_bounds_to_grid(Index dim, double min) const -> double
+    auto adjust_bounds_to_grid(size_t dim, double min) const -> double
     {
         return min + dim * m_cell_size;
     }

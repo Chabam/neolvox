@@ -27,7 +27,7 @@ TEST(grid, grid_traversal_x_axis)
         lvox::Vector dir{1., 0., 0.};
         lvox::Beam   beam{pos, dir};
 
-        std::vector<lvox::Index3D> visited_voxel_idxs;
+        std::vector<size_t3D> visited_voxel_idxs;
         lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
@@ -35,7 +35,7 @@ TEST(grid, grid_traversal_x_axis)
             }
         );
         ASSERT_EQ(grid.dim_x(), visited_voxel_idxs.size());
-        for (lvox::Index i = 0; i < visited_voxel_idxs.size(); ++i)
+        for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
             ASSERT_EQ(i, x);
@@ -48,7 +48,7 @@ TEST(grid, grid_traversal_x_axis)
         lvox::Vector dir{-1., 0., 0.};
         lvox::Beam   beam{pos, dir};
 
-        std::vector<lvox::Index3D> visited_voxel_idxs;
+        std::vector<size_t3D> visited_voxel_idxs;
         lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
@@ -56,7 +56,7 @@ TEST(grid, grid_traversal_x_axis)
             }
         );
         ASSERT_EQ(grid.dim_x(), visited_voxel_idxs.size());
-        for (lvox::Index i = 0; i < visited_voxel_idxs.size(); ++i)
+        for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
             ASSERT_EQ(grid.dim_x() - i - 1, x);
@@ -86,7 +86,7 @@ TEST(grid, grid_traversal_y_axis)
         lvox::Vector dir{0., 1., 0.};
         lvox::Beam   beam{pos, dir};
 
-        std::vector<lvox::Index3D> visited_voxel_idxs;
+        std::vector<size_t3D> visited_voxel_idxs;
         lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
@@ -94,7 +94,7 @@ TEST(grid, grid_traversal_y_axis)
             }
         );
         ASSERT_EQ(grid.dim_y(), visited_voxel_idxs.size());
-        for (lvox::Index i = 0; i < visited_voxel_idxs.size(); ++i)
+        for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
             ASSERT_EQ(0, x);
@@ -107,7 +107,7 @@ TEST(grid, grid_traversal_y_axis)
         lvox::Vector dir{0., -1., 0.};
         lvox::Beam   beam{pos, dir};
 
-        std::vector<lvox::Index3D> visited_voxel_idxs;
+        std::vector<size_t3D> visited_voxel_idxs;
         lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
@@ -115,7 +115,7 @@ TEST(grid, grid_traversal_y_axis)
             }
         );
         ASSERT_EQ(grid.dim_y(), visited_voxel_idxs.size());
-        for (lvox::Index i = 0; i < visited_voxel_idxs.size(); ++i)
+        for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
             ASSERT_EQ(0, x);
@@ -144,7 +144,7 @@ TEST(grid, grid_traversal_z_axis)
         lvox::Vector dir{0., 0., 1.};
         lvox::Beam   beam{pos, dir};
 
-        std::vector<lvox::Index3D> visited_voxel_idxs;
+        std::vector<size_t3D> visited_voxel_idxs;
         lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
@@ -152,7 +152,7 @@ TEST(grid, grid_traversal_z_axis)
             }
         );
         ASSERT_EQ(grid.dim_z(), visited_voxel_idxs.size());
-        for (lvox::Index i = 0; i < visited_voxel_idxs.size(); ++i)
+        for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
             ASSERT_EQ(0, x);
@@ -165,7 +165,7 @@ TEST(grid, grid_traversal_z_axis)
         lvox::Vector dir{0., 0., -1.};
         lvox::Beam   beam{pos, dir};
 
-        std::vector<lvox::Index3D> visited_voxel_idxs;
+        std::vector<size_t3D> visited_voxel_idxs;
         lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
@@ -173,7 +173,7 @@ TEST(grid, grid_traversal_z_axis)
             }
         );
         ASSERT_EQ(grid.dim_z(), visited_voxel_idxs.size());
-        for (lvox::Index i = 0; i < visited_voxel_idxs.size(); ++i)
+        for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
             ASSERT_EQ(0, x);
@@ -206,7 +206,7 @@ TEST(grid, grid_traversal_diagonals)
         lvox::Vector dir{max - min};
         lvox::Beam   beam{min, dir};
 
-        std::vector<lvox::Index3D> visited_voxel_idxs;
+        std::vector<size_t3D> visited_voxel_idxs;
         lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
@@ -216,23 +216,23 @@ TEST(grid, grid_traversal_diagonals)
         // NOTE: Greater or equal because of floating point errors
         ASSERT_GE(visited_voxel_idxs.size(), std::round((max - min).norm()));
 
-        for (lvox::Index x = 0; x < dim_x; ++x)
+        for (size_t x = 0; x < dim_x; ++x)
         {
-            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [x](const lvox::Index3D idx) {
+            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [x](const size_t3D idx) {
                             return idx[0] == x;
                         }) != visited_voxel_idxs.end());
         }
 
-        for (lvox::Index y = 0; y < dim_y; ++y)
+        for (size_t y = 0; y < dim_y; ++y)
         {
-            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [y](const lvox::Index3D idx) {
+            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [y](const size_t3D idx) {
                             return idx[1] == y;
                         }) != visited_voxel_idxs.end());
         }
 
-        for (lvox::Index z = 0; z < dim_z; ++z)
+        for (size_t z = 0; z < dim_z; ++z)
         {
-            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [z](const lvox::Index3D idx) {
+            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [z](const size_t3D idx) {
                             return idx[2] == z;
                         }) != visited_voxel_idxs.end());
         }
@@ -244,7 +244,7 @@ TEST(grid, grid_traversal_diagonals)
         lvox::Vector dir{min - max};
         lvox::Beam   beam{max, dir};
 
-        std::vector<lvox::Index3D> visited_voxel_idxs;
+        std::vector<size_t3D> visited_voxel_idxs;
         lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
@@ -254,23 +254,23 @@ TEST(grid, grid_traversal_diagonals)
 
         // NOTE: Greater or equal because of floating point errors
         ASSERT_GE(visited_voxel_idxs.size(), std::round((max - min).norm()));
-        for (lvox::Index x = 0; x < dim_x; ++x)
+        for (size_t x = 0; x < dim_x; ++x)
         {
-            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [x](const lvox::Index3D idx) {
+            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [x](const size_t3D idx) {
                             return idx[0] == x;
                         }) != visited_voxel_idxs.end());
         }
 
-        for (lvox::Index y = 0; y < dim_y; ++y)
+        for (size_t y = 0; y < dim_y; ++y)
         {
-            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [y](const lvox::Index3D idx) {
+            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [y](const size_t3D idx) {
                             return idx[1] == y;
                         }) != visited_voxel_idxs.end());
         }
 
-        for (lvox::Index z = 0; z < dim_z; ++z)
+        for (size_t z = 0; z < dim_z; ++z)
         {
-            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [z](const lvox::Index3D idx) {
+            ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [z](const size_t3D idx) {
                             return idx[2] == z;
                         }) != visited_voxel_idxs.end());
         }
@@ -297,7 +297,7 @@ TEST(grid, grid_traversal_max_distance)
         lvox::Vector dir{1., 0., 0.};
         lvox::Beam   beam{pos, dir};
 
-        std::vector<lvox::Index3D> visited_voxel_idxs;
+        std::vector<size_t3D> visited_voxel_idxs;
         lvox::algorithms::GridTraversalExactDistance<lvox::GridU32>{grid}(
             beam,
             [&visited_voxel_idxs](const lvox::algorithms::VoxelHitInfo& hit) mutable {
@@ -306,7 +306,7 @@ TEST(grid, grid_traversal_max_distance)
             (dim_x / 2) - 0.1
         );
         ASSERT_EQ(grid.dim_x() / 2, visited_voxel_idxs.size());
-        for (lvox::Index i = 0; i < visited_voxel_idxs.size(); ++i)
+        for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
             ASSERT_EQ(i, x);

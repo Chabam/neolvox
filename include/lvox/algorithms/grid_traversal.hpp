@@ -42,14 +42,14 @@ struct GridTraversal
 
         Logger logger{"Grid traversal"};
 
-        using GridIndex      = Eigen::Vector<Index, 3>;
+        using GridIndex      = Eigen::Vector<unsigned int, 3>;
         using Step           = Eigen::Vector<signed char, 3>;
         constexpr double inf = std::numeric_limits<double>::infinity();
 
         const Bounds bounds    = m_grid.bounds();
-        const Index  dim_x     = m_grid.dim_x();
-        const Index  dim_y     = m_grid.dim_y();
-        const Index  dim_z     = m_grid.dim_z();
+        const size_t  dim_x     = m_grid.dim_x();
+        const size_t  dim_y     = m_grid.dim_y();
+        const size_t  dim_z     = m_grid.dim_z();
         const double cell_size = m_grid.cell_size();
 
         const Point  beam_origin    = beam.origin();

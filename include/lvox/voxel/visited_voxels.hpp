@@ -68,7 +68,7 @@ class VisitedVoxels
     std::vector<std::pair<Index3D, T>> m_voxels;
     Grid                               m_grid;
 
-    auto index3d_to_flat_index(const Index3D& idx) const -> Index
+    auto index3d_to_flat_index(const size_t3D& idx) const -> size_t
     {
         const auto [x, y, z] = idx;
         return x + y * m_grid.dim_x() + z * m_grid.dim_x() * m_grid.dim_y();
