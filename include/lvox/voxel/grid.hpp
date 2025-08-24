@@ -2,6 +2,8 @@
 #define LVOX_VOXEL_GRID_HPP
 
 #include <filesystem>
+#include <array>
+#include <lvox/voxel/voxel_chunk.hpp>
 
 #include <lvox/types.hpp>
 
@@ -52,6 +54,9 @@ class Grid
     ) const -> void;
 
   private:
+    static constexpr auto s_chunk_count = 2 << 8;
+    using chunk_ptr = std::shared_ptr<VoxelChunk>;
+
     double       m_cell_size;
     unsigned int m_dim_x;
     unsigned int m_dim_y;
@@ -59,11 +64,9 @@ class Grid
     size_t       m_cell_count;
     Bounds       m_bounds;
 
-    std::vector<std::atomic<unsigned int>>          m_hits;
-    std::vector<std::atomic<unsigned int>>          m_counts;
-    std::vector<std::atomic<double>>                m_lengths;
-    std::optional<std::vector<std::atomic<double>>> m_lengths_variances;
-    std::vector<double>                             m_pad;
+    auto get_or_create_chunk(const Index3D& idx) -> chunk_ptr&;
+
+    std::array<chunk_ptr, s_chunk_count> m_chunks;
 
     static auto adjust_dim_to_grid(double distance, double cell_size) -> unsigned int;
     auto        adjust_bounds_to_grid(size_t dim, double min) const -> double;
