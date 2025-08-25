@@ -3,8 +3,9 @@
 namespace lvox
 {
 
-VoxelChunk:: VoxelChunk()
-    : m_hits{s_cell_count, std::allocator<a_u32>{}}
+VoxelChunk::VoxelChunk(const Bounds& bounds)
+    : m_bounds{bounds}
+    , m_hits{s_cell_count, std::allocator<a_u32>{}}
     , m_counts{s_cell_count, std::allocator<a_u32>{}}
     , m_lengths{s_cell_count, std::allocator<a_dbl>{}}
     , m_lengths_variances{s_cell_count, std::allocator<a_dbl>{}}
@@ -14,8 +15,10 @@ VoxelChunk:: VoxelChunk()
 
 auto VoxelChunk::index3d_to_flat_index(const Index3D& idx) -> size_t
 {
-
-    // TODO: 😀
+    // TODO: might not be the correct computation It might need to
+    // shifted according to the chunk center
+    auto [x, y, z] = idx;
+    return x + y * s_chunk_size + z * s_chunk_size * s_chunk_size;
 }
 
 auto VoxelChunk::register_hit(const Index3D& idx) -> void

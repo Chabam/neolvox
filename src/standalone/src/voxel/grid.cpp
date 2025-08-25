@@ -17,6 +17,7 @@ Grid::Grid(const Bounds& bounds, double cell_size, bool compute_variance)
     , m_dim_y{Grid::adjust_dim_to_grid(bounds.maxy - bounds.miny, cell_size)}
     , m_dim_z{Grid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
     , m_cell_count{m_dim_x * m_dim_y * m_dim_z}
+    , m_chunk_count{static_cast<size_t>(std::ceil(static_cast<float>(m_cell_count) / VoxelChunk::s_cell_count))}
     , m_bounds{
           bounds.minx,
           bounds.miny,
@@ -25,6 +26,7 @@ Grid::Grid(const Bounds& bounds, double cell_size, bool compute_variance)
           Grid::adjust_bounds_to_grid(m_dim_y, bounds.miny),
           Grid::adjust_bounds_to_grid(m_dim_z, bounds.minz)
     }
+    , m_chunks{m_chunk_count}
 {
 
     Logger logger{"Grid"};
@@ -115,10 +117,17 @@ auto Grid::adjust_bounds_to_grid(size_t dim, double min) const -> double
     return min + dim * m_cell_size;
 }
 
-auto Grid::index3d_to_flat_index(const Index3D& idx) const -> size_t
+auto Grid::get_or_create_chunk(const Index3D& idx) -> chunk_ptr&
 {
-    const auto [x, y, z] = idx;
-    return x + y * m_dim_x + z * m_dim_x * m_dim_y;
+}
+
+auto Grid::index3d_to_chunk_idx(const Index3D& idx) -> size_t
+{
+    const auto& [x, y, z] = idx;
+    // Plan -> Divide each dims by a chunk size (problem: chunk might
+    // not fit if the number doesn't divide, it may not be a problem,
+    // we can leave it empty). We then do the same computation that we
+    // do in the chunk for getting the voxel.
 }
 
 template <typename PadFunc>
@@ -140,26 +149,17 @@ auto compute_pad_impl(
 
 auto Grid::register_hit(const Index3D& idx) -> void
 {
-    
-    const auto cur_idx = index3d_to_flat_index(idx);
-    m_hits[cur_idx].fetch_add(1, std::memory_order_relaxed);
+    // TODO: somehow get the correct chunk
 }
 
 auto Grid::add_length_and_count(const Index3D& idx, double length) -> void
 {
-    const auto cur_idx = index3d_to_flat_index(idx);
-
-    m_counts[cur_idx].fetch_add(1, std::memory_order_relaxed);
-    m_lengths[cur_idx].fetch_add(length, std::memory_order_relaxed);
+    // TODO: somehow get the correct chunk
 }
 
 auto Grid::add_length_count_and_variance(const Index3D& idx, double length) -> void
 {
-    const auto cur_idx = index3d_to_flat_index(idx);
-    m_counts[cur_idx].fetch_add(1, std::memory_order_relaxed);
-    m_lengths[cur_idx].fetch_add(length, std::memory_order_relaxed);
-
-    (*m_lengths_variances)[cur_idx].fetch_add(length, std::memory_order_relaxed);
+    // TODO: somehow get the correct chunk
 }
 
 auto Grid::compute_pad(algorithms::pe::BeerLambert) -> void

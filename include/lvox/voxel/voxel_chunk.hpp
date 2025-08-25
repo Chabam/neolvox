@@ -13,15 +13,16 @@ class VoxelChunk
   public:
     using a_u32 = std::atomic_uint32_t;
     using a_dbl = std::atomic<double>;
-    static constexpr auto s_chunk_size = 256;
+    static constexpr auto s_chunk_size = 8;
     static constexpr auto s_cell_count = s_chunk_size * s_chunk_size * s_chunk_size;
 
-    VoxelChunk();
+    VoxelChunk(const Index3D& voxel_center);
 
     auto register_hit(const Index3D& idx) -> void;
 
   private:
     static auto index3d_to_flat_index(const Index3D& idx) -> size_t;
+    Bounds m_bounds;
     std::vector<a_u32> m_hits;
     std::vector<a_u32> m_counts;
     std::vector<a_dbl> m_lengths;
