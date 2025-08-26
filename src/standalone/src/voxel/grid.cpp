@@ -8,16 +8,28 @@
 #include <lvox/types.hpp>
 #include <lvox/voxel/grid.hpp>
 
+#include "lvox/voxel/voxel_chunk.hpp"
+
 namespace lvox
 {
 
 Grid::Grid(const Bounds& bounds, double cell_size, bool compute_variance)
     : m_cell_size{cell_size}
-    , m_dim_x{Grid::adjust_dim_to_grid(bounds.maxx - bounds.minx, cell_size)}
-    , m_dim_y{Grid::adjust_dim_to_grid(bounds.maxy - bounds.miny, cell_size)}
-    , m_dim_z{Grid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
+    , m_dim_x{Grid::adjust_dim_to_grid(bounds.maxx - bounds.minx)}
+    , m_dim_y{Grid::adjust_dim_to_grid(bounds.maxy - bounds.miny)}
+    , m_dim_z{Grid::adjust_dim_to_grid(bounds.maxz - bounds.minz)}
     , m_cell_count{m_dim_x * m_dim_y * m_dim_z}
-    , m_chunk_count{static_cast<size_t>(std::ceil(static_cast<float>(m_cell_count) / VoxelChunk::s_cell_count))}
+    , m_chunks_x{static_cast<unsigned int>(
+        std::ceil(static_cast<float>(m_dim_x) / VoxelChunk::s_max_edge_size)
+    )}
+    , m_chunks_y{static_cast<unsigned int>(
+        std::ceil(static_cast<float>(m_dim_y) / VoxelChunk::s_max_edge_size)
+    )}
+    , m_chunks_z{static_cast<unsigned int>(
+        std::ceil(static_cast<float>(m_dim_z) / VoxelChunk::s_max_edge_size)
+    )}
+    , m_chunk_count{m_chunks_x * m_chunks_y * m_chunks_z}
+    , m_chunks{m_chunk_count}
     , m_bounds{
           bounds.minx,
           bounds.miny,
@@ -26,7 +38,6 @@ Grid::Grid(const Bounds& bounds, double cell_size, bool compute_variance)
           Grid::adjust_bounds_to_grid(m_dim_y, bounds.miny),
           Grid::adjust_bounds_to_grid(m_dim_z, bounds.minz)
     }
-    , m_chunks{m_chunk_count}
 {
 
     Logger logger{"Grid"};
@@ -52,7 +63,28 @@ Grid::Grid(Grid&& other)
     , m_dim_x{std::move(other.m_dim_x)}
     , m_dim_y{std::move(other.m_dim_y)}
     , m_dim_z{std::move(other.m_dim_z)}
+    , m_cell_count{std::move(other.m_cell_count)}
+    , m_chunks_x{std::move(other.m_chunks_x)}
+    , m_chunks_y{std::move(other.m_chunks_y)}
+    , m_chunks_z{std::move(other.m_chunks_z)}
+    , m_chunk_count{std::move(other.m_chunk_count)}
+    , m_chunks{std::move(other.m_chunks)}
     , m_bounds{std::move(other.m_bounds)}
+{
+}
+
+Grid::VoxelChunk::VoxelChunk(
+    const Point& min_coords, unsigned int dim_x, unsigned int dim_y, unsigned int dim_z
+)
+    : m_dim_x{dim_x}
+    , m_dim_y{dim_y}
+    , m_dim_z{dim_z}
+    , m_cell_count{m_dim_x * m_dim_y * m_dim_z}
+    , m_hits{m_cell_count, std::allocator<a_u32>{}}
+    , m_counts{m_cell_count, std::allocator<a_u32>{}}
+    , m_lengths{m_cell_count, std::allocator<a_dbl>{}}
+    , m_lengths_variances{m_cell_count, std::allocator<a_dbl>{}}
+    , m_pad{m_cell_count, std::allocator<a_dbl>{}}
 {
 }
 
@@ -107,9 +139,9 @@ auto Grid::index_of_point(const Point& point) const -> Index3D
     };
 }
 
-auto Grid::adjust_dim_to_grid(double distance, double cell_size) -> unsigned int
+auto Grid::adjust_dim_to_grid(double distance) -> unsigned int
 {
-    return static_cast<size_t>(std::ceil(distance / cell_size));
+    return static_cast<unsigned int>(std::ceil(distance / m_cell_size));
 }
 
 auto Grid::adjust_bounds_to_grid(size_t dim, double min) const -> double
@@ -117,17 +149,62 @@ auto Grid::adjust_bounds_to_grid(size_t dim, double min) const -> double
     return min + dim * m_cell_size;
 }
 
-auto Grid::get_or_create_chunk(const Index3D& idx) -> chunk_ptr&
+auto Grid::get_or_create_chunk(const Index3D& voxel_idx) -> chunk_ptr&
 {
+    const auto chunk_idx = index3d_to_chunk_idx(voxel_idx);
+    auto&      chunk_ref = m_chunks[chunk_idx];
+
+    if (chunk_ref.load())
+    {
+        return chunk_ref;
+    }
+
+    const auto& [x, y, z] = voxel_idx;
+
+    const auto chunk_x_idx = static_cast<unsigned int>((x - m_bounds.minx) / m_cell_size);
+    const auto chunk_y_idx = static_cast<unsigned int>((y - m_bounds.miny) / m_cell_size);
+    const auto chunk_z_idx = static_cast<unsigned int>((z - m_bounds.minz) / m_cell_size);
+
+    const auto max_edge    = static_cast<unsigned int>(VoxelChunk::s_max_edge_size);
+    const auto chunk_dim_x = std::min(max_edge, m_dim_x - chunk_x_idx);
+    const auto chunk_dim_y = std::min(max_edge, m_dim_y - chunk_y_idx);
+    const auto chunk_dim_z = std::min(max_edge, m_dim_z - chunk_z_idx);
+
+    Point min_coords{
+        m_bounds.minx + m_cell_size * chunk_x_idx,
+        m_bounds.miny + m_cell_size * chunk_y_idx,
+        m_bounds.minz + m_cell_size * chunk_z_idx
+    };
+
+    auto new_chunk =
+        std::make_shared<VoxelChunk>(min_coords, chunk_dim_x, chunk_dim_y, chunk_dim_z);
+    std::shared_ptr<VoxelChunk> empty_chunk;
+
+    // We don't really care wether the value was exchanged or not. We
+    // just don't want to override the existing value if it wasn't an
+    // empty chunk.
+    //
+    // TODO: think about what memory order should be used
+    chunk_ref.compare_exchange_weak(empty_chunk, new_chunk);
+
+    return chunk_ref;
 }
 
-auto Grid::index3d_to_chunk_idx(const Index3D& idx) -> size_t
+auto Grid::index3d_to_chunk_idx(const Index3D& voxel_idx) -> size_t
 {
-    const auto& [x, y, z] = idx;
-    // Plan -> Divide each dims by a chunk size (problem: chunk might
-    // not fit if the number doesn't divide, it may not be a problem,
-    // we can leave it empty). We then do the same computation that we
-    // do in the chunk for getting the voxel.
+    const auto& [x, y, z] = voxel_idx;
+    return x + y * m_chunks_x + z * m_chunks_x * m_chunks_y;
+}
+
+auto Grid::index3d_to_chunk_flat_idx(const chunk_ptr& chunk, const Index3D& voxel_idx) const
+    -> unsigned int
+{
+    const auto& [x, y, z] = voxel_idx;
+
+    const auto chunk_dim_x = chunk.load(std::memory_order_relaxed)->m_dim_x;
+    const auto chunk_dim_y = chunk.load(std::memory_order_relaxed)->m_dim_y;
+
+    return x + y * chunk_dim_x + z * chunk_dim_x * chunk_dim_y;
 }
 
 template <typename PadFunc>
@@ -149,17 +226,42 @@ auto compute_pad_impl(
 
 auto Grid::register_hit(const Index3D& idx) -> void
 {
-    // TODO: somehow get the correct chunk
+
+    auto&      chunk              = get_or_create_chunk(idx);
+    const auto voxel_idx_in_chunk = index3d_to_chunk_flat_idx(chunk, idx);
+
+    chunk.load(std::memory_order_relaxed)
+        ->m_hits[voxel_idx_in_chunk]
+        .fetch_add(1, std::memory_order_relaxed);
 }
 
 auto Grid::add_length_and_count(const Index3D& idx, double length) -> void
 {
-    // TODO: somehow get the correct chunk
+    auto&      chunk              = get_or_create_chunk(idx);
+    const auto voxel_idx_in_chunk = index3d_to_chunk_flat_idx(chunk, idx);
+
+    chunk.load(std::memory_order_relaxed)
+        ->m_lengths[voxel_idx_in_chunk]
+        .fetch_add(length, std::memory_order_relaxed);
+    chunk.load(std::memory_order_relaxed)
+        ->m_counts[voxel_idx_in_chunk]
+        .fetch_add(1, std::memory_order_relaxed);
 }
 
 auto Grid::add_length_count_and_variance(const Index3D& idx, double length) -> void
 {
-    // TODO: somehow get the correct chunk
+    auto&      chunk              = get_or_create_chunk(idx);
+    const auto voxel_idx_in_chunk = index3d_to_chunk_flat_idx(chunk, idx);
+
+    chunk.load(std::memory_order_relaxed)
+        ->m_lengths[voxel_idx_in_chunk]
+        .fetch_add(length, std::memory_order_relaxed);
+
+    chunk.load(std::memory_order_relaxed)
+        ->m_counts[voxel_idx_in_chunk]
+        .fetch_add(1, std::memory_order_relaxed);
+
+    // TODO: Compute variance, will probably require a mutex to ensure order :/
 }
 
 auto Grid::compute_pad(algorithms::pe::BeerLambert) -> void
@@ -233,7 +335,8 @@ auto Grid::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
     //         {
     //             const double inv_RDI = 1. - RDI;
     //             attenuation_coeff =
-    //                 (1. / mean_ray_length) * (std::log(inv_RDI) - (1. / (2 * ray_count * inv_RDI)));
+    //                 (1. / mean_ray_length) * (std::log(inv_RDI) - (1. / (2 * ray_count *
+    //                 inv_RDI)));
     //         }
     //         else // RDI == 1.
     //         {
@@ -278,12 +381,11 @@ auto Grid::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
 
 auto Grid::flat_index_to_index3d(size_t i) const -> Index3D
 {
-    return
-        {
-            static_cast<unsigned int>(i % m_dim_x),
-            static_cast<unsigned int>((i / m_dim_x) % m_dim_y),
-            static_cast<unsigned int>((i / m_dim_x) / m_dim_y)
-        };
+    return {
+        static_cast<unsigned int>(i % m_dim_x),
+        static_cast<unsigned int>((i / m_dim_x) % m_dim_y),
+        static_cast<unsigned int>((i / m_dim_x) / m_dim_y)
+    };
 }
 
 auto Grid::export_as_coo_to_h5(
@@ -408,13 +510,15 @@ auto Grid::export_as_coo_to_h5(
     //     {
     //         H5::PredType h5_lengths_var_t =  H5::PredType::NATIVE_DOUBLE;
     //         const std::vector<double> lengths_variance =
-    //             index_with_data | std::views::transform([this](const size_t& index) -> unsigned int {
+    //             index_with_data | std::views::transform([this](const size_t& index) -> unsigned
+    //             int {
     //                 return m_lengths[index];
     //             }) |
     //             std::ranges::to<std::vector<double>>();
 
-    //         H5::DataSet lengths_variance_data = get_or_create_dataset("lengths variance", h5_lengths_var_t, data_space);
-    //         lengths_variance_data.write(lengths_variance.data(), h5_lengths_var_t);
+    //         H5::DataSet lengths_variance_data = get_or_create_dataset("lengths variance",
+    //         h5_lengths_var_t, data_space); lengths_variance_data.write(lengths_variance.data(),
+    //         h5_lengths_var_t);
 
     //     }
     // }

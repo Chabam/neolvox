@@ -2,9 +2,9 @@
 #define LVOX_VOXEL_GRID_HPP
 
 #include <filesystem>
-#include <lvox/voxel/voxel_chunk.hpp>
 
 #include <lvox/types.hpp>
+#include <lvox/voxel/voxel_chunk.hpp>
 
 namespace lvox
 {
@@ -53,25 +53,52 @@ class Grid
     ) const -> void;
 
   private:
+    class VoxelChunk
+    {
+      public:
+        using a_u32                           = std::atomic_uint32_t;
+        using a_dbl                           = std::atomic<double>;
+        static constexpr auto s_max_edge_size = 8;
+        static constexpr auto s_max_cell_count = s_max_edge_size * s_max_edge_size * s_max_edge_size;
+
+        VoxelChunk(
+            const Point& min_coords,
+            unsigned int   dim_x,
+            unsigned int   dim_y,
+            unsigned int   dim_z
+        );
+
+        unsigned int       m_dim_x;
+        unsigned int       m_dim_y;
+        unsigned int       m_dim_z;
+        size_t             m_cell_count;
+        std::vector<a_u32> m_hits;
+        std::vector<a_u32> m_counts;
+        std::vector<a_dbl> m_lengths;
+        std::vector<a_dbl> m_lengths_variances;
+        std::vector<a_dbl> m_pad;
+    };
+
     using chunk_ptr = std::atomic<std::shared_ptr<VoxelChunk>>;
 
-    double       m_cell_size;
-    unsigned int m_dim_x;
-    unsigned int m_dim_y;
-    unsigned int m_dim_z;
-    size_t       m_cell_count;
-    size_t       m_chunk_count;
-    Bounds       m_bounds;
-
-    auto get_or_create_chunk(const Index3D& idx) -> chunk_ptr&;
-    auto index3d_to_chunk_idx(const Index3D& idx) -> size_t;
-
+    double                 m_cell_size;
+    unsigned int           m_dim_x;
+    unsigned int           m_dim_y;
+    unsigned int           m_dim_z;
+    unsigned int           m_chunks_x;
+    unsigned int           m_chunks_y;
+    unsigned int           m_chunks_z;
+    size_t                 m_cell_count;
+    size_t                 m_chunk_count;
     std::vector<chunk_ptr> m_chunks;
+    Bounds                 m_bounds;
 
-    static auto adjust_dim_to_grid(double distance, double cell_size) -> unsigned int;
-    auto        adjust_bounds_to_grid(size_t dim, double min) const -> double;
-    auto        index3d_to_flat_index(const Index3D& idx) const -> size_t;
-    auto        flat_index_to_index3d(size_t idx) const -> Index3D;
+    auto get_or_create_chunk(const Index3D& voxel_idx) -> chunk_ptr&;
+    auto index3d_to_chunk_idx(const Index3D& voxel_idx) -> size_t;
+    auto index3d_to_chunk_flat_idx(const chunk_ptr& chunk, const Index3D& voxel_idx) const -> unsigned int;
+
+    auto adjust_dim_to_grid(double distance) -> unsigned int;
+    auto adjust_bounds_to_grid(size_t dim, double min) const -> double;
 
     static constexpr auto g_grid_loginfo = R"(
 Creating grid of dimension: {}x{}x{}
