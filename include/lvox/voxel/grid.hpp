@@ -61,8 +61,11 @@ class Grid
         static constexpr auto s_max_cell_count =
             s_max_edge_size * s_max_edge_size * s_max_edge_size;
 
-        VoxelChunk(unsigned int dim_x, unsigned int dim_y, unsigned int dim_z);
+        VoxelChunk(
+            const Index3D& starting_idx, unsigned int dim_x, unsigned int dim_y, unsigned int dim_z
+        );
 
+        Index3D            m_starting_idx;
         unsigned int       m_dim_x;
         unsigned int       m_dim_y;
         unsigned int       m_dim_z;
@@ -98,6 +101,10 @@ class Grid
         for (auto& a_chunk : m_chunks)
         {
             auto chunk = a_chunk.load(std::memory_order_relaxed);
+
+            if (!chunk)
+                continue;
+
             for (unsigned int i = 0; i < chunk->m_cell_count; ++i)
             {
                 // TODO: Make the treshold configurable
@@ -113,6 +120,7 @@ class Grid
     auto index3d_to_chunk_idx(const Index3D& voxel_idx) -> size_t;
     auto index3d_to_chunk_flat_idx(const a_chunk_ptr& chunk, const Index3D& voxel_idx) const
         -> unsigned int;
+    auto flat_index_to_index3d(const chunk_ptr& chunk, size_t i) const -> Index3D;
 
     auto adjust_dim_to_grid(double distance) -> unsigned int;
     auto adjust_bounds_to_grid(size_t dim, double min) const -> double;

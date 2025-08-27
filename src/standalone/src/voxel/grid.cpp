@@ -170,7 +170,7 @@ auto Grid::get_or_create_chunk(const Index3D& voxel_idx) -> a_chunk_ptr&
     const auto chunk_dim_z = std::min(max_edge, m_dim_z - chunk_z_idx);
 
     auto new_chunk =
-        std::make_shared<VoxelChunk>(chunk_dim_x, chunk_dim_y, chunk_dim_z);
+        std::make_shared<VoxelChunk>(Index3D{chunk_x_idx, chunk_y_idx, chunk_z_idx}, chunk_dim_x, chunk_dim_y, chunk_dim_z);
     std::shared_ptr<VoxelChunk> empty_chunk;
 
     // We don't really care wether the value was exchanged or not. We
@@ -361,189 +361,190 @@ auto Grid::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
     );
 }
 
-// auto Grid::flat_index_to_index3d(size_t i) const -> Index3D
-// {
-//     return {
-//         static_cast<unsigned int>(i % m_dim_x),
-//         static_cast<unsigned int>((i / m_dim_x) % m_dim_y),
-//         static_cast<unsigned int>((i / m_dim_x) / m_dim_y)
-//     };
-// }
+auto Grid::flat_index_to_index3d(const chunk_ptr& chunk, size_t i) const -> Index3D
+{
+    // TODO: proper conversion using `VoxelChunk::m_starting_idx` and `VoxelChunk::m_cell_count`
+    return {
+        static_cast<unsigned int>(i % m_dim_x),
+        static_cast<unsigned int>((i / m_dim_x) % m_dim_y),
+        static_cast<unsigned int>((i / m_dim_x) / m_dim_y)
+    };
+}
 
 auto Grid::export_as_coo_to_h5(
     const std::string& dataset_name, const std::filesystem::path& filename, bool include_all_data
 ) const -> void
 {
-    // H5::H5File file;
-    // if (std::filesystem::exists(filename))
-    // {
-    //     file = H5::H5File{filename.string(), H5F_ACC_RDWR};
-    // }
-    // else
-    // {
-    //     file = H5::H5File{filename.string(), H5F_ACC_TRUNC};
-    // }
+    H5::H5File file;
+    if (std::filesystem::exists(filename))
+        file = H5::H5File{filename.string(), H5F_ACC_RDWR};
+    else
+        file = H5::H5File{filename.string(), H5F_ACC_TRUNC};
 
-    // const auto voxel_size      = m_cell_size;
-    // auto       index_with_data = m_counts | std::views::enumerate |
-    //                              std::views::filter([this](const auto& pair) -> bool {
-    //                                  return m_counts[std::get<0>(pair)] == 0;
-    //                              }) |
-    //                              std::views::elements<0>;
-    // auto index3d_with_data =
-    //     index_with_data | std::views::transform([this](const size_t& index) -> Index3D {
-    //         return flat_index_to_index3d(index);
-    //     });
+    for (auto& a_chunk : m_chunks)
+    {
+        auto chunk = a_chunk.load(std::memory_order_relaxed);
 
-    // const hsize_t voxels_with_data = std::ranges::distance(index_with_data);
+        if (!chunk)
+            continue;
 
-    // using h5_dimension_t = std::array<hsize_t, 1>;
-    // const h5_dimension_t voxel_count_dim{voxels_with_data};
+        const auto voxel_size      = m_cell_size;
+        auto       index_with_data = chunk->m_counts | std::views::enumerate |
+                                     std::views::filter([&chunk](const auto& pair) -> bool {
+                                         return chunk->m_counts[std::get<0>(pair)] == 0;
+                                     }) |
+                                     std::views::elements<0>;
+        auto index3d_with_data =
+            index_with_data | std::views::transform([this, &chunk](const size_t& index) -> Index3D {
+                return flat_index_to_index3d(chunk, index);
+            });
 
-    // const H5::DataSpace data_space{std::tuple_size_v<h5_dimension_t>, voxel_count_dim.data()};
+        const hsize_t voxels_with_data = std::ranges::distance(index_with_data);
 
-    // H5::Group plot_group;
-    // if (file.nameExists(dataset_name))
-    // {
-    //     plot_group = file.openGroup(dataset_name);
-    // }
-    // else
-    // {
-    //     plot_group = file.createGroup(dataset_name, 6);
-    // }
+        using h5_dimension_t = std::array<hsize_t, 1>;
+        const h5_dimension_t voxel_count_dim{voxels_with_data};
 
-    // H5::DSetCreatPropList create_prop_list{};
-    // h5_dimension_t        chunk_dims{std::min(static_cast<hsize_t>(2 << 13), voxels_with_data)};
-    // create_prop_list.setChunk(1, chunk_dims.data());
+        const H5::DataSpace data_space{std::tuple_size_v<h5_dimension_t>, voxel_count_dim.data()};
 
-    // const auto get_or_create_dataset =
-    //     [&plot_group, &dataset_name, &create_prop_list](
-    //         const std::string& name, const H5::PredType& type, const H5::DataSpace& dataspace
-    //     ) -> H5::DataSet {
-    //         if (plot_group.nameExists(name))
-    //         {
-    //             return plot_group.openDataSet(name);
-    //         }
+        H5::Group plot_group;
+        if (file.nameExists(dataset_name))
+            plot_group = file.openGroup(dataset_name);
+        else
+            plot_group = file.createGroup(dataset_name, 6);
 
-    //         return plot_group.createDataSet(name, type, dataspace, create_prop_list);
-    //     };
+        H5::DSetCreatPropList create_prop_list{};
+        h5_dimension_t        chunk_dims{std::min(static_cast<hsize_t>(2 << 13), voxels_with_data)};
+        create_prop_list.setChunk(1, chunk_dims.data());
 
-    // // Writing indexes
-    // const auto h5_size_t = H5::PredType::NATIVE_HSIZE;
-    // {
-    //     const std::vector<size_t> xs =
-    //         index3d_with_data | std::views::elements<0> | std::ranges::to<std::vector<size_t>>();
+        const auto get_or_create_dataset =
+            [&plot_group, &dataset_name, &create_prop_list](
+                const std::string& name, const H5::PredType& type, const H5::DataSpace& dataspace
+            ) -> H5::DataSet {
+                if (plot_group.nameExists(name))
+                {
+                    return plot_group.openDataSet(name);
+                }
 
-    //     H5::DataSet xs_data = get_or_create_dataset("x", h5_size_t, data_space);
-    //     xs_data.write(xs.data(), h5_size_t);
-    // }
+                return plot_group.createDataSet(name, type, dataspace, create_prop_list);
+            };
 
-    // {
-    //     const std::vector<size_t> ys =
-    //         index3d_with_data | std::views::elements<1> | std::ranges::to<std::vector<size_t>>();
+        // Writing indexes
+        const auto h5_size_t = H5::PredType::NATIVE_HSIZE;
+        {
+            const std::vector<size_t> xs =
+                index3d_with_data | std::views::elements<0> | std::ranges::to<std::vector<size_t>>();
 
-    //     H5::DataSet ys_data = get_or_create_dataset("y", h5_size_t, data_space);
-    //     ys_data.write(ys.data(), h5_size_t);
-    // }
+            H5::DataSet xs_data = get_or_create_dataset("x", h5_size_t, data_space);
+            xs_data.write(xs.data(), h5_size_t);
+        }
 
-    // {
-    //     const std::vector<size_t> zs =
-    //         index3d_with_data | std::views::elements<2> | std::ranges::to<std::vector<size_t>>();
+        {
+            const std::vector<size_t> ys =
+                index3d_with_data | std::views::elements<1> | std::ranges::to<std::vector<size_t>>();
 
-    //     H5::DataSet zs_data = get_or_create_dataset("z", h5_size_t, data_space);
-    //     zs_data.write(zs.data(), h5_size_t);
-    // }
+            H5::DataSet ys_data = get_or_create_dataset("y", h5_size_t, data_space);
+            ys_data.write(ys.data(), h5_size_t);
+        }
 
-    // {
-    //     H5::PredType h5_pad_t =  H5::PredType::NATIVE_DOUBLE;
-    //     const std::vector<double> pad_values =
-    //         index_with_data | std::views::transform([this](const size_t& index) -> double {
-    //             return m_pad[index];
-    //         }) |
-    //         std::ranges::to<std::vector<double>>();
+        {
+            const std::vector<size_t> zs =
+                index3d_with_data | std::views::elements<2> | std::ranges::to<std::vector<size_t>>();
 
-    //     H5::DataSet values_data = get_or_create_dataset("pad", h5_pad_t, data_space);
-    //     values_data.write(pad_values.data(), h5_pad_t);
-    // }
+            H5::DataSet zs_data = get_or_create_dataset("z", h5_size_t, data_space);
+            zs_data.write(zs.data(), h5_size_t);
+        }
 
-    // if (include_all_data)
-    // {
-    //     H5::PredType h5_counts_t =  H5::PredType::NATIVE_UINT;
-    //     const std::vector<double> counts =
-    //         index_with_data | std::views::transform([this](const size_t& index) -> unsigned int {
-    //             return m_counts[index];
-    //         }) |
-    //         std::ranges::to<std::vector<double>>();
+        {
+            H5::PredType h5_pad_t =  H5::PredType::NATIVE_DOUBLE;
+            const std::vector<double> pad_values =
+                index_with_data | std::views::transform([&chunk](const size_t& index) -> double {
+                    return chunk->m_pad[index];
+                }) |
+                std::ranges::to<std::vector<double>>();
 
-    //     H5::DataSet counts_data = get_or_create_dataset("counts", h5_counts_t, data_space);
-    //     counts_data.write(counts.data(), h5_counts_t);
+            H5::DataSet values_data = get_or_create_dataset("pad", h5_pad_t, data_space);
+            values_data.write(pad_values.data(), h5_pad_t);
+        }
 
-    //     H5::PredType h5_lengths_t =  H5::PredType::NATIVE_DOUBLE;
-    //     const std::vector<double> lengths =
-    //         index_with_data | std::views::transform([this](const size_t& index) -> unsigned int {
-    //             return m_lengths[index];
-    //         }) |
-    //         std::ranges::to<std::vector<double>>();
+        if (include_all_data)
+        {
+            H5::PredType h5_counts_t =  H5::PredType::NATIVE_UINT;
+            const std::vector<double> counts =
+                index_with_data | std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                    return chunk->m_counts[index];
+                }) |
+                std::ranges::to<std::vector<double>>();
 
-    //     H5::DataSet lengths_data = get_or_create_dataset("lengths", h5_lengths_t, data_space);
-    //     lengths_data.write(lengths.data(), h5_lengths_t);
+            H5::DataSet counts_data = get_or_create_dataset("counts", h5_counts_t, data_space);
+            counts_data.write(counts.data(), h5_counts_t);
 
-    //     if (m_lengths_variances)
-    //     {
-    //         H5::PredType h5_lengths_var_t =  H5::PredType::NATIVE_DOUBLE;
-    //         const std::vector<double> lengths_variance =
-    //             index_with_data | std::views::transform([this](const size_t& index) -> unsigned
-    //             int {
-    //                 return m_lengths[index];
-    //             }) |
-    //             std::ranges::to<std::vector<double>>();
+            H5::PredType h5_lengths_t =  H5::PredType::NATIVE_DOUBLE;
+            const std::vector<double> lengths =
+                index_with_data | std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                    return chunk->m_lengths[index];
+                }) |
+                std::ranges::to<std::vector<double>>();
 
-    //         H5::DataSet lengths_variance_data = get_or_create_dataset("lengths variance",
-    //         h5_lengths_var_t, data_space); lengths_variance_data.write(lengths_variance.data(),
-    //         h5_lengths_var_t);
+            H5::DataSet lengths_data = get_or_create_dataset("lengths", h5_lengths_t, data_space);
+            lengths_data.write(lengths.data(), h5_lengths_t);
 
-    //     }
-    // }
+            if (!chunk->m_lengths_variances.empty())
+            {
+                H5::PredType h5_lengths_var_t =  H5::PredType::NATIVE_DOUBLE;
+                const std::vector<double> lengths_variance =
+                    index_with_data | std::views::transform([&chunk](const size_t& index) -> unsigned
+                int {
+                    return chunk->m_lengths_variances[index];
+                }) |
+                    std::ranges::to<std::vector<double>>();
 
-    // // Minimum coordinate attribute
-    // const std::array<hsize_t, 1> scalar_value_dim{1};
-    // H5::DataSpace                scalar_data_space{1, scalar_value_dim.data()};
-    // const std::array<hsize_t, 1> singular_3d_coord_count = {3};
-    // H5::DataSpace                singular_3d_coord_data_space{1, singular_3d_coord_count.data()};
+                H5::DataSet lengths_variance_data = get_or_create_dataset("lengths variance",
+                    h5_lengths_var_t, data_space); lengths_variance_data.write(lengths_variance.data(),
+                        h5_lengths_var_t);
 
-    // const auto get_or_create_attribute =
-    //     [&plot_group](
-    //         const std::string& name, const H5::PredType& type, const H5::DataSpace& dataspace
-    //     ) -> H5::Attribute {
-    //         if (plot_group.attrExists(name))
-    //         {
-    //             return plot_group.openAttribute(name);
-    //         }
+            }
+        }
+    }
 
-    //         return plot_group.createAttribute(name, type, dataspace);
-    //     };
-    // const auto    h5_voxel_size_t = H5::PredType::NATIVE_DOUBLE;
-    // H5::Attribute voxel_size_attr =
-    //     get_or_create_attribute("Voxel size", h5_voxel_size_t, H5::DataSpace{});
-    // voxel_size_attr.write(h5_voxel_size_t, &voxel_size);
+    // Minimum coordinate attribute
+    const std::array<hsize_t, 1> scalar_value_dim{1};
+    H5::DataSpace                scalar_data_space{1, scalar_value_dim.data()};
+    const std::array<hsize_t, 1> singular_3d_coord_count = {3};
+    H5::DataSpace                singular_3d_coord_data_space{1, singular_3d_coord_count.data()};
 
-    // const auto h5_min_coords_t = H5::PredType::NATIVE_DOUBLE;
+    const auto get_or_create_attribute =
+        [&plot_group](
+            const std::string& name, const H5::PredType& type, const H5::DataSpace& dataspace
+        ) -> H5::Attribute {
+            if (plot_group.attrExists(name))
+            {
+                return plot_group.openAttribute(name);
+            }
 
-    // H5::Attribute min_coord_attr = get_or_create_attribute(
-    //     "Minimal coordinates values", h5_min_coords_t, singular_3d_coord_data_space
-    // );
+            return plot_group.createAttribute(name, type, dataspace);
+        };
+    const auto    h5_voxel_size_t = H5::PredType::NATIVE_DOUBLE;
+    H5::Attribute voxel_size_attr =
+        get_or_create_attribute("Voxel size", h5_voxel_size_t, H5::DataSpace{});
+    voxel_size_attr.write(h5_voxel_size_t, &voxel_size);
 
-    // const std::array<double, 3> min_coords = {m_bounds.minx, m_bounds.miny, m_bounds.minz};
-    // min_coord_attr.write(h5_voxel_size_t, min_coords.data());
+    const auto h5_min_coords_t = H5::PredType::NATIVE_DOUBLE;
 
-    // // Grid dimensions
-    // const auto    h5_grid_dim_t = H5::PredType::NATIVE_UINT64;
-    // H5::Attribute grid_dims_attr =
-    //     get_or_create_attribute("Dimensions", h5_grid_dim_t, singular_3d_coord_data_space);
-    // const std::array<size_t, 3> grid_dims = {m_dim_x, m_dim_y, m_dim_z};
-    // grid_dims_attr.write(h5_grid_dim_t, grid_dims.data());
+    H5::Attribute min_coord_attr = get_or_create_attribute(
+        "Minimal coordinates values", h5_min_coords_t, singular_3d_coord_data_space
+    );
 
-    // file.close();
+    const std::array<double, 3> min_coords = {m_bounds.minx, m_bounds.miny, m_bounds.minz};
+    min_coord_attr.write(h5_voxel_size_t, min_coords.data());
+
+    // Grid dimensions
+    const auto    h5_grid_dim_t = H5::PredType::NATIVE_UINT64;
+    H5::Attribute grid_dims_attr =
+        get_or_create_attribute("Dimensions", h5_grid_dim_t, singular_3d_coord_data_space);
+    const std::array<size_t, 3> grid_dims = {m_dim_x, m_dim_y, m_dim_z};
+    grid_dims_attr.write(h5_grid_dim_t, grid_dims.data());
+
+    file.close();
 }
 
 } // namespace lvox
