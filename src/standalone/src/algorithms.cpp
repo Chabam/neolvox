@@ -89,7 +89,7 @@ auto compute_rays_count_and_length_impl(
 
             if constexpr (compute_hits)
             {
-                const auto idx = grid.index_of_point(timed_point.m_point);
+                const auto idx = grid.index3d_of_point(timed_point.m_point);
                 grid.register_hit(idx);
             }
 

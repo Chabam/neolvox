@@ -75,7 +75,7 @@ struct GridTraversal
 
         const Step step = beam_direction.unaryExpr(get_axis_dir);
 
-        auto [current_voxel_x, current_voxel_y, current_voxel_z] = m_grid.index_of_point(beam_origin);
+        auto [current_voxel_x, current_voxel_y, current_voxel_z] = m_grid.index3d_of_point(beam_origin);
 
         const Bounds voxel_bounds =
             m_grid.voxel_bounds(current_voxel_x, current_voxel_y, current_voxel_z);

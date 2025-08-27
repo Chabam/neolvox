@@ -36,7 +36,7 @@ class Grid
     auto voxel_bounds_from_point(const Point& point) -> Bounds;
 
     // Return an index tuple of this layout (x, y, z)
-    auto index_of_point(const Point& point) const -> Index3D;
+    auto index3d_of_point(const Point& point) const -> Index3D;
 
     auto cell_size() const -> double { return m_cell_size; }
     auto cell_count() const -> size_t { return m_cell_count; }
@@ -86,6 +86,7 @@ class Grid
     unsigned int           m_chunks_z;
     size_t                 m_cell_count;
     size_t                 m_chunk_count;
+    std::atomic_size_t                 m_effective_chunk_count;
     std::vector<a_chunk_ptr> m_chunks;
     Bounds                 m_bounds;
 

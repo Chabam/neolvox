@@ -17,6 +17,7 @@ Grid::Grid(const Bounds& bounds, double cell_size, bool compute_variance)
     , m_dim_y{Grid::adjust_dim_to_grid(bounds.maxy - bounds.miny)}
     , m_dim_z{Grid::adjust_dim_to_grid(bounds.maxz - bounds.minz)}
     , m_cell_count{m_dim_x * m_dim_y * m_dim_z}
+    , m_effective_chunk_count{0}
     , m_chunks_x{static_cast<unsigned int>(
         std::ceil(static_cast<float>(m_dim_x) / VoxelChunk::s_max_edge_size)
     )}
@@ -104,12 +105,12 @@ auto Grid::voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> Bound
 
 auto Grid::voxel_bounds_from_point(const Point& point) -> Bounds
 {
-    const auto [idx_x, idx_y, idx_z] = index_of_point(point);
+    const auto [idx_x, idx_y, idx_z] = index3d_of_point(point);
     return voxel_bounds(idx_x, idx_y, idx_z);
 }
 
 // Return an index tuple of this layout (x, y, z)
-auto Grid::index_of_point(const Point& point) const -> Index3D
+auto Grid::index3d_of_point(const Point& point) const -> Index3D
 {
     const double x = point.x();
     const double y = point.y();
@@ -150,7 +151,7 @@ auto Grid::adjust_bounds_to_grid(size_t dim, double min) const -> double
 auto Grid::get_or_create_chunk(const Index3D& voxel_idx) -> a_chunk_ptr&
 {
     const auto chunk_idx = index3d_to_chunk_idx(voxel_idx);
-    auto&      chunk_ref = m_chunks.at(chunk_idx);
+    auto& chunk_ref = m_chunks.at(chunk_idx);
 
     if (chunk_ref.load())
     {
@@ -159,11 +160,11 @@ auto Grid::get_or_create_chunk(const Index3D& voxel_idx) -> a_chunk_ptr&
 
     const auto& [x, y, z] = voxel_idx;
 
-    const auto chunk_x_idx = static_cast<unsigned int>((x - m_bounds.minx) / m_cell_size);
-    const auto chunk_y_idx = static_cast<unsigned int>((y - m_bounds.miny) / m_cell_size);
-    const auto chunk_z_idx = static_cast<unsigned int>((z - m_bounds.minz) / m_cell_size);
+    const auto chunk_x_idx = x / VoxelChunk::s_max_edge_size;
+    const auto chunk_y_idx = y / VoxelChunk::s_max_edge_size;
+    const auto chunk_z_idx = z / VoxelChunk::s_max_edge_size;
 
-    const auto max_edge    = static_cast<unsigned int>(VoxelChunk::s_max_edge_size);
+    constexpr auto max_edge = static_cast<unsigned int>(VoxelChunk::s_max_edge_size);
     const auto chunk_dim_x = std::min(max_edge, m_dim_x - chunk_x_idx);
     const auto chunk_dim_y = std::min(max_edge, m_dim_y - chunk_y_idx);
     const auto chunk_dim_z = std::min(max_edge, m_dim_z - chunk_z_idx);
@@ -186,22 +187,32 @@ auto Grid::index3d_to_chunk_idx(const Index3D& voxel_idx) -> size_t
 {
     const auto& [x, y, z] = voxel_idx;
 
-    const auto chunk_x_idx = static_cast<unsigned int>((x - m_bounds.minx) / m_cell_size) / m_chunks_x;
-    const auto chunk_y_idx = static_cast<unsigned int>((y - m_bounds.miny) / m_cell_size) / m_chunks_y;
-    const auto chunk_z_idx = static_cast<unsigned int>((z - m_bounds.minz) / m_cell_size) / m_chunks_z;
+    constexpr auto max_edge = VoxelChunk::s_max_edge_size;
+    const auto chunk_x_idx = x / max_edge;
+    const auto chunk_y_idx = y / max_edge;
+    const auto chunk_z_idx = z / max_edge;
 
     return chunk_x_idx + chunk_y_idx * m_chunks_x + chunk_z_idx * m_chunks_x * m_chunks_y;
 }
 
-auto Grid::index3d_to_chunk_flat_idx(const a_chunk_ptr& chunk, const Index3D& voxel_idx) const
-    -> unsigned int
+auto Grid::index3d_to_chunk_flat_idx(const a_chunk_ptr& chunk, const Index3D& voxel_idx) const -> unsigned int
 {
     const auto& [x, y, z] = voxel_idx;
 
     const auto chunk_dim_x = chunk.load(std::memory_order_relaxed)->m_dim_x;
     const auto chunk_dim_y = chunk.load(std::memory_order_relaxed)->m_dim_y;
+    const auto chunk_dim_z = chunk.load(std::memory_order_relaxed)->m_dim_z;
 
-    return x + y * chunk_dim_x + z * chunk_dim_x * chunk_dim_y;
+    constexpr auto max_edge = VoxelChunk::s_max_edge_size;
+    const auto chunk_x_idx = x / max_edge;
+    const auto chunk_y_idx = y / max_edge;
+    const auto chunk_z_idx = z / max_edge;
+
+    const auto rel_chunk_x_idx = (x - chunk_x_idx * max_edge);
+    const auto rel_chunk_y_idx = (y - chunk_y_idx * max_edge);
+    const auto rel_chunk_z_idx = (z - chunk_z_idx * max_edge);
+
+    return rel_chunk_x_idx + rel_chunk_y_idx * chunk_dim_x + rel_chunk_z_idx * chunk_dim_x * chunk_dim_y;
 }
 
 auto Grid::register_hit(const Index3D& idx) -> void
@@ -211,7 +222,7 @@ auto Grid::register_hit(const Index3D& idx) -> void
     const auto voxel_idx_in_chunk = index3d_to_chunk_flat_idx(chunk, idx);
 
     chunk.load(std::memory_order_relaxed)
-        ->m_hits[voxel_idx_in_chunk]
+        ->m_hits.at(voxel_idx_in_chunk)
         .fetch_add(1, std::memory_order_relaxed);
 }
 
