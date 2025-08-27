@@ -1,10 +1,10 @@
 #ifndef LVOX_VOXEL_GRID_HPP
 #define LVOX_VOXEL_GRID_HPP
 
+#include <atomic>
 #include <filesystem>
 
 #include <lvox/types.hpp>
-#include <lvox/voxel/voxel_chunk.hpp>
 
 namespace lvox
 {
@@ -53,20 +53,15 @@ class Grid
     ) const -> void;
 
   private:
-    class VoxelChunk
+    struct VoxelChunk
     {
-      public:
         using a_u32                           = std::atomic_uint32_t;
         using a_dbl                           = std::atomic<double>;
         static constexpr auto s_max_edge_size = 8;
-        static constexpr auto s_max_cell_count = s_max_edge_size * s_max_edge_size * s_max_edge_size;
+        static constexpr auto s_max_cell_count =
+            s_max_edge_size * s_max_edge_size * s_max_edge_size;
 
-        VoxelChunk(
-            const Point& min_coords,
-            unsigned int   dim_x,
-            unsigned int   dim_y,
-            unsigned int   dim_z
-        );
+        VoxelChunk(unsigned int dim_x, unsigned int dim_y, unsigned int dim_z);
 
         unsigned int       m_dim_x;
         unsigned int       m_dim_y;
@@ -79,7 +74,8 @@ class Grid
         std::vector<a_dbl> m_pad;
     };
 
-    using chunk_ptr = std::atomic<std::shared_ptr<VoxelChunk>>;
+    using chunk_ptr = std::shared_ptr<VoxelChunk>;
+    using a_chunk_ptr = std::atomic<chunk_ptr>;
 
     double                 m_cell_size;
     unsigned int           m_dim_x;
@@ -90,12 +86,32 @@ class Grid
     unsigned int           m_chunks_z;
     size_t                 m_cell_count;
     size_t                 m_chunk_count;
-    std::vector<chunk_ptr> m_chunks;
+    std::vector<a_chunk_ptr> m_chunks;
     Bounds                 m_bounds;
 
-    auto get_or_create_chunk(const Index3D& voxel_idx) -> chunk_ptr&;
+    template <typename PadFunc>
+    auto compute_pad_impl(
+        PadFunc&& func
+    ) -> void
+    {
+        for (auto& a_chunk : m_chunks)
+        {
+            auto chunk = a_chunk.load(std::memory_order_relaxed);
+            for (unsigned int i = 0; i < chunk->m_cell_count; ++i)
+            {
+                // TODO: Make the treshold configurable
+                if (chunk->m_counts[i] < 5)
+                    chunk->m_pad[i] = 0;
+                chunk->m_pad[i] = func(chunk, i);
+
+            }
+        }
+    }
+
+    auto get_or_create_chunk(const Index3D& voxel_idx) -> a_chunk_ptr&;
     auto index3d_to_chunk_idx(const Index3D& voxel_idx) -> size_t;
-    auto index3d_to_chunk_flat_idx(const chunk_ptr& chunk, const Index3D& voxel_idx) const -> unsigned int;
+    auto index3d_to_chunk_flat_idx(const a_chunk_ptr& chunk, const Index3D& voxel_idx) const
+        -> unsigned int;
 
     auto adjust_dim_to_grid(double distance) -> unsigned int;
     auto adjust_bounds_to_grid(size_t dim, double min) const -> double;

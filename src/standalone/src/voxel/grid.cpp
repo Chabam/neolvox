@@ -8,8 +8,6 @@
 #include <lvox/types.hpp>
 #include <lvox/voxel/grid.hpp>
 
-#include "lvox/voxel/voxel_chunk.hpp"
-
 namespace lvox
 {
 
@@ -74,7 +72,7 @@ Grid::Grid(Grid&& other)
 }
 
 Grid::VoxelChunk::VoxelChunk(
-    const Point& min_coords, unsigned int dim_x, unsigned int dim_y, unsigned int dim_z
+    unsigned int dim_x, unsigned int dim_y, unsigned int dim_z
 )
     : m_dim_x{dim_x}
     , m_dim_y{dim_y}
@@ -149,10 +147,10 @@ auto Grid::adjust_bounds_to_grid(size_t dim, double min) const -> double
     return min + dim * m_cell_size;
 }
 
-auto Grid::get_or_create_chunk(const Index3D& voxel_idx) -> chunk_ptr&
+auto Grid::get_or_create_chunk(const Index3D& voxel_idx) -> a_chunk_ptr&
 {
     const auto chunk_idx = index3d_to_chunk_idx(voxel_idx);
-    auto&      chunk_ref = m_chunks[chunk_idx];
+    auto&      chunk_ref = m_chunks.at(chunk_idx);
 
     if (chunk_ref.load())
     {
@@ -170,14 +168,8 @@ auto Grid::get_or_create_chunk(const Index3D& voxel_idx) -> chunk_ptr&
     const auto chunk_dim_y = std::min(max_edge, m_dim_y - chunk_y_idx);
     const auto chunk_dim_z = std::min(max_edge, m_dim_z - chunk_z_idx);
 
-    Point min_coords{
-        m_bounds.minx + m_cell_size * chunk_x_idx,
-        m_bounds.miny + m_cell_size * chunk_y_idx,
-        m_bounds.minz + m_cell_size * chunk_z_idx
-    };
-
     auto new_chunk =
-        std::make_shared<VoxelChunk>(min_coords, chunk_dim_x, chunk_dim_y, chunk_dim_z);
+        std::make_shared<VoxelChunk>(chunk_dim_x, chunk_dim_y, chunk_dim_z);
     std::shared_ptr<VoxelChunk> empty_chunk;
 
     // We don't really care wether the value was exchanged or not. We
@@ -185,7 +177,7 @@ auto Grid::get_or_create_chunk(const Index3D& voxel_idx) -> chunk_ptr&
     // empty chunk.
     //
     // TODO: think about what memory order should be used
-    chunk_ref.compare_exchange_weak(empty_chunk, new_chunk);
+    chunk_ref.compare_exchange_strong(empty_chunk, new_chunk);
 
     return chunk_ref;
 }
@@ -193,10 +185,15 @@ auto Grid::get_or_create_chunk(const Index3D& voxel_idx) -> chunk_ptr&
 auto Grid::index3d_to_chunk_idx(const Index3D& voxel_idx) -> size_t
 {
     const auto& [x, y, z] = voxel_idx;
-    return x + y * m_chunks_x + z * m_chunks_x * m_chunks_y;
+
+    const auto chunk_x_idx = static_cast<unsigned int>((x - m_bounds.minx) / m_cell_size) / m_chunks_x;
+    const auto chunk_y_idx = static_cast<unsigned int>((y - m_bounds.miny) / m_cell_size) / m_chunks_y;
+    const auto chunk_z_idx = static_cast<unsigned int>((z - m_bounds.minz) / m_cell_size) / m_chunks_z;
+
+    return chunk_x_idx + chunk_y_idx * m_chunks_x + chunk_z_idx * m_chunks_x * m_chunks_y;
 }
 
-auto Grid::index3d_to_chunk_flat_idx(const chunk_ptr& chunk, const Index3D& voxel_idx) const
+auto Grid::index3d_to_chunk_flat_idx(const a_chunk_ptr& chunk, const Index3D& voxel_idx) const
     -> unsigned int
 {
     const auto& [x, y, z] = voxel_idx;
@@ -205,23 +202,6 @@ auto Grid::index3d_to_chunk_flat_idx(const chunk_ptr& chunk, const Index3D& voxe
     const auto chunk_dim_y = chunk.load(std::memory_order_relaxed)->m_dim_y;
 
     return x + y * chunk_dim_x + z * chunk_dim_x * chunk_dim_y;
-}
-
-template <typename PadFunc>
-auto compute_pad_impl(
-    PadFunc&&                                     func,
-    std::vector<double>&                          pad,
-    const std::vector<std::atomic<unsigned int>>& counts,
-    size_t                                        cell_count
-) -> void
-{
-    for (size_t i = 0; i < pad.size(); ++i)
-    {
-        // TODO: Make the treshold configurable
-        if (counts[i] < 5)
-            pad[i] = 0;
-        pad[i] = func(i);
-    }
 }
 
 auto Grid::register_hit(const Index3D& idx) -> void
@@ -266,127 +246,118 @@ auto Grid::add_length_count_and_variance(const Index3D& idx, double length) -> v
 
 auto Grid::compute_pad(algorithms::pe::BeerLambert) -> void
 {
-    // compute_pad_impl(
-    //     [this](size_t voxel_idx) -> double {
-    //         const auto G = [](double val) -> double {
-    //             return 0.5 * val;
-    //         };
+    compute_pad_impl(
+        [this](chunk_ptr& chunk, unsigned int voxel_idx) -> double {
+            const auto G = [](double val) -> double {
+                return 0.5 * val;
+            };
 
-    //         const double hits            = m_hits[voxel_idx];
-    //         const double ray_count       = m_counts[voxel_idx];
-    //         const double RDI             = hits / static_cast<double>(ray_count);
-    //         const double ray_length      = m_lengths[voxel_idx];
-    //         const double mean_ray_length = ray_length / ray_count;
+            const double hits            = chunk->m_hits[voxel_idx];
+            const double ray_count       = chunk->m_counts[voxel_idx];
+            const double RDI             = hits / static_cast<double>(ray_count);
+            const double ray_length      = chunk->m_lengths[voxel_idx];
+            const double mean_ray_length = ray_length / ray_count;
 
-    //         if (RDI >= 1.)
-    //             return 0.;
+            if (RDI >= 1.)
+                return 0.;
 
-    //         return -(std::log(1. - RDI) / G(mean_ray_length));
-    //     },
-    //     m_pad,
-    //     m_counts,
-    //     m_cell_count
-    // );
+            return -(std::log(1. - RDI) / G(mean_ray_length));
+        }
+    );
 }
 
 auto Grid::compute_pad(algorithms::pe::ContactFrequency) -> void
 {
-    // compute_pad_impl(
-    //     [this](size_t voxel_idx) -> double {
-    //         const auto G = [](double val) -> double {
-    //             return 0.5 * val;
-    //         };
+    compute_pad_impl(
+        [this](chunk_ptr& chunk, unsigned int voxel_idx) -> double {
+            const auto G = [](double val) -> double {
+                return 0.5 * val;
+            };
 
-    //         const double hits       = m_hits[voxel_idx];
-    //         const double ray_count  = m_counts[voxel_idx];
-    //         const double RDI        = hits / static_cast<double>(ray_count);
-    //         const double ray_length = m_lengths[voxel_idx];
+            const double hits       = chunk->m_hits[voxel_idx];
+            const double ray_count  = chunk->m_counts[voxel_idx];
+            const double RDI        = hits / static_cast<double>(ray_count);
+            const double ray_length = chunk->m_lengths[voxel_idx];
 
-    //         if (RDI >= 1.)
-    //             return 0.;
+            if (RDI >= 1.)
+                return 0.;
 
-    //         return RDI / G(ray_length);
-    //     },
-    //     m_pad,
-    //     m_counts,
-    //     m_cell_count
-    // );
+            return RDI / G(ray_length);
+        }
+    );
 }
 
 auto Grid::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
 {
-    // compute_pad_impl(
-    //     [this](size_t voxel_idx) -> double {
-    //         const auto G = [](double val) -> double {
-    //             return 0.5 * val;
-    //         };
+    compute_pad_impl(
+        [this](chunk_ptr& chunk, unsigned int voxel_idx) -> double {
+            const auto G = [](double val) -> double {
+                return 0.5 * val;
+            };
 
-    //         const double hits               = m_hits[voxel_idx];
-    //         const double ray_count          = m_counts[voxel_idx];
-    //         const double RDI                = hits / static_cast<double>(ray_count);
-    //         const double length             = m_lengths[voxel_idx];
-    //         const double variance           = (*m_lengths_variances)[voxel_idx];
-    //         const double mean_ray_length    = length / ray_count;
-    //         const double unequal_path_ratio = variance / mean_ray_length;
+            const double hits               = chunk->m_hits[voxel_idx];
+            const double ray_count          = chunk->m_counts[voxel_idx];
+            const double RDI                = hits / static_cast<double>(ray_count);
+            const double length             = chunk->m_lengths[voxel_idx];
+            const double variance           = chunk->m_lengths_variances[voxel_idx];
+            const double mean_ray_length    = length / ray_count;
+            const double unequal_path_ratio = variance / mean_ray_length;
 
-    //         double attenuation_coeff;
+            double attenuation_coeff;
 
-    //         if (RDI < 1.)
-    //         {
-    //             const double inv_RDI = 1. - RDI;
-    //             attenuation_coeff =
-    //                 (1. / mean_ray_length) * (std::log(inv_RDI) - (1. / (2 * ray_count *
-    //                 inv_RDI)));
-    //         }
-    //         else // RDI == 1.
-    //         {
-    //             attenuation_coeff = std::log(2 * ray_count + 2) / mean_ray_length;
-    //         }
+            if (RDI < 1.)
+            {
+                const double inv_RDI = 1. - RDI;
+                attenuation_coeff =
+                    (1. / mean_ray_length) * (std::log(inv_RDI) - (1. / (2 * ray_count *
+                    inv_RDI)));
+            }
+            else // RDI == 1.
+            {
+                attenuation_coeff = std::log(2 * ray_count + 2) / mean_ray_length;
+            }
 
-    //         const double res = (1. / G(attenuation_coeff)) *
-    //                            (1. - std::sqrt(1. - 2 * unequal_path_ratio * attenuation_coeff));
+            const double res = (1. / G(attenuation_coeff)) *
+                               (1. - std::sqrt(1. - 2 * unequal_path_ratio * attenuation_coeff));
 
-    //         if (std::isnan(res))
-    //         {
-    //             std::cout << std::format(
-    //                              R"(
-    // hits                = {}
-    // ray_count           = {}
-    // RDI                 = {}
-    // ray_length          = {}
-    // mean_ray_length     = {}
-    // ray_length_variance = {}
-    // unequal_path_ratio  = {}
-    // attenuation_coeff   = {})",
-    //                              hits,
-    //                              ray_count,
-    //                              RDI,
-    //                              length,
-    //                              mean_ray_length,
-    //                              variance,
-    //                              unequal_path_ratio,
-    //                              attenuation_coeff
-    //                          )
-    //                       << std::endl;
-    //             return 0.;
-    //         }
+            if (std::isnan(res))
+            {
+                std::cout << std::format(
+                                 R"(
+    hits                = {}
+    ray_count           = {}
+    RDI                 = {}
+    ray_length          = {}
+    mean_ray_length     = {}
+    ray_length_variance = {}
+    unequal_path_ratio  = {}
+    attenuation_coeff   = {})",
+                                 hits,
+                                 ray_count,
+                                 RDI,
+                                 length,
+                                 mean_ray_length,
+                                 variance,
+                                 unequal_path_ratio,
+                                 attenuation_coeff
+                             )
+                          << std::endl;
+                return 0.;
+            }
 
-    //         return res;
-    //     },
-    //     m_pad,
-    //     m_counts,
-    //     m_cell_count
-    // );
+            return res;
+        }
+    );
 }
 
-auto Grid::flat_index_to_index3d(size_t i) const -> Index3D
-{
-    return {
-        static_cast<unsigned int>(i % m_dim_x),
-        static_cast<unsigned int>((i / m_dim_x) % m_dim_y),
-        static_cast<unsigned int>((i / m_dim_x) / m_dim_y)
-    };
-}
+// auto Grid::flat_index_to_index3d(size_t i) const -> Index3D
+// {
+//     return {
+//         static_cast<unsigned int>(i % m_dim_x),
+//         static_cast<unsigned int>((i / m_dim_x) % m_dim_y),
+//         static_cast<unsigned int>((i / m_dim_x) / m_dim_y)
+//     };
+// }
 
 auto Grid::export_as_coo_to_h5(
     const std::string& dataset_name, const std::filesystem::path& filename, bool include_all_data
