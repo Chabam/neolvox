@@ -64,7 +64,11 @@ class Grid
 
         VoxelChunk(size_t starting_idx, unsigned int dim_x, unsigned int dim_y, unsigned int dim_z);
 
-        size_t            m_starting_idx;
+        auto index3d_to_flat_idx(const Index3D& voxel_idx) const -> size_t;
+
+        auto flat_idx_to_index3d(unsigned int idx) const -> Index3D;
+
+        size_t             m_starting_idx;
         unsigned int       m_dim_x;
         unsigned int       m_dim_y;
         unsigned int       m_dim_z;
@@ -117,11 +121,9 @@ class Grid
         );
     }
 
-    auto get_or_create_chunk(const Index3D& voxel_idx) -> a_chunk_ptr&;
-    auto index3d_to_chunk_idx(const Index3D& voxel_idx) -> size_t;
-    auto index3d_to_chunk_flat_idx(const a_chunk_ptr& chunk, const Index3D& voxel_idx) const
-        -> unsigned int;
-    auto flat_index_to_index3d(const chunk_ptr& chunk, size_t i) const -> Index3D;
+    auto get_or_create_chunk(const Index3D& chunk_idx) -> a_chunk_ptr&;
+    // Returns a pair of the chunk index in the index of the voxel in the chunk
+    auto index3d_to_chunk_idx(const Index3D& voxel_idx) const -> Index3D;
 
     auto adjust_dim_to_grid(double distance) -> unsigned int;
     auto adjust_bounds_to_grid(size_t dim, double min) const -> double;
