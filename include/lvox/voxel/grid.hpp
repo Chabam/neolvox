@@ -106,7 +106,11 @@ class Grid
                 {
                     // TODO: Make the treshold configurable
                     if (chunk->m_counts[i] < 5)
+                    {
                         chunk->m_pad[i] = 0;
+                        continue;
+                    }
+
                     chunk->m_pad[i] = func(chunk, i);
                 }
             }

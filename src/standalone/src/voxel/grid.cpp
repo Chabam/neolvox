@@ -379,33 +379,10 @@ auto Grid::export_as_coo_to_h5(
     H5::H5File file;
     if (std::filesystem::exists(filename))
     {
-        logger.warn(R"('{}' already exist. Do you want to reuse the same file? (y/n)
-(Reusing may corrupt the file if writting to an existing dataset))", filename.string());
-        while (true)
-        {
-            std::string ans;
-            std::cin >> ans;
-            if (ans != "y" && ans != "n")
-            {
-                logger.error("Please enter 'y' or 'n'");
-                continue;
-            }
-
-            if (ans == "y")
-                file = H5::H5File{filename.string(), H5F_ACC_RDWR};
-            else
-                file = H5::H5File{
-                    (filename.parent_path() / ("new_" + filename.filename().string())).string(),
-                    H5F_ACC_TRUNC
-                };
-
-            break;
-        }
+        std::filesystem::remove(filename);
     }
-    else
-    {
-        file = H5::H5File{filename.string(), H5F_ACC_TRUNC};
-    }
+
+    file = H5::H5File{filename.string(), H5F_ACC_TRUNC};
 
     std::vector<unsigned int> xs;
     std::vector<unsigned int> ys;
@@ -424,7 +401,7 @@ auto Grid::export_as_coo_to_h5(
 
         auto index_with_data = chunk->m_counts | std::views::enumerate |
                                std::views::filter([&chunk](const auto& pair) -> bool {
-                                   return chunk->m_counts[std::get<0>(pair)] == 0;
+                                   return chunk->m_counts[std::get<0>(pair)] != 0;
                                }) |
                                std::views::elements<0> | std::ranges::to<std::vector>();
         auto index3d_with_data =

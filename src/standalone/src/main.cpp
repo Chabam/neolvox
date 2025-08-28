@@ -45,7 +45,7 @@ Options:
    -g, --grid         filename            Outputs the grid of PAD voxel values to a
                                           hdf5 file. [defaults to out.h5]
 
-   -b, --blanks       none                Wheter or not to use points classified with
+   -b, --blanks       none                Whether or not to use points classified with
                                           flag 0 as reference for "blank shots". These
                                           can used alongside virtual scene to measure
                                           the impact of rays that didn't touch anything
@@ -60,6 +60,10 @@ Options:
                                              - CF: Contact Frequency
                                              - UPLBL: Unequal Path Length
                                                Beer Lambert
+
+   -a, --all          none                Whether or not to include all the information
+                                          from the grid (ray counts, lengths, etc.) in the
+                                          exported file. [disabled by default]
 
    -h, --help                             Prints this message
 )";
@@ -78,6 +82,7 @@ std::mutex                 g_print_guard          = {};
 fs::path                   g_file;
 std::optional<fs::path>    g_traj_file           = {};
 fs::path                   g_grid_file           = "out.h5";
+bool                       g_include_all_info    = false;
 
 struct PointCloudWithTheoriticalShots
 {
@@ -343,6 +348,10 @@ auto main(int argc, char* argv[]) -> int
         {
             g_compute_theoriticals = true;
         }
+        else if (*arg_it == "-a" || *arg_it == "--all")
+        {
+            g_include_all_info = true;
+        }
         else
         {
             g_file = *arg_it;
@@ -369,5 +378,5 @@ auto main(int argc, char* argv[]) -> int
     };
     const lvox::Grid result = lvox::algorithms::compute_pad(scans, compute_options);
 
-    result.export_as_coo_to_h5("lvox computation values", g_grid_file);
+    result.export_as_coo_to_h5("lvox computation values", g_grid_file, g_include_all_info);
 }
