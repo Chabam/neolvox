@@ -2,6 +2,7 @@
 #define LVOX_VOXEL_GRID_HPP
 
 #include <atomic>
+#include <execution>
 #include <filesystem>
 
 #include <lvox/types.hpp>
@@ -61,11 +62,9 @@ class Grid
         static constexpr auto s_max_cell_count =
             s_max_edge_size * s_max_edge_size * s_max_edge_size;
 
-        VoxelChunk(
-            const Index3D& starting_idx, unsigned int dim_x, unsigned int dim_y, unsigned int dim_z
-        );
+        VoxelChunk(size_t starting_idx, unsigned int dim_x, unsigned int dim_y, unsigned int dim_z);
 
-        Index3D            m_starting_idx;
+        size_t            m_starting_idx;
         unsigned int       m_dim_x;
         unsigned int       m_dim_y;
         unsigned int       m_dim_z;
@@ -73,47 +72,45 @@ class Grid
         std::vector<a_u32> m_hits;
         std::vector<a_u32> m_counts;
         std::vector<a_dbl> m_lengths;
-        std::vector<a_dbl> m_lengths_variances;
+        std::vector<a_dbl> m_lengths_variance;
         std::vector<a_dbl> m_pad;
     };
 
-    using chunk_ptr = std::shared_ptr<VoxelChunk>;
+    using chunk_ptr   = std::shared_ptr<VoxelChunk>;
     using a_chunk_ptr = std::atomic<chunk_ptr>;
 
-    double                 m_cell_size;
-    unsigned int           m_dim_x;
-    unsigned int           m_dim_y;
-    unsigned int           m_dim_z;
-    unsigned int           m_chunks_x;
-    unsigned int           m_chunks_y;
-    unsigned int           m_chunks_z;
-    size_t                 m_cell_count;
-    size_t                 m_chunk_count;
-    std::atomic_size_t                 m_effective_chunk_count;
+    double                   m_cell_size;
+    unsigned int             m_dim_x;
+    unsigned int             m_dim_y;
+    unsigned int             m_dim_z;
+    unsigned int             m_chunks_x;
+    unsigned int             m_chunks_y;
+    unsigned int             m_chunks_z;
+    size_t                   m_cell_count;
+    size_t                   m_chunk_count;
+    std::atomic_size_t       m_effective_chunk_count;
     std::vector<a_chunk_ptr> m_chunks;
-    Bounds                 m_bounds;
+    Bounds                   m_bounds;
 
     template <typename PadFunc>
-    auto compute_pad_impl(
-        PadFunc&& func
-    ) -> void
+    auto compute_pad_impl(PadFunc&& func) -> void
     {
-        for (auto& a_chunk : m_chunks)
-        {
-            auto chunk = a_chunk.load(std::memory_order_relaxed);
+        std::for_each(
+            std::execution::par_unseq, m_chunks.begin(), m_chunks.end(), [func](auto& a_chunk) {
+                auto chunk = a_chunk.load(std::memory_order_relaxed);
 
-            if (!chunk)
-                continue;
+                if (!chunk)
+                    return;
 
-            for (unsigned int i = 0; i < chunk->m_cell_count; ++i)
-            {
-                // TODO: Make the treshold configurable
-                if (chunk->m_counts[i] < 5)
-                    chunk->m_pad[i] = 0;
-                chunk->m_pad[i] = func(chunk, i);
-
+                for (unsigned int i = 0; i < chunk->m_cell_count; ++i)
+                {
+                    // TODO: Make the treshold configurable
+                    if (chunk->m_counts[i] < 5)
+                        chunk->m_pad[i] = 0;
+                    chunk->m_pad[i] = func(chunk, i);
+                }
             }
-        }
+        );
     }
 
     auto get_or_create_chunk(const Index3D& voxel_idx) -> a_chunk_ptr&;
