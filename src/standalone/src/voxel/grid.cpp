@@ -3,6 +3,7 @@
 #include <atomic>
 #include <format>
 #include <iterator>
+#include <mutex>
 
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/logger/logger.hpp>
@@ -85,6 +86,7 @@ Grid::VoxelChunk::VoxelChunk(
     , m_lengths{m_cell_count, std::allocator<a_dbl>{}}
     , m_lengths_variance{m_cell_count, std::allocator<a_dbl>{}}
     , m_pad{m_cell_count, std::allocator<a_dbl>{}}
+    , m_write_access{}
 {
 }
 
@@ -206,44 +208,34 @@ auto Grid::VoxelChunk::index3d_to_flat_idx(const Index3D& voxel_idx) const -> si
 
 auto Grid::register_hit(const Index3D& idx) -> void
 {
-    auto       chunk_idx          = index3d_to_chunk_idx(idx);
-    auto&      chunk              = get_or_create_chunk(chunk_idx);
-    const auto voxel_idx_in_chunk = chunk.load(std::memory_order_relaxed)->index3d_to_flat_idx(idx);
+    auto chunk_idx = index3d_to_chunk_idx(idx);
+    auto       chunk              = get_or_create_chunk(chunk_idx).load(std::memory_order::acq_rel);
+    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(idx);
 
-    chunk.load(std::memory_order_relaxed)
-        ->m_hits[voxel_idx_in_chunk]
-        .fetch_add(1, std::memory_order_relaxed);
+    std::lock_guard lock{chunk->m_write_access};
+    chunk->m_hits[voxel_idx_in_chunk] += 1;
 }
 
 auto Grid::add_length_and_count(const Index3D& idx, double length) -> void
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
-    auto&      chunk              = get_or_create_chunk(chunk_idx);
-    const auto voxel_idx_in_chunk = chunk.load(std::memory_order_relaxed)->index3d_to_flat_idx(idx);
+    auto       chunk              = get_or_create_chunk(chunk_idx).load(std::memory_order::acq_rel);
+    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(idx);
 
-    chunk.load(std::memory_order_relaxed)
-        ->m_lengths[voxel_idx_in_chunk]
-        .fetch_add(length, std::memory_order_relaxed);
-
-    chunk.load(std::memory_order_relaxed)
-        ->m_counts[voxel_idx_in_chunk]
-        .fetch_add(1, std::memory_order_relaxed);
+    std::lock_guard lock{chunk->m_write_access};
+    chunk->m_lengths[voxel_idx_in_chunk] += length;
+    chunk->m_counts[voxel_idx_in_chunk] += 1;
 }
 
 auto Grid::add_length_count_and_variance(const Index3D& idx, double length) -> void
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
-    auto&      chunk              = get_or_create_chunk(chunk_idx);
-    const auto voxel_idx_in_chunk = chunk.load(std::memory_order_relaxed)->index3d_to_flat_idx(idx);
+    auto       chunk              = get_or_create_chunk(chunk_idx).load(std::memory_order::acq_rel);
+    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(idx);
 
-    chunk.load(std::memory_order_relaxed)
-        ->m_lengths[voxel_idx_in_chunk]
-        .fetch_add(length, std::memory_order_relaxed);
-
-    chunk.load(std::memory_order_relaxed)
-        ->m_counts[voxel_idx_in_chunk]
-        .fetch_add(1, std::memory_order_relaxed);
-
+    std::lock_guard lock{chunk->m_write_access};
+    chunk->m_lengths[voxel_idx_in_chunk] += length;
+    chunk->m_counts[voxel_idx_in_chunk] += 1;
     // TODO: Compute variance, will probably require a mutex to ensure order :/
 }
 
@@ -364,9 +356,7 @@ auto Grid::export_as_coo_to_h5(
     Logger     logger{"Grid HDF5 export"};
     H5::H5File file;
     if (std::filesystem::exists(filename))
-    {
         std::filesystem::remove(filename);
-    }
 
     file = H5::H5File{filename.string(), H5F_ACC_TRUNC};
 
@@ -478,7 +468,7 @@ auto Grid::export_as_coo_to_h5(
     if (file.nameExists(dataset_name))
         plot_group = file.openGroup(dataset_name);
     else
-        plot_group = file.createGroup(dataset_name, 6);
+        plot_group = file.createGroup(dataset_name, 7);
 
     H5::DSetCreatPropList create_prop_list{};
     h5_dimension_t        chunk_dims{std::min(static_cast<hsize_t>(2 << 13), voxels_with_data)};

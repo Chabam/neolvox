@@ -67,16 +67,17 @@ class Grid
         auto index3d_to_flat_idx(const Index3D& voxel_idx) const -> size_t;
         auto flat_idx_to_global_index3d(unsigned int idx) const -> Index3D;
 
-        Index3D            m_origin_idx;
-        unsigned int       m_dim_x;
-        unsigned int       m_dim_y;
-        unsigned int       m_dim_z;
-        size_t             m_cell_count;
-        std::vector<a_u32> m_hits;
-        std::vector<a_u32> m_counts;
-        std::vector<a_dbl> m_lengths;
-        std::vector<a_dbl> m_lengths_variance;
-        std::vector<a_dbl> m_pad;
+        Index3D                   m_origin_idx;
+        unsigned int              m_dim_x;
+        unsigned int              m_dim_y;
+        unsigned int              m_dim_z;
+        size_t                    m_cell_count;
+        std::vector<unsigned int> m_hits;
+        std::vector<unsigned int> m_counts;
+        std::vector<double>       m_lengths;
+        std::vector<double>       m_lengths_variance;
+        std::vector<double>       m_pad;
+        mutable std::mutex        m_write_access;
     };
 
     using chunk_ptr   = std::shared_ptr<VoxelChunk>;
