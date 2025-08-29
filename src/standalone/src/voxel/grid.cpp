@@ -18,7 +18,6 @@ Grid::Grid(const Bounds& bounds, double cell_size, bool compute_variance)
     , m_dim_y{Grid::adjust_dim_to_grid(bounds.maxy - bounds.miny)}
     , m_dim_z{Grid::adjust_dim_to_grid(bounds.maxz - bounds.minz)}
     , m_cell_count{m_dim_x * m_dim_y * m_dim_z}
-    , m_effective_chunk_count{0}
     , m_chunks_x{static_cast<unsigned int>(
           std::ceil(static_cast<float>(m_dim_x) / VoxelChunk::s_max_edge_size)
       )}
@@ -74,9 +73,9 @@ Grid::Grid(Grid&& other)
 }
 
 Grid::VoxelChunk::VoxelChunk(
-    size_t starting_idx, unsigned int dim_x, unsigned int dim_y, unsigned int dim_z
+    const Index3D& origin_idx, unsigned int dim_x, unsigned int dim_y, unsigned int dim_z
 )
-    : m_starting_idx{starting_idx}
+    : m_origin_idx{origin_idx}
     , m_dim_x{dim_x}
     , m_dim_y{dim_y}
     , m_dim_z{dim_z}
@@ -168,18 +167,13 @@ auto Grid::get_or_create_chunk(const Index3D& chunk_idx) -> a_chunk_ptr&
     const auto chunk_dim_y = std::min(max_edge, m_dim_y - chunk_y);
     const auto chunk_dim_z = std::min(max_edge, m_dim_z - chunk_z);
 
-    const auto starting_idx = chunk_x * max_edge + chunk_y * m_chunks_x * max_edge +
-                              chunk_z * (m_chunks_x * m_chunks_y) * (max_edge * max_edge);
-
     auto new_chunk =
-        std::make_shared<VoxelChunk>(starting_idx, chunk_dim_x, chunk_dim_y, chunk_dim_z);
+        std::make_shared<VoxelChunk>(chunk_idx, chunk_dim_x, chunk_dim_y, chunk_dim_z);
     std::shared_ptr<VoxelChunk> empty_chunk;
 
     // We don't really care wether the value was exchanged or not. We
     // just don't want to override the existing value if it wasn't an
     // empty chunk.
-    //
-    // TODO: think about what memory order should be used
     chunk_ref.compare_exchange_strong(empty_chunk, new_chunk, std::memory_order_acq_rel);
 
     return chunk_ref;
@@ -352,14 +346,14 @@ auto Grid::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
     });
 }
 
-auto Grid::VoxelChunk::flat_idx_to_index3d(unsigned int i) const -> Index3D
-{
-    const auto reordered_idx = m_starting_idx + i;
 
+auto Grid::VoxelChunk::flat_idx_to_global_index3d(unsigned int idx) const -> Index3D
+{
+    auto& [chunk_x, chunk_y, chunk_z] = m_origin_idx;
     return {
-        static_cast<unsigned int>(reordered_idx % m_dim_x),
-        static_cast<unsigned int>((reordered_idx / m_dim_x) % m_dim_y),
-        static_cast<unsigned int>((reordered_idx / m_dim_x) / m_dim_y)
+        chunk_x * s_max_edge_size + static_cast<unsigned int>(idx % m_dim_x),
+        chunk_y * s_max_edge_size + static_cast<unsigned int>((idx / m_dim_x) % m_dim_y),
+        chunk_z * s_max_edge_size + static_cast<unsigned int>((idx / m_dim_x) / m_dim_y)
     };
 }
 
@@ -379,9 +373,10 @@ auto Grid::export_as_coo_to_h5(
     std::vector<unsigned int> xs;
     std::vector<unsigned int> ys;
     std::vector<unsigned int> zs;
+    std::vector<unsigned int> counts;
+    std::vector<unsigned int> hits;
     std::vector<double>       pads;
     std::vector<double>       lengths;
-    std::vector<double>       counts;
     std::vector<double>       lengths_variance;
 
     for (auto& a_chunk : m_chunks)
@@ -398,9 +393,7 @@ auto Grid::export_as_coo_to_h5(
                                std::views::elements<0> | std::ranges::to<std::vector>();
         auto index3d_with_data =
             index_with_data | std::views::transform([this, &chunk](unsigned int index) -> Index3D {
-                auto res = chunk->flat_idx_to_index3d(index);
-                std::cout << std::format("({},{},{})", res[0], res[1], res[2]) << std::endl;
-                return res;
+                return chunk->flat_idx_to_global_index3d(index);
             }) |
             std::ranges::to<std::vector>();
 
@@ -431,6 +424,15 @@ auto Grid::export_as_coo_to_h5(
 
         if (include_all_data)
         {
+            {
+                auto chunk_hits =
+                    index_with_data |
+                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                        return chunk->m_hits[index];
+                    });
+                std::copy(chunk_hits.begin(), chunk_hits.end(), std::back_inserter(hits));
+            }
+
             {
                 auto chunk_counts =
                     index_with_data |
@@ -494,20 +496,20 @@ auto Grid::export_as_coo_to_h5(
         return plot_group.createDataSet(name, type, dataspace, create_prop_list);
     };
 
-    const H5::PredType h5_size_t = H5::PredType::NATIVE_UINT;
+    const H5::PredType h5_index_t = H5::PredType::NATIVE_UINT;
     {
-        H5::DataSet xs_data = get_or_create_dataset("x", h5_size_t, data_space);
-        xs_data.write(xs.data(), h5_size_t);
+        H5::DataSet xs_data = get_or_create_dataset("x", h5_index_t, data_space);
+        xs_data.write(xs.data(), h5_index_t);
     }
 
     {
-        H5::DataSet ys_data = get_or_create_dataset("y", h5_size_t, data_space);
-        ys_data.write(ys.data(), h5_size_t);
+        H5::DataSet ys_data = get_or_create_dataset("y", h5_index_t, data_space);
+        ys_data.write(ys.data(), h5_index_t);
     }
 
     {
-        H5::DataSet zs_data = get_or_create_dataset("z", h5_size_t, data_space);
-        zs_data.write(zs.data(), h5_size_t);
+        H5::DataSet zs_data = get_or_create_dataset("z", h5_index_t, data_space);
+        zs_data.write(zs.data(), h5_index_t);
     }
 
     {
@@ -518,6 +520,12 @@ auto Grid::export_as_coo_to_h5(
 
     if (include_all_data)
     {
+        {
+            H5::PredType h5_hits_t = H5::PredType::NATIVE_UINT;
+            H5::DataSet  hits_data = get_or_create_dataset("hits", h5_hits_t, data_space);
+            hits_data.write(hits.data(), h5_hits_t);
+        }
+
         {
             H5::PredType h5_counts_t = H5::PredType::NATIVE_UINT;
             H5::DataSet  counts_data = get_or_create_dataset("counts", h5_counts_t, data_space);

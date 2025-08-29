@@ -62,13 +62,12 @@ class Grid
         static constexpr auto s_max_cell_count =
             s_max_edge_size * s_max_edge_size * s_max_edge_size;
 
-        VoxelChunk(size_t starting_idx, unsigned int dim_x, unsigned int dim_y, unsigned int dim_z);
+        VoxelChunk(const Index3D& starting_idx, unsigned int dim_x, unsigned int dim_y, unsigned int dim_z);
 
         auto index3d_to_flat_idx(const Index3D& voxel_idx) const -> size_t;
+        auto flat_idx_to_global_index3d(unsigned int idx) const -> Index3D;
 
-        auto flat_idx_to_index3d(unsigned int idx) const -> Index3D;
-
-        size_t             m_starting_idx;
+        Index3D            m_origin_idx;
         unsigned int       m_dim_x;
         unsigned int       m_dim_y;
         unsigned int       m_dim_z;
@@ -92,7 +91,6 @@ class Grid
     unsigned int             m_chunks_z;
     size_t                   m_cell_count;
     size_t                   m_chunk_count;
-    std::atomic_size_t       m_effective_chunk_count;
     std::vector<a_chunk_ptr> m_chunks;
     Bounds                   m_bounds;
 
