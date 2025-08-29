@@ -28,6 +28,7 @@ Grid::Grid(const Bounds& bounds, double cell_size, bool compute_variance)
     , m_chunks_z{static_cast<unsigned int>(
           std::ceil(static_cast<float>(m_dim_z) / VoxelChunk::s_max_edge_size)
       )}
+    , m_compute_variance{compute_variance}
     , m_chunk_count{m_chunks_x * m_chunks_y * m_chunks_z}
     , m_chunks{m_chunk_count}
     , m_bounds{
@@ -74,18 +75,26 @@ Grid::Grid(Grid&& other)
 }
 
 Grid::VoxelChunk::VoxelChunk(
-    const Index3D& origin_idx, unsigned int dim_x, unsigned int dim_y, unsigned int dim_z
+    const Index3D& origin_idx,
+    unsigned int   dim_x,
+    unsigned int   dim_y,
+    unsigned int   dim_z,
+    bool           compute_variance
 )
     : m_origin_idx{origin_idx}
     , m_dim_x{dim_x}
     , m_dim_y{dim_y}
     , m_dim_z{dim_z}
     , m_cell_count{m_dim_x * m_dim_y * m_dim_z}
-    , m_hits{m_cell_count, std::allocator<a_u32>{}}
-    , m_counts{m_cell_count, std::allocator<a_u32>{}}
-    , m_lengths{m_cell_count, std::allocator<a_dbl>{}}
-    , m_lengths_variance{m_cell_count, std::allocator<a_dbl>{}}
-    , m_pad{m_cell_count, std::allocator<a_dbl>{}}
+    , m_hits{m_cell_count, std::allocator<unsigned int>{}}
+    , m_counts{m_cell_count, std::allocator<unsigned int>{}}
+    , m_lengths{m_cell_count, std::allocator<double>{}}
+    , m_lengths_variance{std::invoke([this, compute_variance]() -> std::vector<double> {
+        if (compute_variance)
+            return std::vector<double>{m_cell_count, std::allocator<double>{}};
+        return {};
+    })}
+    , m_pad{m_cell_count, std::allocator<double>{}}
     , m_write_access{}
 {
 }
@@ -169,8 +178,9 @@ auto Grid::get_or_create_chunk(const Index3D& chunk_idx) -> a_chunk_ptr&
     const auto chunk_dim_y = std::min(max_edge, m_dim_y - chunk_y);
     const auto chunk_dim_z = std::min(max_edge, m_dim_z - chunk_z);
 
-    auto new_chunk =
-        std::make_shared<VoxelChunk>(chunk_idx, chunk_dim_x, chunk_dim_y, chunk_dim_z);
+    auto new_chunk = std::make_shared<VoxelChunk>(
+        chunk_idx, chunk_dim_x, chunk_dim_y, chunk_dim_z, m_compute_variance
+    );
     std::shared_ptr<VoxelChunk> empty_chunk;
 
     // We don't really care wether the value was exchanged or not. We
@@ -208,7 +218,7 @@ auto Grid::VoxelChunk::index3d_to_flat_idx(const Index3D& voxel_idx) const -> si
 
 auto Grid::register_hit(const Index3D& idx) -> void
 {
-    auto chunk_idx = index3d_to_chunk_idx(idx);
+    auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx).load(std::memory_order::acq_rel);
     const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(idx);
 
@@ -233,9 +243,37 @@ auto Grid::add_length_count_and_variance(const Index3D& idx, double length) -> v
     auto       chunk              = get_or_create_chunk(chunk_idx).load(std::memory_order::acq_rel);
     const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(idx);
 
-    std::lock_guard lock{chunk->m_write_access};
+    std::unique_lock lock{chunk->m_write_access};
+    const double     previous_lengths = chunk->m_lengths[voxel_idx_in_chunk];
+    const double     previous_counts  = chunk->m_counts[voxel_idx_in_chunk];
     chunk->m_lengths[voxel_idx_in_chunk] += length;
     chunk->m_counts[voxel_idx_in_chunk] += 1;
+    lock.unlock();
+
+    // TODO: make this configurable maybe, and based on a specific PAD estimation method
+    // So far it's based on Computree's NeedleFromDimension
+    constexpr double elem_length       = 0.06;
+    constexpr double elem_diameter     = 0.02;
+    constexpr double attenuation_coeff = (2. * std::numbers::pi * elem_length * elem_diameter) / 4.;
+
+    const double attenuated_length =
+        -(std::log(1. - attenuation_coeff * length) / attenuation_coeff);
+
+    // No variance possible if the count is not big enough
+    if (previous_counts < 2)
+        return;
+
+    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+    const double previous_mean = previous_lengths / previous_counts;
+    const double delta         = length - previous_mean;
+    const double new_count     = previous_counts + 1;
+    const double new_mean      = previous_mean + (delta / new_count);
+    const double delta_2       = length - new_mean;
+
+    lock.lock();
+    // -1 on the count here because we are computing a variance sample.
+    chunk->m_lengths_variance[voxel_idx_in_chunk] += (delta * delta_2) / (new_count - 1);
+
     // TODO: Compute variance, will probably require a mutex to ensure order :/
 }
 
@@ -337,7 +375,6 @@ auto Grid::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
         return res;
     });
 }
-
 
 auto Grid::VoxelChunk::flat_idx_to_global_index3d(unsigned int idx) const -> Index3D
 {
@@ -468,7 +505,7 @@ auto Grid::export_as_coo_to_h5(
     if (file.nameExists(dataset_name))
         plot_group = file.openGroup(dataset_name);
     else
-        plot_group = file.createGroup(dataset_name, 7);
+        plot_group = file.createGroup(dataset_name, 8);
 
     H5::DSetCreatPropList create_prop_list{};
     h5_dimension_t        chunk_dims{std::min(static_cast<hsize_t>(2 << 13), voxels_with_data)};

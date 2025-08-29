@@ -30,39 +30,6 @@ auto compute_in_parallel(const R& objects, unsigned int job_count, const F& func
     }
 }
 
-// auto compute_lengths_variance(
-//     double              length_in_voxel,
-//     LengthGrid::cell_t& variance_ref,
-//     double              previous_lengths,
-//     unsigned int        previous_count
-// ) -> void
-// {
-//     // TODO: make this configurable maybe?
-//     // So far it's based on Computree's NeedleFromDimension
-//     constexpr double elem_length       = 0.06;
-//     constexpr double elem_diameter     = 0.02;
-//     constexpr double attenuation_coeff = (2. * std::numbers::pi * elem_length * elem_diameter)
-//     / 4.;
-
-//     const double attenuated_length =
-//         -(std::log(1. - attenuation_coeff * length_in_voxel) / attenuation_coeff);
-
-//     // No variance possible if the count is not big enough
-//     if (previous_count < 2)
-//         return;
-
-//     //
-//     https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
-//     const double previous_mean = previous_lengths / previous_count;
-//     const double delta         = length_in_voxel - previous_mean;
-//     const double new_count     = previous_count + 1;
-//     const double new_mean      = previous_mean + (delta / new_count);
-//     const double delta_2       = length_in_voxel - new_mean;
-
-//     // -1 on the count here because we are computing a variance sample.
-//     variance_ref.fetch_add((delta * delta_2) / (new_count - 1), std::memory_order_relaxed);
-// }
-
 template <bool limit_ray_length, bool compute_hits, typename PadEstimator>
 auto compute_rays_count_and_length_impl(
     Grid& grid, const Scan& scan, const ComputeOptions& options, Logger logger
