@@ -4,7 +4,7 @@ import sparse
 
 
 file = h5py.File("out.h5")
-group: h5py.Group = file["lvox computation values"]
+group: h5py.Group = file["lvox"]
 
 dims = group.attrs["Dimensions"]
 dset_hits = sparse.COO((group["hits"], (group["x"], group["y"], group["z"])), shape=dims).todense()

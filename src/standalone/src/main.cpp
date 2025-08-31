@@ -378,5 +378,5 @@ auto main(int argc, char* argv[]) -> int
     };
     const lvox::Grid result = lvox::algorithms::compute_pad(scans, compute_options);
 
-    result.export_as_coo_to_h5("lvox computation values", g_grid_file, g_include_all_info);
+    result.export_as_coo_to_h5("lvox", g_grid_file, g_include_all_info);
 }
