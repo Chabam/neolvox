@@ -89,7 +89,7 @@ auto generate_cubic_point_cloud_with_random_points(pdal::PointTableRef table, si
     std::uniform_real_distribution<double> dis_y(-half_dim_y, half_dim_y);
     std::uniform_real_distribution<double> dis_z(-half_dim_z, half_dim_z);
 
-    for (lvox::Index i = 0; i < point_count; ++i)
+    for (size_t i = 0; i < point_count; ++i)
     {
         view->setField(pdal::Dimension::Id::X, i, dis_x(gen));
         view->setField(pdal::Dimension::Id::Y, i, dis_y(gen));
