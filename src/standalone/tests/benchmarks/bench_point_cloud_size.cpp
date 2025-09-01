@@ -53,7 +53,7 @@ static auto bm_point_cloud_size(benchmark::State& state) -> void
         lvox::Logger::set_global_level(lvox::Logger::Level::Error);
 
         state.ResumeTiming();
-        lvox::algorithms::compute_pad(scans, options);
+        std::ignore = lvox::algorithms::compute_pad(scans, options);
     }
 }
 
