@@ -50,7 +50,7 @@ auto generate_cubic_point_cloud(pdal::PointTableRef table, double dim_x, double 
         Point{half_dim_x, -half_dim_y, -half_dim_z},
     };
 
-    for (lvox::Index i = 0; i < cube.size(); ++i)
+    for (size_t i = 0; i < cube.size(); ++i)
     {
         view->setField(pdal::Dimension::Id::X, i, cube[i].x);
         view->setField(pdal::Dimension::Id::Y, i, cube[i].y);

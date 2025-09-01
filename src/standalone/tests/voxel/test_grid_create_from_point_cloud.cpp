@@ -11,7 +11,7 @@ TEST(grid, create_from_point_cloud)
     lvox::Bounds point_cloud_bounds;
     const double         cell_size = 0.5;
     view->calculateBounds(point_cloud_bounds);
-    lvox::GridU32 grid{point_cloud_bounds, cell_size};
+    lvox::Grid grid{point_cloud_bounds, cell_size};
 
     for (const auto pt : *view)
     {

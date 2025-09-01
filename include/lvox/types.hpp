@@ -20,8 +20,7 @@ struct TimedPoint
 using PointCloud     = std::vector<TimedPoint>;
 using PointCloudView = std::unique_ptr<PointCloud>;
 using Bounds         = pdal::BOX3D;
-using Index          = std::size_t;
-using Index3D        = std::array<Index, 3>;
+using Index3D        = std::array<unsigned int, 3>;
 } // namespace lvox
 
 #endif // LVOX_TYPES_HPP

@@ -22,11 +22,12 @@
 
 #include <lvox/algorithms/algorithms.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
+#include <lvox/logger/logger.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
 #include <lvox/scanner/trajectory.hpp>
 #include <lvox/types.hpp>
-#include <lvox/voxel/h5_exporter.hpp>
+#include <lvox/voxel/grid.hpp>
 
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
@@ -44,15 +45,11 @@ Options:
    -g, --grid         filename            Outputs the grid of PAD voxel values to a
                                           hdf5 file. [defaults to out.h5]
 
-   -b, --blanks       none                Wheter or not to use points classified with
+   -b, --blanks       none                Whether or not to use points classified with
                                           flag 0 as reference for "blank shots". These
                                           can used alongside virtual scene to measure
                                           the impact of rays that didn't touch anything
                                           on PAD estimations. [disabled by defaults]
-
-   -p, --profile      filename            Outputs to vertical profile of the voxels
-                                          of the grid to a csv file.
-                                          [disabled by defaults]
 
    -j, --jobs         number              A number of parallel jobs to use.
                                           [defaults to the amount of core]
@@ -63,6 +60,10 @@ Options:
                                              - CF: Contact Frequency
                                              - UPLBL: Unequal Path Length
                                                Beer Lambert
+
+   -a, --all          none                Whether or not to include all the information
+                                          from the grid (ray counts, lengths, etc.) in the
+                                          exported file. [disabled by default]
 
    -h, --help                             Prints this message
 )";
@@ -79,10 +80,9 @@ bool                       g_compute_theoriticals = false;
 std::optional<lvox::Point> g_scan_origin          = {};
 std::mutex                 g_print_guard          = {};
 fs::path                   g_file;
-std::optional<fs::path>    g_traj_file            = {};
-std::optional<fs::path>    g_output_profile_file  = {};
-fs::path                   g_grid_file            = "out.h5";
-
+std::optional<fs::path>    g_traj_file           = {};
+fs::path                   g_grid_file           = "out.h5";
+bool                       g_include_all_info    = false;
 
 struct PointCloudWithTheoriticalShots
 {
@@ -95,7 +95,7 @@ auto load_point_cloud_from_file(
     std::optional<std::reference_wrapper<lvox::Bounds>> bounds = {}
 ) -> PointCloudWithTheoriticalShots
 {
-    using dim    = pdal::Dimension::Id;
+    using dim = pdal::Dimension::Id;
 
     lvox::Logger logger{"Point cloud file reader"};
     if (!fs::exists(file) || !fs::is_regular_file(file))
@@ -177,26 +177,6 @@ auto load_point_cloud_from_file(
     sc.execute(pts_table);
 
     return out;
-}
-
-auto output_profile_to_csv(
-    const std::filesystem::path& path, const lvox::algorithms::PadResult& result
-) -> void
-{
-    std::ofstream fstream{path};
-
-    fstream << "Height in meters,PAD\n";
-    for (size_t z = 0; z < result.dim_z(); ++z)
-    {
-        double sum = 0;
-        for (size_t x = 0; x < result.dim_x(); ++x)
-            for (size_t y = 0; y < result.dim_y(); ++y)
-                sum += result.at(x, y, z);
-
-        fstream << std::format("{},{}\n", z * result.cell_size(), sum);
-    }
-
-    fstream.flush();
 }
 
 auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox::Scan>
@@ -323,10 +303,6 @@ auto main(int argc, char* argv[]) -> int
         {
             g_scan_origin = {std::stod(*++arg_it), std::stod(*++arg_it), std::stod(*++arg_it)};
         }
-        else if (*arg_it == "-p" || *arg_it == "--profile")
-        {
-            g_output_profile_file = *++arg_it;
-        }
         else if (*arg_it == "-g" || *arg_it == "--grid")
         {
             g_grid_file = *++arg_it;
@@ -372,6 +348,10 @@ auto main(int argc, char* argv[]) -> int
         {
             g_compute_theoriticals = true;
         }
+        else if (*arg_it == "-a" || *arg_it == "--all")
+        {
+            g_include_all_info = true;
+        }
         else
         {
             g_file = *arg_it;
@@ -396,30 +376,7 @@ auto main(int argc, char* argv[]) -> int
         .m_pad_estimator        = g_pad_estimator,
         .m_compute_theoriticals = g_compute_theoriticals
     };
-    const lvox::algorithms::PadResult result =
-        lvox::algorithms::compute_pad(scans, compute_options);
+    const lvox::Grid result = lvox::algorithms::compute_pad(scans, compute_options);
 
-    lvox::h5_exporter::export_grid(result, "pad", g_grid_file);
-
-    if (g_output_profile_file)
-    {
-        output_profile_to_csv(*g_output_profile_file, result);
-    }
-
-    // const lvox::Bounds bounds = lvox::algorithms::compute_scene_bounds(scans);
-    // lvox::algorithms::ComputeData data{
-    //     .m_counts{bounds, compute_options.voxel_size},
-    //     .m_lengths{bounds, compute_options.voxel_size},
-    //     .m_hits{{bounds, compute_options.voxel_size}},
-    // };
-
-    // for (const auto& scan : scans)
-    // {
-    //     lvox::algorithms::compute_rays_count_and_length(scan, data, compute_options);
-    // }
-
-    // logger.info("Writing output HDF5 file");
-    // lvox::h5_exporter::export_grid(*data.m_hits, "hits", file);
-    // lvox::h5_exporter::export_grid(data.m_counts, "counts", file);
-    //     lvox::h5_exporter::export_grid(data.m_lengths, "lengths", file);
+    result.export_as_coo_to_h5("lvox", g_grid_file, g_include_all_info);
 }
