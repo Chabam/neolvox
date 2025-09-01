@@ -144,6 +144,9 @@ auto Grid::adjust_dim_to_grid(double distance) -> unsigned int
     constexpr auto chunk_dim = VoxelChunk::s_edge_size;
     const auto     new_dim   = static_cast<unsigned int>(std::ceil(distance / m_cell_size));
 
+    if (new_dim % chunk_dim == 0)
+        return new_dim;
+
     // Rounding to the nearest chunk dimension.
     return new_dim + chunk_dim - (new_dim % chunk_dim);
 }

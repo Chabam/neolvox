@@ -11,7 +11,7 @@ TEST(grid, voxel_bounds)
     lvox::Bounds bounds = create_bounds(dim_x, dim_y, dim_z);
 
     const double                 cell_size = 1.;
-    lvox::GridU32 grid{bounds, cell_size};
+    lvox::Grid grid{bounds, cell_size};
     const lvox::Bounds   grid_bounds = grid.bounds();
 
     {

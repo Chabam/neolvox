@@ -10,7 +10,7 @@ TEST(grid, voxel_bounds_from_point)
     lvox::Bounds bounds = create_bounds(dim, dim, dim);
 
     const double                 cell_size = 1.;
-    lvox::GridU32 grid{bounds, cell_size};
+    lvox::Grid grid{bounds, cell_size};
 
     const double       middle_point = (dim / 2.);
     const lvox::Bounds middle_voxel_from_dim =
