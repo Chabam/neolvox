@@ -116,6 +116,16 @@ auto compute_theoriticals(Grid& grid, const Scan& scan, const ComputeOptions& op
     );
 }
 
+auto compute_scene_bounds(const std::vector<lvox::Scan>& scans) -> lvox::Bounds
+{
+    Bounds total_bounds;
+
+    for (const auto& scan : scans)
+        total_bounds.grow(scan.m_bounds);
+
+    return total_bounds;
+}
+
 auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options) -> Grid
 {
     Logger logger{"LVOX"};
@@ -147,16 +157,6 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
     }
 
     return grid;
-}
-
-auto compute_scene_bounds(const std::vector<lvox::Scan>& scans) -> lvox::Bounds
-{
-    Bounds total_bounds;
-
-    for (const auto& scan : scans)
-        total_bounds.grow(scan.m_bounds);
-
-    return total_bounds;
 }
 
 } // namespace lvox::algorithms
