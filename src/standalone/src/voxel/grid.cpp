@@ -4,11 +4,14 @@
 #include <format>
 #include <iterator>
 #include <mutex>
+#include <numbers>
+#include <ranges>
 
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/logger/logger.hpp>
 #include <lvox/types.hpp>
 #include <lvox/voxel/grid.hpp>
+
 
 namespace lvox
 {
@@ -397,7 +400,7 @@ auto Grid::export_as_coo_to_h5(
                                std::views::elements<0> | std::ranges::to<std::vector>();
         auto index3d_with_data =
             index_with_data |
-            std::views::transform([this, &logger, chunk_x, chunk_y, chunk_z](unsigned int idx) -> Index3D {
+            std::views::transform([this, &logger, chunk_x, chunk_y, chunk_z](size_t idx) -> Index3D {
                 constexpr auto chunk_dim = VoxelChunk::s_edge_size;
                 return {
                     chunk_x * chunk_dim + static_cast<unsigned int>(idx % chunk_dim),

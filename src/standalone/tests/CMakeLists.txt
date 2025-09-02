@@ -21,7 +21,7 @@ target_include_directories(lvox_tests
 
 target_link_libraries(lvox_tests
     GTest::GTest
-    GTest::gtest_main
+    GTest::Main
     pdalcpp
     Eigen3::Eigen
     lvox_common
