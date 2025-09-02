@@ -128,12 +128,12 @@ public:
     void doSommation(size_t index, float delta, float free) ;
 
 private:
-    std::map<size_t, float> _sommaDelta;
-    std::map<size_t, float> _sommaFree;
-    std::map<size_t, float> _sommaEffectiveFree;
-    std::map<size_t, float> _sommaEffectiveDelta;
-    std::map<size_t, float> _sommaEffectiveHits;
-    std::map<size_t, float> _sommaDeltaSquare;
+    std::vector<float> _sommaDelta;
+    std::vector<float> _sommaFree;
+    std::vector<float> _sommaEffectiveFree;
+    std::vector<float> _sommaEffectiveDelta;
+    std::vector<float> _sommaEffectiveHits;
+    std::vector<float> _sommaDeltaSquare;
 
     double _lambda1;
 };
