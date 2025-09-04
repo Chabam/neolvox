@@ -42,36 +42,73 @@ auto compute_rays_count_and_length_impl(
             return GridTraversalVoxelRounding{grid};
     });
 
-    const auto ray_trace = [&](auto&& points) -> void {
-        for (const auto& timed_point : points)
+    const auto points_to_process = std::ranges::distance(*scan.m_points);
+
+
+    struct PointRange
+    {
+        using const_iterator = PointCloudView::element_type::const_iterator;
+
+        const_iterator m_start;
+        const_iterator m_end;
+
+        auto begin() const -> const_iterator { return m_start; }
+        auto end() const -> const_iterator { return m_end; }
+    };
+
+    const auto ray_trace = [&](const PointRange& task) -> void {
+        for (const auto& timed_point : task)
         {
             const double gps_time = timed_point.m_gps_time;
             const Point& pt       = timed_point.m_point;
             const Point  scan_origin =
                 std::visit(Scan::ComputeBeamOrigin{timed_point.m_gps_time}, scan.m_scanner_origin);
 
-            const Vector beam_to_point{pt - scan_origin};
+            // If we compute the hits, we start at the point in the
+            // point cloud towards the scanner. This is done to avoid
+            // recomputing the index of the point since it is provided
+            // by the grid traversal.
+            const Vector beam_dir = std::invoke([&scan_origin, &pt]() -> Vector {
+                if constexpr (compute_hits)
+                    return Vector{scan_origin - pt};
+                else
+                    return Vector{pt - scan_origin};
+            });
+
+            // Invertly, if we do not compute the hits, we start at
+            // the scanner towards the point.
+            const Point point_origin = std::invoke([&scan_origin, &pt]() -> Vector {
+                if constexpr (compute_hits)
+                    return pt;
+                else
+                    return scan_origin;
+            });
 
             double max_distance = std::numeric_limits<double>::infinity();
 
-            if constexpr (compute_hits)
-            {
-                const auto idx = grid.index3d_of_point(timed_point.m_point);
-                grid.register_hit(idx);
-            }
-
             if constexpr (limit_ray_length)
             {
-                max_distance = beam_to_point.norm();
+                max_distance = beam_dir.norm();
             }
 
+            bool is_hit_computed = false;
+
             grid_traversal(
-                Beam{scan_origin, beam_to_point},
-                [&grid](const VoxelHitInfo& hit) {
+                Beam{point_origin, beam_dir},
+                [&grid, &is_hit_computed](const VoxelHitInfo& hit) {
                     if constexpr (pe::is_uplbl<PadEstimator>::value)
                         grid.add_length_count_and_variance(hit.m_index, hit.m_distance_in_voxel);
                     else
                         grid.add_length_and_count(hit.m_index, hit.m_distance_in_voxel);
+
+                    if constexpr (compute_hits)
+                    {
+                        if (!is_hit_computed)
+                        {
+                            grid.register_hit(hit.m_index);
+                            is_hit_computed = true;
+                        }
+                    }
                 },
                 max_distance
             );
@@ -80,7 +117,17 @@ auto compute_rays_count_and_length_impl(
         logger.debug("thread finished");
     };
 
-    compute_in_parallel(*scan.m_points, options.m_job_limit, ray_trace);
+    const size_t point_count     = scan.m_points->size();
+    const size_t points_per_tasks = std::ceil(static_cast<float>(point_count) / options.m_job_limit);
+    std::vector<std::jthread> threads;
+    auto start_it = scan.m_points->begin();
+    for (auto i = 0; i < point_count; i += (points_per_tasks + 1))
+    {
+        auto next_end = start_it + std::min(points_per_tasks, point_count - i);
+        threads.emplace_back(ray_trace, PointRange{start_it, next_end});
+
+        start_it = next_end + 1;
+    }
 }
 
 auto compute_rays_count_and_length(Grid& grid, const Scan& scan, const ComputeOptions& options)
