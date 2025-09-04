@@ -14,7 +14,7 @@ def main():
 
 
     file = h5py.File(args.file_name, "r")
-    group: h5py.Group = file["lvox computation values"]
+    group: h5py.Group = file["lvox"]
 
     dims = group.attrs["Dimensions"]
 

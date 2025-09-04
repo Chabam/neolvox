@@ -395,7 +395,7 @@ auto Grid::export_as_coo_to_h5(
 
         auto index_with_data = chunk->m_counts | std::views::enumerate |
                                std::views::filter([&chunk](const auto& pair) -> bool {
-                                   return chunk->m_pad[std::get<0>(pair)] != 0;
+                                   return chunk->m_counts[std::get<0>(pair)] != 0;
                                }) |
                                std::views::elements<0> | std::ranges::to<std::vector>();
         auto index3d_with_data =
