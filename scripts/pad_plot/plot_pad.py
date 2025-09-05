@@ -14,11 +14,11 @@ def main():
 
 
     file = h5py.File(args.file_name, "r")
-    dset: h5py.Dataset = file["pad"]
+    group: h5py.Group = file["lvox"]
 
-    dims = dset.attrs["Dimensions"]
+    dims = group.attrs["Dimensions"]
 
-    dset_m = sparse.COO((dset["values"], (dset["x"], dset["y"], dset["z"])), shape=dims).todense()
+    dset_m = sparse.COO((group["pad"], (group["x"], group["y"], group["z"])), shape=dims).todense()
 
     profile = numpy.average(dset_m, axis=(0, 1))
     figure, axis = plt.subplots()

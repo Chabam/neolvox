@@ -1,8 +1,8 @@
 #include <cmath>
+#include <gtest/gtest.h>
+#include <iterator>
 #include <numbers>
 #include <ranges>
-
-#include <gtest/gtest.h>
 
 #include <lvox/scanner/spherical_scanner.hpp>
 
@@ -18,18 +18,19 @@ TEST(SphericalScannerTests, creation_all_6_axis)
 
     const lvox::SphericalScanner scanner{origin, h_fov, v_fov, res};
     EXPECT_EQ(16, scanner.get_beams().size());
-    const std::set<std::array<double, 3>> beams =
+    std::set<std::array<double, 3>> beams;
+
+    std::ranges::copy(
         scanner.get_beams() |
-        std::ranges::views::transform([](const lvox::Beam& beam) -> std::array<double, 3> {
-            const auto dir = beam.direction();
+            std::ranges::views::transform([](const lvox::Beam& beam) -> std::array<double, 3> {
+                const auto dir = beam.direction();
 
-            // Rounding the values because of floating point errors.
-            return {std::round(dir.x()), std::round(dir.y()), std::round(dir.z())};
-        }) |
-        // To remove duplicates
-        std::ranges::to<std::set>();
+                // Rounding the values because of floating point errors.
+                return {std::round(dir.x()), std::round(dir.y()), std::round(dir.z())};
+            }),
+        std::inserter(beams, beams.end())
+    );
 
-    // clang-format off
     const std::set<std::array<double, 3>> all_axis{
         // X
         {-1., 0., 0.},
@@ -41,7 +42,6 @@ TEST(SphericalScannerTests, creation_all_6_axis)
         {0., 0., -1.},
         {0., 0., 1.}
     };
-    // clang-format on
 
     ASSERT_EQ(beams, all_axis);
 }
@@ -53,8 +53,8 @@ TEST(SphericalScannerTests, verify_angle_resolution)
     const double      h_fov        = 360.;
     const double      v_fov        = 300.;
     const double      res          = 1.;
-    const lvox::Index      nb_vert_rays = std::ceil(v_fov / res);
-    const lvox::Index      nb_hor_rays  = std::ceil(h_fov / res);
+    const size_t      nb_vert_rays = std::ceil(v_fov / res);
+    const size_t      nb_hor_rays  = std::ceil(h_fov / res);
     const double      angle_vert   = v_fov / nb_vert_rays;
     const double      angle_hor    = h_fov / nb_hor_rays;
     const double      epsilon      = 0.000001;
@@ -68,7 +68,7 @@ TEST(SphericalScannerTests, verify_angle_resolution)
     };
 
     // Check for vertical resolution
-    for (lvox::Index i = 1; i < nb_vert_rays; ++i)
+    for (size_t i = 1; i < nb_vert_rays; ++i)
     {
         const lvox::Beam cur_beam  = beams[i];
         const lvox::Beam prev_beam = beams[i - 1];
@@ -83,7 +83,7 @@ TEST(SphericalScannerTests, verify_angle_resolution)
     }
 
     // Check for horizontal resolution (+60 beams to end up flat on the x/y axis)
-    for (lvox::Index i = nb_vert_rays + 60; i < scanner.get_beams().size(); i += nb_vert_rays)
+    for (size_t i = nb_vert_rays + 60; i < scanner.get_beams().size(); i += nb_vert_rays)
     {
         const lvox::Beam cur_beam  = beams[i];
         const lvox::Beam prev_beam = beams[i - nb_vert_rays];

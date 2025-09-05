@@ -75,7 +75,6 @@ set(LVOX_SOURCES
     step/lvox3_steploadfiles.cpp
     step/lvox3_stepmakeshootingpatternformls.cpp
     step/lvox3_stepmergegrids.cpp
-    tools/3dgrid/lvox_grid3d.cpp
     tools/lvox3_mergegrids.cpp
     tools/lvox3_rayboxintersectionmath.cpp
     tools/lvox3_scannerutils.cpp

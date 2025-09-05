@@ -2,292 +2,124 @@
 #define LVOX_VOXEL_GRID_HPP
 
 #include <atomic>
-#include <cmath>
-#include <format>
-#include <vector>
+#include <execution>
+#include <filesystem>
 
-#include <lvox/logger/logger.hpp>
 #include <lvox/types.hpp>
 
 namespace lvox
 {
 
-template <typename T>
-struct contained_type
+namespace algorithms::pad_estimators
 {
-    using type = T;
-};
+struct BeerLambert;
+struct ContactFrequency;
+struct UnequalPathLengthBeerLambert;
+} // namespace algorithms::pad_estimators
 
-template <typename T>
-struct contained_type<std::atomic<T>>
-{
-    using type = T;
-};
-
-template <typename T>
-using contained_type_t = contained_type<T>::type;
-
-template <typename T>
 class Grid
 {
   public:
-    using cell_t           = T;
-    using const_cell_ref   = const cell_t&;
-    using cell_ref         = cell_t&;
-    using iterator_t       = std::vector<cell_t>::iterator;
-    using const_iterator_t = std::vector<cell_t>::const_iterator;
+    Grid(const Bounds& bounds, double cell_size, bool compute_variance = false);
+    Grid(Grid&& other);
 
-    Grid()  = default;
-    ~Grid() = default;
+    auto register_hit(const Index3D& idx) -> void;
+    auto add_length_and_count(const Index3D& idx, double length) -> void;
+    auto add_length_count_and_variance(const Index3D& idx, double length) -> void;
 
-    Grid(const Bounds& bounds, double cell_size)
-        : m_cell_size{cell_size}
-        , m_dim_x{Grid::adjust_dim_to_grid(bounds.maxx - bounds.minx, cell_size)}
-        , m_dim_y{Grid::adjust_dim_to_grid(bounds.maxy - bounds.miny, cell_size)}
-        , m_dim_z{Grid::adjust_dim_to_grid(bounds.maxz - bounds.minz, cell_size)}
-        , m_cells{m_dim_x * m_dim_y * m_dim_z, std::allocator<cell_t>{}}
-        , m_bounds{
-            bounds.minx,
-            bounds.miny,
-            bounds.minz,
-            Grid::adjust_bounds_to_grid(m_dim_x, bounds.minx),
-            Grid::adjust_bounds_to_grid(m_dim_y, bounds.miny),
-            Grid::adjust_bounds_to_grid(m_dim_z, bounds.minz)
-        }
+    auto compute_pad(algorithms::pad_estimators::BeerLambert) -> void;
+    auto compute_pad(algorithms::pad_estimators::ContactFrequency) -> void;
+    auto compute_pad(algorithms::pad_estimators::UnequalPathLengthBeerLambert) -> void;
+
+    // NOTE: no bounds check!
+    auto voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> Bounds;
+
+    auto voxel_bounds_from_point(const Point& point) -> Bounds;
+
+    // Return an index tuple of this layout (x, y, z)
+    auto index3d_of_point(const Point& point) const -> Index3D;
+
+    auto cell_size() const -> double { return m_cell_size; }
+    auto cell_count() const -> size_t { return m_cell_count; }
+
+    auto dim_x() const -> unsigned int { return m_dim_x; }
+    auto dim_y() const -> unsigned int { return m_dim_y; }
+    auto dim_z() const -> unsigned int { return m_dim_z; }
+
+    auto bounds() const -> const Bounds& { return m_bounds; }
+    auto export_as_coo_to_h5(
+        const std::string&           dataset_name,
+        const std::filesystem::path& filename,
+        bool                         include_all_data = false
+    ) const -> void;
+
+  private:
+    struct VoxelChunk
     {
+        static constexpr auto s_edge_size = 8;
+        static constexpr auto s_edge_bits = 3; // Number of bits for the edge size (log base 2 of 8)
+        static constexpr auto s_edge_mask = s_edge_size - 1; // Inverting the size
+        static constexpr auto s_cell_count = s_edge_size * s_edge_size * s_edge_size;
 
-        Logger logger{"Grid"};
+        VoxelChunk(bool compute_variance);
 
-        logger.debug(
-            g_grid_loginfo,
-            m_dim_x,
-            m_dim_y,
-            m_dim_z,
-            m_cell_size,
-            cell_count(),
-            m_bounds.minx,
-            m_bounds.maxx,
-            m_bounds.miny,
-            m_bounds.maxy,
-            m_bounds.minz,
-            m_bounds.maxz
+        static auto index3d_to_flat_idx(const Index3D& voxel_idx) -> size_t;
+
+        std::vector<unsigned int> m_hits;
+        std::vector<unsigned int> m_counts;
+        std::vector<double>       m_lengths;
+        std::vector<double>       m_lengths_variance;
+        std::vector<double>       m_pad;
+        mutable std::mutex        m_write_access;
+    };
+
+    using chunk_ptr   = std::shared_ptr<VoxelChunk>;
+    using a_chunk_ptr = std::atomic<chunk_ptr>;
+
+    double                   m_cell_size;
+    unsigned int             m_dim_x;
+    unsigned int             m_dim_y;
+    unsigned int             m_dim_z;
+    unsigned int             m_chunks_x;
+    unsigned int             m_chunks_y;
+    unsigned int             m_chunks_z;
+    size_t                   m_cell_count;
+    size_t                   m_chunk_count;
+    bool                     m_compute_variance;
+    std::vector<a_chunk_ptr> m_chunks;
+    Bounds                   m_bounds;
+
+    template <typename PadFunc>
+    auto compute_pad_impl(PadFunc&& func) -> void
+    {
+        std::for_each(
+            std::execution::par_unseq, m_chunks.begin(), m_chunks.end(), [func](auto& a_chunk) {
+                auto chunk = a_chunk.load(std::memory_order_relaxed);
+
+                if (!chunk)
+                    return;
+
+                for (unsigned int i = 0; i < VoxelChunk::s_cell_count; ++i)
+                {
+                    // TODO: Make the treshold configurable
+                    if (chunk->m_counts[i] < 5)
+                    {
+                        chunk->m_pad[i] = 0;
+                        continue;
+                    }
+
+                    chunk->m_pad[i] = func(chunk, i);
+                }
+            }
         );
     }
 
-    Grid(Grid&& other)
-        : m_cell_size{std::move(other.m_cell_size)}
-        , m_dim_x{std::move(other.m_dim_x)}
-        , m_dim_y{std::move(other.m_dim_y)}
-        , m_dim_z{std::move(other.m_dim_z)}
-        , m_cells{std::move(other.m_cells)}
-        , m_bounds{std::move(other.m_bounds)}
-    {
-    }
+    auto get_or_create_chunk(size_t chunk_idx) -> a_chunk_ptr&;
+    // Returns a pair of the chunk index in the index of the voxel in the chunk
+    auto index3d_to_chunk_idx(const Index3D& voxel_idx) const -> size_t;
 
-    Grid(const Grid& other)
-        : m_cell_size{other.m_cell_size}
-        , m_dim_x{other.m_dim_x}
-        , m_dim_y{other.m_dim_y}
-        , m_dim_z{other.m_dim_z}
-        , m_cells{other.m_cells}
-        , m_bounds{other.m_bounds}
-    {
-    }
-
-    auto operator=(Grid&& other) -> Grid&
-    {
-        m_cell_size = std::move(other.m_cell_size);
-        m_dim_x     = std::move(other.m_dim_x);
-        m_dim_y     = std::move(other.m_dim_y);
-        m_dim_z     = std::move(other.m_dim_z);
-        m_cells     = std::move(other.m_cells);
-        m_bounds    = std::move(other.m_bounds);
-
-        return *this;
-    }
-
-    auto operator=(const Grid& other) -> Grid&
-    {
-        m_cell_size = other.m_cell_size;
-        m_dim_x     = other.m_dim_x;
-        m_dim_y     = other.m_dim_y;
-        m_dim_z     = other.m_dim_z;
-        m_cells     = other.m_cells;
-        m_bounds    = other.m_bounds;
-
-        return *this;
-    }
-
-    [[nodiscard]]
-    auto at(Index index) const -> const_cell_ref
-    {
-        return m_cells.at(index);
-    }
-
-    [[nodiscard]]
-    auto at(Index index) -> cell_ref
-    {
-        return m_cells.at(index);
-    }
-
-    [[nodiscard]]
-    auto at(Index x, Index y, Index z) const -> const_cell_ref
-    {
-        return at(index3d_to_index(x, y, z));
-    }
-
-    [[nodiscard]]
-    auto at(Index x, Index y, Index z) -> cell_ref
-    {
-        return at(index3d_to_index(x, y, z));
-    }
-
-    // NOTE: no bounds check!
-    [[nodiscard]]
-    auto voxel_bounds(Index idx_x, Index idx_y, Index idx_z) const -> Bounds
-    {
-        const double min_x = m_bounds.minx + idx_x * m_cell_size;
-        const double min_y = m_bounds.miny + idx_y * m_cell_size;
-        const double min_z = m_bounds.minz + idx_z * m_cell_size;
-        return Bounds{//
-                      min_x,
-                      min_y,
-                      min_z,
-                      min_x + m_cell_size,
-                      min_y + m_cell_size,
-                      min_z + m_cell_size
-        };
-    }
-
-    [[nodiscard]]
-    auto voxel_bounds_from_point(const Point& point) -> Bounds
-    {
-        const auto [idx_x, idx_y, idx_z] = index_of_point(point);
-        return voxel_bounds(idx_x, idx_y, idx_z);
-    }
-
-    // Return an index tuple of this layout (x, y, z)
-    [[nodiscard]]
-    auto index_of_point(const Point& point) const -> Index3D
-    {
-        const double x = point.x();
-        const double y = point.y();
-        const double z = point.z();
-
-        if (!m_bounds.contains(x, y, z))
-        {
-            throw std::runtime_error{
-                std::format("Provided coords are not in the grid: ({}, {}, {})", x, y, z)
-            };
-        }
-
-        const auto coords_to_index =
-            [cell_size = m_cell_size](double min, double max, double coord) -> Index {
-            const double result = std::floor((coord - min) / cell_size);
-            if (coord == max)
-                return result - 1;
-            return result;
-        };
-
-        return {
-            coords_to_index(m_bounds.minx, m_bounds.maxx, x),
-            coords_to_index(m_bounds.miny, m_bounds.maxy, y),
-            coords_to_index(m_bounds.minz, m_bounds.maxz, z)
-        };
-    }
-
-    [[nodiscard]]
-    auto cell_size() const -> double
-    {
-        return m_cell_size;
-    }
-
-    [[nodiscard]]
-    auto cell_count() const -> Index
-    {
-        return dim_x() * dim_y() * dim_z();
-    }
-
-    [[nodiscard]]
-    auto dim_x() const -> Index
-    {
-        return m_dim_x;
-    }
-
-    [[nodiscard]]
-    auto dim_y() const -> Index
-    {
-        return m_dim_y;
-    }
-
-    [[nodiscard]]
-    auto dim_z() const -> Index
-    {
-        return m_dim_z;
-    }
-
-    [[nodiscard]]
-    auto bounds() const -> const Bounds&
-    {
-        return m_bounds;
-    }
-
-    auto is_na(Index i) const -> bool
-    {
-        return at(i) == cell_t{};
-    };
-
-    auto is_na(Index x, Index y, Index z) const -> bool
-    {
-        return is_na(index3d_to_index(x, y, z));
-    };
-
-    [[nodiscard]]
-    auto index3d_to_index(Index x, Index y, Index z) const -> Index
-    {
-        return x + (y * m_dim_x) + (z * m_dim_x * m_dim_y);
-    }
-
-    [[nodiscard]]
-    auto index_to_index3d(Index i) const -> Index3D
-    {
-        return
-        {
-            i % m_dim_x,
-            (i / m_dim_x) % m_dim_y,
-            (i / m_dim_x) / m_dim_y
-        };
-    }
-
-    auto begin() -> iterator_t { return m_cells.begin(); }
-
-    auto end() -> iterator_t { return m_cells.end(); }
-
-    auto cbegin() const -> const_iterator_t { return m_cells.cbegin(); }
-
-    auto cend() const -> const_iterator_t { return m_cells.cend(); }
-
-    auto begin() const -> const_iterator_t { return m_cells.begin(); }
-
-    auto end() const -> const_iterator_t { return m_cells.end(); }
-
-  private:
-    double                    m_cell_size;
-    Index                     m_dim_x;
-    Index                     m_dim_y;
-    Index                     m_dim_z;
-    std::vector<cell_t>       m_cells;
-    Bounds                    m_bounds;
-
-    static auto adjust_dim_to_grid(double distance, double cell_size) -> Index
-    {
-        return static_cast<Index>(std::ceil(distance / cell_size));
-    }
-
-    auto adjust_bounds_to_grid(Index dim, double min) const -> double
-    {
-        return min + dim * m_cell_size;
-    }
+    auto adjust_dim_to_grid(double distance) -> unsigned int;
+    auto adjust_bounds_to_grid(size_t dim, double min) const -> double;
 
     static constexpr auto g_grid_loginfo = R"(
 Creating grid of dimension: {}x{}x{}
@@ -297,11 +129,8 @@ Bounds:
     x: {}, {}
     y: {}, {}
     z: {}, {}
-)";
+    )";
 };
-
-using GridU32 = Grid<std::atomic_uint32_t>;
-using GridD   = Grid<std::atomic<double>>;
 
 } // namespace lvox
 

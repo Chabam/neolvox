@@ -39,12 +39,12 @@ LVOX_Grid3D<DataT>::LVOX_Grid3D(double xmin,
                      resolution,
                      na,
                      initValue)
-  , _sommaDelta()
-  , _sommaFree()
-  , _sommaEffectiveFree()
-  , _sommaEffectiveDelta()
-  , _sommaEffectiveHits()
-  , _sommaDeltaSquare()
+  , _sommaDelta(nCells())
+  , _sommaFree(nCells())
+  , _sommaEffectiveFree(nCells())
+  , _sommaEffectiveDelta(nCells())
+  , _sommaEffectiveHits(nCells())
+  , _sommaDeltaSquare(nCells())
 {
 }
 
@@ -197,36 +197,36 @@ void LVOX_Grid3D<DataT>::addSommaDeltaSquare(size_t i, float value)
 template <typename DataT>
 float LVOX_Grid3D<DataT>::getSommaDelta(size_t i) const
 {
-  return LVOX_Grid3DPrivate::safeGetValueFromMap(_sommaDelta, i);
+  return _sommaDelta[i];
 }
 
 template <typename DataT>
 float LVOX_Grid3D<DataT>::getSommaFree(size_t i) const
 {
-  return LVOX_Grid3DPrivate::safeGetValueFromMap(_sommaFree, i);
+  return _sommaFree[i];
 }
 template <typename DataT>
 float LVOX_Grid3D<DataT>::getSommaEffectiveFree(size_t i) const
 {
-  return LVOX_Grid3DPrivate::safeGetValueFromMap(_sommaEffectiveFree, i);
+  return _sommaEffectiveFree[i];
 }
 
 template <typename DataT>
 float LVOX_Grid3D<DataT>::getSommaEffectiveDelta(size_t i) const
 {
-  return LVOX_Grid3DPrivate::safeGetValueFromMap(_sommaEffectiveDelta, i);
+  return _sommaEffectiveDelta[i];
 }
 
 template <typename DataT>
 float LVOX_Grid3D<DataT>::getSommaEffectiveHits(size_t i) const
 {
-  return LVOX_Grid3DPrivate::safeGetValueFromMap(_sommaEffectiveHits, i);
+  return _sommaEffectiveHits[i];
 }
 
 template <typename DataT>
 float LVOX_Grid3D<DataT>::getSommaDeltaSquare(size_t i) const
 {
-  return LVOX_Grid3DPrivate::safeGetValueFromMap(_sommaDeltaSquare, i);
+  return _sommaDeltaSquare[i];
 }
 
 template <typename DataT>
