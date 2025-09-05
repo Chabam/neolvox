@@ -28,10 +28,10 @@ jobs:
         if: runner.os == 'Windows'
         uses: lukka/run-vcpkg@v11
         id: runvcpkg
-
-      - name: Install vcpkg dependencies
-        if: runner.os == 'Windows'
-        run: vcpkg.exe install --clean-after-build hdf5 pdal eigen3 gtest benchmark
+        with:
+            vcpkgGitCommitId: '120deac3062162151622ca4860575a33844ba10b' # 2025.08.27
+            vcpkgJsonGlob: "vcpkg.json"
+            runVcpkgInstall: true
 
       - name: Linux setup PPA for pdal
         if: runner.os == 'Linux'
