@@ -15,14 +15,11 @@ jobs:
           - os: ubuntu-latest
             configurePreset: 'linux-standalone'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
             submodules: true
 
       - uses: lukka/get-cmake@latest
-      - name: List $RUNNER_WORKSPACE before build
-        run: find $RUNNER_WORKSPACE
-        shell: bash
 
       - name: Setup vcpkg
         if: runner.os == 'Windows'
