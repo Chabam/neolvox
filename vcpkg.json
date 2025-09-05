@@ -1,0 +1,9 @@
+{
+    "dependencies": [
+        "pdal",
+        "hdf5",
+        "eigen3",
+        "gtest",
+        "benchmark"
+    ]
+}
