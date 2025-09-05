@@ -1,8 +1,8 @@
 #include <cmath>
+#include <gtest/gtest.h>
+#include <iterator>
 #include <numbers>
 #include <ranges>
-
-#include <gtest/gtest.h>
 
 #include <lvox/scanner/spherical_scanner.hpp>
 
@@ -18,18 +18,19 @@ TEST(SphericalScannerTests, creation_all_6_axis)
 
     const lvox::SphericalScanner scanner{origin, h_fov, v_fov, res};
     EXPECT_EQ(16, scanner.get_beams().size());
-    const std::set<std::array<double, 3>> beams =
+    std::set<std::array<double, 3>> beams;
+
+    std::ranges::copy(
         scanner.get_beams() |
-        std::ranges::views::transform([](const lvox::Beam& beam) -> std::array<double, 3> {
-            const auto dir = beam.direction();
+            std::ranges::views::transform([](const lvox::Beam& beam) -> std::array<double, 3> {
+                const auto dir = beam.direction();
 
-            // Rounding the values because of floating point errors.
-            return {std::round(dir.x()), std::round(dir.y()), std::round(dir.z())};
-        }) |
-        // To remove duplicates
-        std::ranges::to<std::set>();
+                // Rounding the values because of floating point errors.
+                return {std::round(dir.x()), std::round(dir.y()), std::round(dir.z())};
+            }),
+        std::inserter(beams, beams.end())
+    );
 
-    // clang-format off
     const std::set<std::array<double, 3>> all_axis{
         // X
         {-1., 0., 0.},
@@ -41,7 +42,6 @@ TEST(SphericalScannerTests, creation_all_6_axis)
         {0., 0., -1.},
         {0., 0., 1.}
     };
-    // clang-format on
 
     ASSERT_EQ(beams, all_axis);
 }

@@ -4,9 +4,9 @@
 #include <functional>
 #include <future>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <mutex>
-#include <ranges>
 #include <sstream>
 #include <stdexcept>
 
@@ -172,7 +172,6 @@ auto load_point_cloud_from_file(
     });
 
     try {
-        
         sc.setInput(*file_reader);
         sc.prepare(pts_table);
 
@@ -232,10 +231,13 @@ auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox:
         );
     }
 
-    return scans | std::views::transform([](std::future<lvox::Scan>& future) -> lvox::Scan {
-               return future.get();
-           }) |
-           std::ranges::to<std::vector<lvox::Scan>>();
+    std::vector<lvox::Scan> out_scans;
+    std::ranges::transform(
+        scans, std::back_inserter(out_scans), [](std::future<lvox::Scan>& future) -> lvox::Scan {
+            return future.get();
+        }
+    );
+    return  out_scans;
 }
 
 auto create_scan_using_pdal(
