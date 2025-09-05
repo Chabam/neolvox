@@ -17,19 +17,6 @@
 namespace lvox::algorithms
 {
 
-template <std::ranges::range R, typename F>
-auto compute_in_parallel(const R& objects, unsigned int job_count, const F& func)
-{
-    const size_t object_count     = std::distance(std::begin(objects), std::end(objects));
-    const size_t objects_per_core = std::ceil(static_cast<float>(object_count) / job_count);
-
-    std::vector<std::jthread> threads;
-    for (auto chunk : objects | std::views::chunk(objects_per_core))
-    {
-        threads.emplace_back(func, std::move(chunk));
-    }
-}
-
 template <bool limit_ray_length, bool compute_hits, typename PadEstimator>
 auto compute_rays_count_and_length_impl(
     Grid& grid, const Scan& scan, const ComputeOptions& options, Logger logger
@@ -183,24 +170,26 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
 
     Grid grid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
 
-    for (const auto [scan_num, scan] : std::views::enumerate(scans))
+    auto scan_num = 1;
+    for (const auto& scan : scans)
     {
         if (options.m_compute_theoriticals && scan.m_blank_shots)
         {
-            logger.info("Compute theoriticals {}/{}", scan_num + 1, scans.size());
+            logger.info("Compute theoriticals {}/{}", scan_num, scans.size());
             compute_theoriticals(grid, scan, options);
         }
 
-        logger.info("Compute ray counts and length {}/{}", scan_num + 1, scans.size());
+        logger.info("Compute ray counts and length {}/{}", scan_num, scans.size());
         compute_rays_count_and_length(grid, scan, options);
 
-        logger.info("Estimating PAD {}/{}", scan_num + 1, scans.size());
+        logger.info("Estimating PAD {}/{}", scan_num, scans.size());
         std::visit(
             [&grid](auto&& chosen_estimator) -> void {
                 grid.compute_pad(chosen_estimator);
             },
             options.m_pad_estimator
         );
+        ++scan_num;
     }
 
     return grid;

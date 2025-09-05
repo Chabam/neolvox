@@ -1,3 +1,5 @@
+#include <format>
+
 #include <lvox/scanner/scan.hpp>
 #include <lvox/scanner/trajectory.hpp>
 

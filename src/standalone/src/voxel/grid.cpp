@@ -382,7 +382,8 @@ auto Grid::export_as_coo_to_h5(
     std::vector<double>       lengths;
     std::vector<double>       lengths_variance;
 
-    for (const auto& [chunk_idx, a_chunk] : m_chunks | std::views::enumerate)
+    auto chunk_idx = 0;
+    for (const auto& a_chunk : m_chunks)
     {
         auto chunk = a_chunk.load(std::memory_order_relaxed);
 
@@ -393,91 +394,68 @@ auto Grid::export_as_coo_to_h5(
         const auto chunk_y = static_cast<unsigned int>((chunk_idx / m_chunks_x) % m_chunks_y);
         const auto chunk_z = static_cast<unsigned int>(chunk_idx / (m_chunks_x * m_chunks_y));
 
-        auto index_with_data = chunk->m_counts | std::views::enumerate |
-                               std::views::filter([&chunk](const auto& pair) -> bool {
-                                   return chunk->m_counts[std::get<0>(pair)] != 0;
-                               }) |
-                               std::views::elements<0> | std::ranges::to<std::vector>();
-        auto index3d_with_data =
-            index_with_data |
-            std::views::transform([this, &logger, chunk_x, chunk_y, chunk_z](size_t idx) -> Index3D {
+        std::vector<unsigned int> all_indexes;
+        all_indexes.resize(chunk->m_counts.size());
+        std::iota(all_indexes.begin(), all_indexes.end(), 0);
+        auto index_with_data = all_indexes |
+                               std::views::filter([&chunk](auto idx) -> bool {
+                                   return chunk->m_counts[idx] != 0;
+                               });
+        std::vector<Index3D> index3d_with_data;
+        std::ranges::transform(
+            index_with_data,
+            std::back_inserter(index3d_with_data),
+            [this, &logger, chunk_x, chunk_y, chunk_z](size_t idx) -> Index3D {
                 constexpr auto chunk_dim = VoxelChunk::s_edge_size;
                 return {
                     chunk_x * chunk_dim + static_cast<unsigned int>(idx % chunk_dim),
                     chunk_y * chunk_dim + static_cast<unsigned int>((idx / chunk_dim) % chunk_dim),
                     chunk_z * chunk_dim + static_cast<unsigned int>(idx / (chunk_dim * chunk_dim))
                 };
-            }) |
-            std::ranges::to<std::vector>();
+            });
 
         // Copying indexes
         const auto h5_size_t = H5::PredType::NATIVE_UINT;
-        {
-            auto chunk_xs = index3d_with_data | std::views::elements<0>;
-            std::copy(chunk_xs.begin(), chunk_xs.end(), std::back_inserter(xs));
-        }
-
-        {
-            auto chunk_ys = index3d_with_data | std::views::elements<1>;
-            std::copy(chunk_ys.begin(), chunk_ys.end(), std::back_inserter(ys));
-        }
-
-        {
-            auto chunk_zs = index3d_with_data | std::views::elements<2>;
-            std::copy(chunk_zs.begin(), chunk_zs.end(), std::back_inserter(zs));
-        }
-
-        {
-            auto chunk_pads =
-                index_with_data | std::views::transform([&chunk](const size_t& index) -> double {
-                    return chunk->m_pad[index];
-                });
-            std::copy(chunk_pads.begin(), chunk_pads.end(), std::back_inserter(pads));
-        }
+        std::ranges::copy(index3d_with_data | std::views::elements<0>, std::back_inserter(xs));
+        std::ranges::copy(index3d_with_data | std::views::elements<1>, std::back_inserter(ys));
+        std::ranges::copy(index3d_with_data | std::views::elements<2>, std::back_inserter(zs));
+        std::ranges::copy(index_with_data | std::views::transform([&chunk](const size_t& index) -> double {
+            return chunk->m_pad[index];
+        }), std::back_inserter(pads));
 
         if (include_all_data)
         {
-            {
-                auto chunk_hits =
-                    index_with_data |
-                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                        return chunk->m_hits[index];
-                    });
-                std::copy(chunk_hits.begin(), chunk_hits.end(), std::back_inserter(hits));
-            }
-
-            {
-                auto chunk_counts =
-                    index_with_data |
-                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                        return chunk->m_counts[index];
-                    });
-                std::copy(chunk_counts.begin(), chunk_counts.end(), std::back_inserter(counts));
-            }
-
-            {
-                auto chunk_lengths =
-                    index_with_data |
-                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                        return chunk->m_lengths[index];
-                    });
-                std::copy(chunk_lengths.begin(), chunk_lengths.end(), std::back_inserter(lengths));
-            }
-
-            if (!chunk->m_lengths_variance.empty())
-            {
-                auto chunk_lengths_variance =
-                    index_with_data |
-                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                        return chunk->m_lengths_variance[index];
-                    });
-                std::copy(
-                    chunk_lengths_variance.begin(),
-                    chunk_lengths_variance.end(),
-                    std::back_inserter(lengths_variance)
-                );
-            }
+            std::ranges::copy(index_with_data |
+                              std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                                  return chunk->m_hits[index];
+                              }), std::back_inserter(hits));
+            std::ranges::copy(index_with_data |
+                              std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                                  return chunk->m_counts[index];
+                              }), std::back_inserter(counts));
         }
+
+        {
+            std::ranges::copy(index_with_data |
+                              std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                                  return chunk->m_lengths[index];
+                              }), std::back_inserter(lengths));
+        }
+
+        if (!chunk->m_lengths_variance.empty())
+        {
+            auto chunk_lengths_variance =
+                index_with_data |
+                std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                    return chunk->m_lengths_variance[index];
+                });
+            std::copy(
+                chunk_lengths_variance.begin(),
+                chunk_lengths_variance.end(),
+                std::back_inserter(lengths_variance)
+            );
+        }
+        ++chunk_idx;
     }
 
     const hsize_t voxels_with_data = std::ranges::distance(pads);

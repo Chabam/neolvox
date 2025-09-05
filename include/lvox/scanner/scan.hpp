@@ -2,6 +2,7 @@
 #define LVOX_SCAN_HPP
 
 #include <variant>
+#include <optional>
 
 #include <lvox/types.hpp>
 
