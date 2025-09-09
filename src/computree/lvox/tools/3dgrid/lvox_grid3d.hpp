@@ -39,46 +39,46 @@ LVOX_Grid3D<DataT>::LVOX_Grid3D(double xmin,
                      resolution,
                      na,
                      initValue)
-  , _sommaDelta(nCells())
-  , _sommaFree(nCells())
-  , _sommaEffectiveFree(nCells())
-  , _sommaEffectiveDelta(nCells())
-  , _sommaEffectiveHits(nCells())
-  , _sommaDeltaSquare(nCells())
+  , _sommaDelta(this->nCells())
+  , _sommaFree(this->nCells())
+  , _sommaEffectiveFree(this->nCells())
+  , _sommaEffectiveDelta(this->nCells())
+  , _sommaEffectiveHits(this->nCells())
+  , _sommaDeltaSquare(this->nCells())
 {
 }
 
 template <typename DataT>
-LVOX_Grid3D<DataT>::LVOX_Grid3D(double xmin,
-          double ymin,
-          double zmin,
-          double xmax,
-          double ymax,
-          double zmax,
-          double resolution,
-          DataT na,
-          DataT initValue)
-  : CT_Grid3D<DataT>(xmin, ymin, zmin,
-                     xmax, ymax, zmax,
-                     resolution, na, initValue)
-  , _sommaDelta()
-  , _sommaFree()
-  , _sommaEffectiveFree()
-  , _sommaEffectiveDelta()
-  , _sommaEffectiveHits()
-  , _sommaDeltaSquare()
+LVOX_Grid3D<DataT>::LVOX_Grid3D(
+    double xmin,
+    double ymin,
+    double zmin,
+    double xmax,
+    double ymax,
+    double zmax,
+    double resolution,
+    DataT  na,
+    DataT  initValue
+)
+    : CT_Grid3D<DataT>(xmin, ymin, zmin, xmax, ymax, zmax, resolution, na, initValue)
+    , _sommaDelta(this->nCells())
+    , _sommaFree(this->nCells())
+    , _sommaEffectiveFree(this->nCells())
+    , _sommaEffectiveDelta(this->nCells())
+    , _sommaEffectiveHits(this->nCells())
+    , _sommaDeltaSquare(this->nCells())
 {
 }
 
 template <typename DataT>
 LVOX_Grid3D<DataT>::LVOX_Grid3D(const CT_Grid3D<DataT>& other)
-  : CT_Grid3D<DataT>(other)
-  , _sommaDelta()
-  , _sommaFree()
-  , _sommaEffectiveFree()
-  , _sommaEffectiveDelta()
-  , _sommaEffectiveHits()
-  , _sommaDeltaSquare()
+    : CT_Grid3D<DataT>(other)
+    , _sommaDelta(this->nCells())
+    , _sommaFree(this->nCells())
+    , _sommaEffectiveFree(this->nCells())
+    , _sommaEffectiveDelta(this->nCells())
+    , _sommaEffectiveHits(this->nCells())
+    , _sommaDeltaSquare(this->nCells())
 {
 }
 
