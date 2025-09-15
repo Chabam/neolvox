@@ -3,6 +3,7 @@
 #include <atomic>
 #include <format>
 #include <iterator>
+#include <mutex>
 #include <numbers>
 #include <ranges>
 
@@ -77,15 +78,16 @@ Grid::Grid(Grid&& other)
 }
 
 Grid::VoxelChunk::VoxelChunk(bool compute_variance)
-    : m_hits{s_cell_count, std::allocator<std::atomic_uint>{}}
-    , m_counts{s_cell_count, std::allocator<std::atomic_uint>{}}
-    , m_lengths{s_cell_count, std::allocator<std::atomic<double>>{}}
-    , m_lengths_variance{std::invoke([this, compute_variance]() -> std::vector<std::atomic<double>> {
+    : m_hits{s_cell_count, std::allocator<unsigned int>{}}
+    , m_counts{s_cell_count, std::allocator<unsigned int>{}}
+    , m_lengths{s_cell_count, std::allocator<double>{}}
+    , m_lengths_variance{std::invoke([this, compute_variance]() -> std::vector<double> {
         if (compute_variance)
-            return std::vector<std::atomic<double>>{s_cell_count, std::allocator<std::atomic<double>>{}};
+            return std::vector<double>{s_cell_count, std::allocator<double>{}};
         return {};
     })}
     , m_pad{s_cell_count, std::allocator<double>{}}
+    , m_write_access{}
 {
 }
 
@@ -202,7 +204,8 @@ auto Grid::register_hit(const Index3D& idx) -> void
     auto       chunk              = get_or_create_chunk(chunk_idx);
     const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(idx);
 
-    chunk->m_hits[voxel_idx_in_chunk].fetch_add(1, std::memory_order_relaxed);
+    std::lock_guard lock{chunk->m_write_access};
+    chunk->m_hits[voxel_idx_in_chunk] += 1;
 }
 
 auto Grid::add_length_and_count(const Index3D& idx, double length) -> void
@@ -211,8 +214,9 @@ auto Grid::add_length_and_count(const Index3D& idx, double length) -> void
     auto       chunk              = get_or_create_chunk(chunk_idx);
     const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(idx);
 
-    chunk->m_lengths[voxel_idx_in_chunk].fetch_add(length, std::memory_order_relaxed);
-    chunk->m_counts[voxel_idx_in_chunk].fetch_add(1, std::memory_order_relaxed);
+    std::lock_guard lock{chunk->m_write_access};
+    chunk->m_lengths[voxel_idx_in_chunk] += length;
+    chunk->m_counts[voxel_idx_in_chunk] += 1;
 }
 
 auto Grid::add_length_count_and_variance(const Index3D& idx, double length) -> void
@@ -221,10 +225,12 @@ auto Grid::add_length_count_and_variance(const Index3D& idx, double length) -> v
     auto       chunk              = get_or_create_chunk(chunk_idx);
     const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(idx);
 
+    std::unique_lock lock{chunk->m_write_access};
     const double     previous_lengths = chunk->m_lengths[voxel_idx_in_chunk];
     const double     previous_counts  = chunk->m_counts[voxel_idx_in_chunk];
-    chunk->m_lengths[voxel_idx_in_chunk].fetch_add(length, std::memory_order_relaxed);
-    chunk->m_counts[voxel_idx_in_chunk].fetch_add(1, std::memory_order_relaxed);
+    chunk->m_lengths[voxel_idx_in_chunk] += length;
+    chunk->m_counts[voxel_idx_in_chunk] += 1;
+    lock.unlock();
 
     // TODO: make this configurable maybe, and based on a specific PAD estimation method
     // So far it's based on Computree's NeedleFromDimension
@@ -246,8 +252,10 @@ auto Grid::add_length_count_and_variance(const Index3D& idx, double length) -> v
     const double new_mean      = previous_mean + (delta / new_count);
     const double delta_2       = length - new_mean;
 
+    lock.lock();
+
     // -1 on the count here because we are computing a variance sample.
-    chunk->m_lengths_variance[voxel_idx_in_chunk].fetch_add((delta * delta_2) / (new_count - 1), std::memory_order_relaxed);
+    chunk->m_lengths_variance[voxel_idx_in_chunk] += (delta * delta_2) / (new_count - 1);
 }
 
 auto Grid::compute_pad(algorithms::pe::BeerLambert) -> void

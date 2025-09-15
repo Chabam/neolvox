@@ -65,11 +65,12 @@ class Grid
 
         static auto index3d_to_flat_idx(const Index3D& voxel_idx) -> size_t;
 
-        std::vector<std::atomic_uint> m_hits;
-        std::vector<std::atomic_uint> m_counts;
-        std::vector<std::atomic<double>>       m_lengths;
-        std::vector<std::atomic<double>>       m_lengths_variance;
-        std::vector<std::atomic<double>>       m_pad;
+        std::vector<unsigned int> m_hits;
+        std::vector<unsigned int> m_counts;
+        std::vector<double>       m_lengths;
+        std::vector<double>       m_lengths_variance;
+        std::vector<double>       m_pad;
+        std::mutex                m_write_access;
     };
 
     using chunk_ptr   = std::shared_ptr<VoxelChunk>;
