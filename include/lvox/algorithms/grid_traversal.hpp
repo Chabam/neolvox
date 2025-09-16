@@ -32,7 +32,7 @@ struct VoxelHitInfo
 template <bool exact_distance>
 struct GridTraversal
 {
-    GridTraversal(const Grid& grid) : m_grid{grid} {};
+    GridTraversal(const BoundedGrid& grid) : m_grid{grid} {};
 
     template <typename HitCallback>
     auto operator()(
@@ -208,7 +208,7 @@ struct GridTraversal
         } while (can_continue);
     }
 
-    const Grid& m_grid;
+    const BoundedGrid& m_grid;
 };
 
 using GridTraversalVoxelRounding = GridTraversal<false>;

@@ -65,8 +65,13 @@ Options:
                                           from the grid (ray counts, lengths, etc.) in the
                                           exported file. [disabled by default]
 
+   -d, --dense        none                Whether or not to use dense grids for computation.
+                                          They should be faster, but will require a lot more
+                                          memory. [disabled by default]
+
+
    -h, --help                             Prints this message
-)";
+    )";
 
 namespace lvox_pe = lvox::algorithms::pad_estimators;
 namespace fs      = std::filesystem;
@@ -79,10 +84,11 @@ lvox_pe::PADEstimator      g_pad_estimator        = lvox_pe::BeerLambert{};
 bool                       g_compute_theoriticals = false;
 std::optional<lvox::Point> g_scan_origin          = {};
 std::mutex                 g_print_guard          = {};
+std::optional<fs::path>    g_traj_file            = {};
+fs::path                   g_grid_file            = "out.h5";
+bool                       g_include_all_info     = false;
+bool                       g_use_dense_grid       = false;
 fs::path                   g_file;
-std::optional<fs::path>    g_traj_file           = {};
-fs::path                   g_grid_file           = "out.h5";
-bool                       g_include_all_info    = false;
 
 struct PointCloudWithTheoriticalShots
 {
@@ -171,12 +177,12 @@ auto load_point_cloud_from_file(
         return true;
     });
 
-    try {
+    try
+    {
         sc.setInput(*file_reader);
         sc.prepare(pts_table);
 
         sc.execute(pts_table);
-
     }
     catch (pdal::pdal_error e)
     {
@@ -237,7 +243,7 @@ auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox:
             return future.get();
         }
     );
-    return  out_scans;
+    return out_scans;
 }
 
 auto create_scan_using_pdal(
@@ -363,6 +369,10 @@ auto main(int argc, char* argv[]) -> int
         {
             g_include_all_info = true;
         }
+        else if (*arg_it == "-d" || *arg_it == "--dense")
+        {
+            g_use_dense_grid = true;
+        }
         else
         {
             g_file = *arg_it;
@@ -385,9 +395,15 @@ auto main(int argc, char* argv[]) -> int
         .m_voxel_size           = g_voxel_size,
         .m_job_limit            = g_job_count,
         .m_pad_estimator        = g_pad_estimator,
-        .m_compute_theoriticals = g_compute_theoriticals
+        .m_compute_theoriticals = g_compute_theoriticals,
+        .m_use_dense_grid       = g_use_dense_grid
     };
     const lvox::Grid result = lvox::algorithms::compute_pad(scans, compute_options);
 
-    result.export_as_coo_to_h5("lvox", g_grid_file, g_include_all_info);
+    std::visit(
+        [](auto& result) {
+            result.export_as_coo_to_h5("lvox", g_grid_file, g_include_all_info);
+        },
+        result
+    );
 }
