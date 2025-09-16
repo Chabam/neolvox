@@ -1,6 +1,5 @@
 #include <iterator>
 #include <limits>
-#include <ranges>
 #include <thread>
 #include <variant>
 
@@ -22,15 +21,17 @@ auto compute_rays_count_and_length_impl(
     Grid& grid, const Scan& scan, const ComputeOptions& options, Logger logger
 ) -> void
 {
-    auto grid_traversal = std::invoke([&grid]() {
-        if constexpr (pe::is_uplbl<PadEstimator>::value)
-            return GridTraversalExactDistance{grid};
-        else
-            return GridTraversalVoxelRounding{grid};
-    });
+    auto grid_traversal = std::visit(
+        [](const auto& grid) {
+            if constexpr (pe::is_uplbl<PadEstimator>::value)
+                return GridTraversalExactDistance{grid.get_bounded_grid()};
+            else
+                return GridTraversalVoxelRounding{grid.get_bounded_grid()};
+        },
+        grid
+    );
 
     const auto points_to_process = std::ranges::distance(*scan.m_points);
-
 
     struct PointRange
     {
@@ -84,15 +85,33 @@ auto compute_rays_count_and_length_impl(
                 Beam{point_origin, beam_dir},
                 [&grid, &is_hit_computed](const VoxelHitInfo& hit) {
                     if constexpr (pe::is_uplbl<PadEstimator>::value)
-                        grid.add_length_count_and_variance(hit.m_index, hit.m_distance_in_voxel);
+                        std::visit(
+                            [&hit](auto& grid) {
+                                grid.add_length_count_and_variance(
+                                    hit.m_index, hit.m_distance_in_voxel
+                                );
+                            },
+                            grid
+                        );
                     else
-                        grid.add_length_and_count(hit.m_index, hit.m_distance_in_voxel);
+                        std::visit(
+                            [&hit](auto& grid) {
+                                grid.add_length_and_count(hit.m_index, hit.m_distance_in_voxel);
+                            },
+                            grid
+                        );
 
                     if constexpr (compute_hits)
                     {
                         if (!is_hit_computed)
                         {
-                            grid.register_hit(hit.m_index);
+                            std::visit(
+                                [&hit](auto& grid) {
+                                    grid.register_hit(hit.m_index);
+                                },
+                                grid
+                            );
+
                             is_hit_computed = true;
                         }
                     }
@@ -104,10 +123,11 @@ auto compute_rays_count_and_length_impl(
         logger.debug("thread finished");
     };
 
-    const size_t point_count     = scan.m_points->size();
-    const size_t points_per_tasks = std::ceil(static_cast<float>(point_count) / options.m_job_limit);
+    const size_t point_count = scan.m_points->size();
+    const size_t points_per_tasks =
+        std::ceil(static_cast<float>(point_count) / options.m_job_limit);
     std::vector<std::jthread> threads;
-    auto start_it = scan.m_points->begin();
+    auto                      start_it = scan.m_points->begin();
     for (auto i = 0; i < point_count; i += (points_per_tasks + 1))
     {
         auto next_end = start_it + std::min(points_per_tasks, point_count - i);
@@ -168,7 +188,13 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
     const bool uses_variance =
         std::holds_alternative<pe::UnequalPathLengthBeerLambert>(options.m_pad_estimator);
 
-    Grid grid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
+    Grid grid = std::invoke([&]() -> Grid {
+        if (options.m_use_dense_grid)
+            return DenseGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
+        else
+            return ChunkedGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
+
+    });
 
     auto scan_num = 1;
     for (const auto& scan : scans)
@@ -185,7 +211,12 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
         logger.info("Estimating PAD {}/{}", scan_num, scans.size());
         std::visit(
             [&grid](auto&& chosen_estimator) -> void {
-                grid.compute_pad(chosen_estimator);
+                std::visit(
+                    [&chosen_estimator](auto& grid) {
+                        grid.compute_pad(chosen_estimator);
+                    },
+                    grid
+                );
             },
             options.m_pad_estimator
         );

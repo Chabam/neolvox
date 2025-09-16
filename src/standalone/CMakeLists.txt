@@ -8,7 +8,9 @@ target_sources(lvox_common
   src/algorithms.cpp
   src/logger/logger.cpp
   src/scanner/beam.cpp
-  src/voxel/grid.cpp
+  src/voxel/bounded_grid.cpp
+  src/voxel/chunked_grid.cpp
+  src/voxel/dense_grid.cpp
   src/scanner/scan.cpp
   src/scanner/spherical_scanner.cpp
   src/scanner/trajectory.cpp

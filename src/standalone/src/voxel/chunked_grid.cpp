@@ -10,74 +10,39 @@
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/logger/logger.hpp>
 #include <lvox/types.hpp>
-#include <lvox/voxel/grid.hpp>
-
+#include <lvox/voxel/chunked_grid.hpp>
 
 namespace lvox
 {
 
-Grid::Grid(const Bounds& bounds, double cell_size, bool compute_variance)
-    : m_cell_size{cell_size}
-    , m_dim_x{Grid::adjust_dim_to_grid(bounds.maxx - bounds.minx)}
-    , m_dim_y{Grid::adjust_dim_to_grid(bounds.maxy - bounds.miny)}
-    , m_dim_z{Grid::adjust_dim_to_grid(bounds.maxz - bounds.minz)}
-    , m_cell_count{m_dim_x * m_dim_y * m_dim_z}
+ChunkedGrid::ChunkedGrid(const Bounds& bounds, double cell_size, bool compute_variance)
+    : m_bounded_grid{bounds, cell_size, VoxelChunk::s_edge_size}
+    , m_compute_variance{compute_variance}
     , m_chunks_x{static_cast<unsigned int>(
-          std::ceil(static_cast<float>(m_dim_x) / VoxelChunk::s_edge_size)
+          std::ceil(static_cast<float>(m_bounded_grid.m_dim_x) / VoxelChunk::s_edge_size)
       )}
     , m_chunks_y{static_cast<unsigned int>(
-          std::ceil(static_cast<float>(m_dim_y) / VoxelChunk::s_edge_size)
+          std::ceil(static_cast<float>(m_bounded_grid.m_dim_y) / VoxelChunk::s_edge_size)
       )}
     , m_chunks_z{static_cast<unsigned int>(
-          std::ceil(static_cast<float>(m_dim_z) / VoxelChunk::s_edge_size)
+          std::ceil(static_cast<float>(m_bounded_grid.m_dim_z) / VoxelChunk::s_edge_size)
       )}
-    , m_compute_variance{compute_variance}
     , m_chunk_count{m_chunks_x * m_chunks_y * m_chunks_z}
     , m_chunks{m_chunk_count}
-    , m_bounds{
-          bounds.minx,
-          bounds.miny,
-          bounds.minz,
-          Grid::adjust_bounds_to_grid(m_dim_x, bounds.minx),
-          Grid::adjust_bounds_to_grid(m_dim_y, bounds.miny),
-          Grid::adjust_bounds_to_grid(m_dim_z, bounds.minz)
-      }
 {
-
-    Logger logger{"Grid"};
-
-    logger.debug(
-        g_grid_loginfo,
-        m_dim_x,
-        m_dim_y,
-        m_dim_z,
-        m_cell_size,
-        cell_count(),
-        m_bounds.minx,
-        m_bounds.maxx,
-        m_bounds.miny,
-        m_bounds.maxy,
-        m_bounds.minz,
-        m_bounds.maxz
-    );
 }
 
-Grid::Grid(Grid&& other)
-    : m_cell_size{std::move(other.m_cell_size)}
-    , m_dim_x{std::move(other.m_dim_x)}
-    , m_dim_y{std::move(other.m_dim_y)}
-    , m_dim_z{std::move(other.m_dim_z)}
-    , m_cell_count{std::move(other.m_cell_count)}
+ChunkedGrid::ChunkedGrid(ChunkedGrid&& other)
+    : m_bounded_grid{std::move(other.m_bounded_grid)}
     , m_chunks_x{std::move(other.m_chunks_x)}
     , m_chunks_y{std::move(other.m_chunks_y)}
     , m_chunks_z{std::move(other.m_chunks_z)}
     , m_chunk_count{std::move(other.m_chunk_count)}
     , m_chunks{std::move(other.m_chunks)}
-    , m_bounds{std::move(other.m_bounds)}
 {
 }
 
-Grid::VoxelChunk::VoxelChunk(bool compute_variance)
+ChunkedGrid::VoxelChunk::VoxelChunk(bool compute_variance)
     : m_hits{s_cell_count, std::allocator<unsigned int>{}}
     , m_counts{s_cell_count, std::allocator<unsigned int>{}}
     , m_lengths{s_cell_count, std::allocator<double>{}}
@@ -91,78 +56,10 @@ Grid::VoxelChunk::VoxelChunk(bool compute_variance)
 {
 }
 
-auto Grid::voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> Bounds
+auto ChunkedGrid::get_or_create_chunk(size_t chunk_idx) -> chunk_ptr
 {
-    const double min_x = m_bounds.minx + idx_x * m_cell_size;
-    const double min_y = m_bounds.miny + idx_y * m_cell_size;
-    const double min_z = m_bounds.minz + idx_z * m_cell_size;
-    return Bounds{
-        //
-        min_x,
-        min_y,
-        min_z,
-        min_x + m_cell_size,
-        min_y + m_cell_size,
-        min_z + m_cell_size
-    };
-}
-
-auto Grid::voxel_bounds_from_point(const Point& point) -> Bounds
-{
-    const auto [idx_x, idx_y, idx_z] = index3d_of_point(point);
-    return voxel_bounds(idx_x, idx_y, idx_z);
-}
-
-// Return an index tuple of this layout (x, y, z)
-auto Grid::index3d_of_point(const Point& point) const -> Index3D
-{
-    const double x = point.x();
-    const double y = point.y();
-    const double z = point.z();
-
-    if (!m_bounds.contains(x, y, z))
-    {
-        throw std::runtime_error{
-            std::format("Provided coords are not in the grid: ({}, {}, {})", x, y, z)
-        };
-    }
-
-    const auto coords_to_index =
-        [cell_size = m_cell_size](double min, double max, double coord) -> unsigned int {
-        const double result = std::floor((coord - min) / cell_size);
-        if (coord == max)
-            return result - 1;
-        return result;
-    };
-
-    return {
-        coords_to_index(m_bounds.minx, m_bounds.maxx, x),
-        coords_to_index(m_bounds.miny, m_bounds.maxy, y),
-        coords_to_index(m_bounds.minz, m_bounds.maxz, z)
-    };
-}
-
-auto Grid::adjust_dim_to_grid(double distance) -> unsigned int
-{
-    constexpr auto chunk_dim = VoxelChunk::s_edge_size;
-    const auto     new_dim   = static_cast<unsigned int>(std::ceil(distance / m_cell_size));
-
-    if (new_dim % chunk_dim == 0)
-        return new_dim;
-
-    // Rounding to the nearest chunk dimension.
-    return new_dim + chunk_dim - (new_dim % chunk_dim);
-}
-
-auto Grid::adjust_bounds_to_grid(size_t dim, double min) const -> double
-{
-    return min + dim * m_cell_size;
-}
-
-auto Grid::get_or_create_chunk(size_t chunk_idx) -> chunk_ptr
-{
-    auto& chunk_ref = m_chunks[chunk_idx];
-    auto existing_chunk = chunk_ref.load(std::memory_order_acquire);
+    auto& chunk_ref      = m_chunks[chunk_idx];
+    auto  existing_chunk = chunk_ref.load(std::memory_order_acquire);
 
     if (existing_chunk)
         return existing_chunk;
@@ -175,18 +72,18 @@ auto Grid::get_or_create_chunk(size_t chunk_idx) -> chunk_ptr
     return existing_chunk;
 }
 
-auto Grid::index3d_to_chunk_idx(const Index3D& voxel_idx) const -> size_t
+auto ChunkedGrid::index3d_to_chunk_idx(const Index3D& voxel_idx) const -> size_t
 {
     const auto& [x, y, z] = voxel_idx;
 
-    const auto     chunk_x_idx = x >> VoxelChunk::s_edge_bits;
-    const auto     chunk_y_idx = y >> VoxelChunk::s_edge_bits;
-    const auto     chunk_z_idx = z >> VoxelChunk::s_edge_bits;
+    const auto chunk_x_idx = x >> VoxelChunk::s_edge_bits;
+    const auto chunk_y_idx = y >> VoxelChunk::s_edge_bits;
+    const auto chunk_z_idx = z >> VoxelChunk::s_edge_bits;
 
     return chunk_x_idx + chunk_y_idx * m_chunks_x + chunk_z_idx * m_chunks_x * m_chunks_y;
 }
 
-auto Grid::VoxelChunk::index3d_to_flat_idx(const Index3D& voxel_idx) -> size_t
+auto ChunkedGrid::VoxelChunk::index3d_to_flat_idx(const Index3D& voxel_idx) -> size_t
 {
     const auto& [x, y, z] = voxel_idx;
 
@@ -194,11 +91,10 @@ auto Grid::VoxelChunk::index3d_to_flat_idx(const Index3D& voxel_idx) -> size_t
     const auto local_y_idx = y & VoxelChunk::s_edge_mask;
     const auto local_z_idx = z & VoxelChunk::s_edge_mask;
 
-    return local_x_idx + local_y_idx * s_edge_size +
-           local_z_idx * s_edge_size * s_edge_size;
+    return local_x_idx + local_y_idx * s_edge_size + local_z_idx * s_edge_size * s_edge_size;
 }
 
-auto Grid::register_hit(const Index3D& idx) -> void
+auto ChunkedGrid::register_hit(const Index3D& idx) -> void
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx);
@@ -208,7 +104,7 @@ auto Grid::register_hit(const Index3D& idx) -> void
     chunk->m_hits[voxel_idx_in_chunk] += 1;
 }
 
-auto Grid::add_length_and_count(const Index3D& idx, double length) -> void
+auto ChunkedGrid::add_length_and_count(const Index3D& idx, double length) -> void
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx);
@@ -219,7 +115,7 @@ auto Grid::add_length_and_count(const Index3D& idx, double length) -> void
     chunk->m_counts[voxel_idx_in_chunk] += 1;
 }
 
-auto Grid::add_length_count_and_variance(const Index3D& idx, double length) -> void
+auto ChunkedGrid::add_length_count_and_variance(const Index3D& idx, double length) -> void
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx);
@@ -258,7 +154,7 @@ auto Grid::add_length_count_and_variance(const Index3D& idx, double length) -> v
     chunk->m_lengths_variance[voxel_idx_in_chunk] += (delta * delta_2) / (new_count - 1);
 }
 
-auto Grid::compute_pad(algorithms::pe::BeerLambert) -> void
+auto ChunkedGrid::compute_pad(algorithms::pe::BeerLambert) -> void
 {
     compute_pad_impl([this](chunk_ptr& chunk, unsigned int voxel_idx) -> double {
         const auto G = [](double val) -> double {
@@ -278,7 +174,7 @@ auto Grid::compute_pad(algorithms::pe::BeerLambert) -> void
     });
 }
 
-auto Grid::compute_pad(algorithms::pe::ContactFrequency) -> void
+auto ChunkedGrid::compute_pad(algorithms::pe::ContactFrequency) -> void
 {
     compute_pad_impl([this](chunk_ptr& chunk, unsigned int voxel_idx) -> double {
         const auto G = [](double val) -> double {
@@ -297,7 +193,7 @@ auto Grid::compute_pad(algorithms::pe::ContactFrequency) -> void
     });
 }
 
-auto Grid::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
+auto ChunkedGrid::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
 {
     compute_pad_impl([this](chunk_ptr& chunk, unsigned int voxel_idx) -> double {
         const auto G = [](double val) -> double {
@@ -357,7 +253,7 @@ auto Grid::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
     });
 }
 
-auto Grid::export_as_coo_to_h5(
+auto ChunkedGrid::export_as_coo_to_h5(
     const std::string& dataset_name, const std::filesystem::path& filename, bool include_all_data
 ) const -> void
 {
@@ -392,8 +288,7 @@ auto Grid::export_as_coo_to_h5(
         std::vector<unsigned int> all_indexes;
         all_indexes.resize(chunk->m_counts.size());
         std::iota(all_indexes.begin(), all_indexes.end(), 0);
-        auto index_with_data = all_indexes |
-                               std::views::filter([&chunk](auto idx) -> bool {
+        auto index_with_data = all_indexes | std::views::filter([&chunk](auto idx) -> bool {
                                    return chunk->m_counts[idx] != 0;
                                });
         std::vector<Index3D> index3d_with_data;
@@ -407,34 +302,47 @@ auto Grid::export_as_coo_to_h5(
                     chunk_y * chunk_dim + static_cast<unsigned int>((idx / chunk_dim) % chunk_dim),
                     chunk_z * chunk_dim + static_cast<unsigned int>(idx / (chunk_dim * chunk_dim))
                 };
-            });
+            }
+        );
 
         // Copying indexes
         const auto h5_size_t = H5::PredType::NATIVE_UINT;
         std::ranges::copy(index3d_with_data | std::views::elements<0>, std::back_inserter(xs));
         std::ranges::copy(index3d_with_data | std::views::elements<1>, std::back_inserter(ys));
         std::ranges::copy(index3d_with_data | std::views::elements<2>, std::back_inserter(zs));
-        std::ranges::copy(index_with_data | std::views::transform([&chunk](const size_t& index) -> double {
-            return chunk->m_pad[index];
-        }), std::back_inserter(pads));
+        std::ranges::copy(
+            index_with_data | std::views::transform([&chunk](const size_t& index) -> double {
+                return chunk->m_pad[index];
+            }),
+            std::back_inserter(pads)
+        );
 
         if (include_all_data)
         {
-            std::ranges::copy(index_with_data |
-                              std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                                  return chunk->m_hits[index];
-                              }), std::back_inserter(hits));
-            std::ranges::copy(index_with_data |
-                              std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                                  return chunk->m_counts[index];
-                              }), std::back_inserter(counts));
+            std::ranges::copy(
+                index_with_data |
+                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                        return chunk->m_hits[index];
+                    }),
+                std::back_inserter(hits)
+            );
+            std::ranges::copy(
+                index_with_data |
+                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                        return chunk->m_counts[index];
+                    }),
+                std::back_inserter(counts)
+            );
         }
 
         {
-            std::ranges::copy(index_with_data |
-                              std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                                  return chunk->m_lengths[index];
-                              }), std::back_inserter(lengths));
+            std::ranges::copy(
+                index_with_data |
+                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                        return chunk->m_lengths[index];
+                    }),
+                std::back_inserter(lengths)
+            );
         }
 
         if (!chunk->m_lengths_variance.empty())
@@ -474,13 +382,13 @@ auto Grid::export_as_coo_to_h5(
         [&plot_group, &dataset_name, &create_prop_list](
             const std::string& name, const H5::PredType& type, const H5::DataSpace& dataspace
         ) -> H5::DataSet {
-            if (plot_group.nameExists(name))
-            {
-                return plot_group.openDataSet(name);
-            }
+        if (plot_group.nameExists(name))
+        {
+            return plot_group.openDataSet(name);
+        }
 
-            return plot_group.createDataSet(name, type, dataspace, create_prop_list);
-        };
+        return plot_group.createDataSet(name, type, dataspace, create_prop_list);
+    };
 
     logger.info("Exporting grid to '{}'", filename.string());
 
@@ -545,17 +453,17 @@ auto Grid::export_as_coo_to_h5(
         [&plot_group](
             const std::string& name, const H5::PredType& type, const H5::DataSpace& dataspace
         ) -> H5::Attribute {
-            if (plot_group.attrExists(name))
-            {
-                return plot_group.openAttribute(name);
-            }
+        if (plot_group.attrExists(name))
+        {
+            return plot_group.openAttribute(name);
+        }
 
-            return plot_group.createAttribute(name, type, dataspace);
-        };
+        return plot_group.createAttribute(name, type, dataspace);
+    };
     const auto    h5_voxel_size_t = H5::PredType::NATIVE_DOUBLE;
     H5::Attribute voxel_size_attr =
         get_or_create_attribute("Voxel size", h5_voxel_size_t, H5::DataSpace{});
-    voxel_size_attr.write(h5_voxel_size_t, &m_cell_size);
+    voxel_size_attr.write(h5_voxel_size_t, &m_bounded_grid.m_cell_size);
 
     const auto h5_min_coords_t = H5::PredType::NATIVE_DOUBLE;
 
@@ -563,14 +471,18 @@ auto Grid::export_as_coo_to_h5(
         "Minimal coordinates values", h5_min_coords_t, singular_3d_coord_data_space
     );
 
-    const std::array<double, 3> min_coords = {m_bounds.minx, m_bounds.miny, m_bounds.minz};
+    const std::array<double, 3> min_coords = {
+        m_bounded_grid.m_bounds.minx, m_bounded_grid.m_bounds.miny, m_bounded_grid.m_bounds.minz
+    };
     min_coord_attr.write(h5_voxel_size_t, min_coords.data());
 
     // Grid dimensions
     const auto    h5_grid_dim_t = H5::PredType::NATIVE_UINT64;
     H5::Attribute grid_dims_attr =
         get_or_create_attribute("Dimensions", h5_grid_dim_t, singular_3d_coord_data_space);
-    const std::array<size_t, 3> grid_dims = {m_dim_x, m_dim_y, m_dim_z};
+    const std::array<size_t, 3> grid_dims = {
+        m_bounded_grid.m_dim_x, m_bounded_grid.m_dim_y, m_bounded_grid.m_dim_z
+    };
     grid_dims_attr.write(h5_grid_dim_t, grid_dims.data());
 
     file.close();

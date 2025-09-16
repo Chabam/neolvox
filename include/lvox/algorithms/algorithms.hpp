@@ -1,16 +1,16 @@
 #ifndef LVOX_ALGORITHMS_HPP
 #define LVOX_ALGORITHMS_HPP
 
+#include <lvox/types.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
-#include <lvox/types.hpp>
+#include <lvox/voxel/grid.hpp>
 
 namespace lvox
 {
 
 class Scan;
 class Beam;
-class Grid;
 class VoxelsMetrics;
 
 namespace algorithms
@@ -22,6 +22,7 @@ struct ComputeOptions
     unsigned int                 m_job_limit;
     pad_estimators::PADEstimator m_pad_estimator;
     bool                         m_compute_theoriticals;
+    bool                         m_use_dense_grid;
 };
 
 //  Wrapper for the whole PAD computation. Does the following:
