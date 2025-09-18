@@ -2,17 +2,19 @@
 #include <memory>
 #include <thread>
 #include <utils/utils.hpp>
+
 #include <pdal/Dimension.hpp>
 #include <pdal/PointView.hpp>
 
-#include <lvox/voxel/grid.hpp>
 #include <lvox/algorithms/algorithms.hpp>
+#include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/types.hpp>
-#include <lvox/algorithms/pad_estimators.hpp>
+#include <lvox/voxel/grid.hpp>
+
 #include "lvox/logger/logger.hpp"
 
-static auto bm_point_cloud_size(benchmark::State& state) -> void
+static auto bm_job_count(benchmark::State& state) -> void
 {
     for (auto _ : state)
     {
@@ -20,10 +22,10 @@ static auto bm_point_cloud_size(benchmark::State& state) -> void
         pdal::PointTable table;
         lvox::Logger     logger{"Benchmark"};
         logger.info("Generating point cloud");
-        const auto       view = generate_cubic_point_cloud_with_random_points(table, state.range(0));
+        const auto view =
+            generate_cubic_point_cloud_with_random_points(table, 1'000'000, 100, 100, 100);
 
         lvox::Bounds point_cloud_bounds;
-        const double         cell_size = 0.5;
         view->calculateBounds(point_cloud_bounds);
 
         using dim = pdal::Dimension::Id;
@@ -45,7 +47,7 @@ static auto bm_point_cloud_size(benchmark::State& state) -> void
         );
         lvox::algorithms::ComputeOptions options{
             .m_voxel_size           = 0.3,
-            .m_job_limit            = std::thread::hardware_concurrency(),
+            .m_job_limit            = static_cast<unsigned int>(state.range(0)),
             .m_pad_estimator        = lvox::algorithms::pad_estimators::BeerLambert{},
             .m_compute_theoriticals = false,
             .m_use_dense_grid       = true
@@ -58,4 +60,4 @@ static auto bm_point_cloud_size(benchmark::State& state) -> void
     }
 }
 
-BENCHMARK(bm_point_cloud_size)->Arg(10'000)->Arg(100'000)->Arg(1'000'000)->Arg(10'000'000);
+BENCHMARK(bm_job_count)->Arg(1)->Arg(2)->Arg(4)->Arg(8)->Arg(12);
