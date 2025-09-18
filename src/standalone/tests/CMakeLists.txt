@@ -73,6 +73,7 @@ add_executable(lvox_benchs)
 target_sources(lvox_benchs
     PRIVATE
     benchmarks/bench_point_cloud_size.cpp
+    benchmarks/bench_job_count.cpp
     benchmarks/main.cpp
 )
 
