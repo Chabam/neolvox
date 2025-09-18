@@ -171,10 +171,19 @@ auto load_point_cloud_from_file(
         return true;
     });
 
-    sc.setInput(*file_reader);
-    sc.prepare(pts_table);
+    try {
+        
+        sc.setInput(*file_reader);
+        sc.prepare(pts_table);
 
-    sc.execute(pts_table);
+        sc.execute(pts_table);
+
+    }
+    catch (pdal::pdal_error e)
+    {
+        logger.error("Pdal error: {}", e.what());
+        throw e;
+    }
 
     return out;
 }
