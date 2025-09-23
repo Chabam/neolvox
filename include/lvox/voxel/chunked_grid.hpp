@@ -25,8 +25,8 @@ class ChunkedGrid
     ChunkedGrid(ChunkedGrid&& other);
 
     auto register_hit(const Index3D& idx) -> void;
-    auto add_length_and_count(const Index3D& idx, double length) -> void;
-    auto add_length_count_and_variance(const Index3D& idx, double length) -> void;
+    auto add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit) -> void;
+    auto add_length_count_and_variance(const Index3D& idx, double length, bool is_hit) -> void;
 
     auto compute_pad(algorithms::pad_estimators::BeerLambert) -> void;
     auto compute_pad(algorithms::pad_estimators::ContactFrequency) -> void;
@@ -38,7 +38,7 @@ class ChunkedGrid
         bool                         include_all_data = false
     ) const -> void;
 
-    auto get_bounded_grid() const -> const BoundedGrid& { return m_bounded_grid; }
+    auto bounded_grid() const -> const BoundedGrid& { return m_bounded_grid; }
 
   private:
     struct VoxelChunk
@@ -55,6 +55,7 @@ class ChunkedGrid
         std::vector<unsigned int> m_hits;
         std::vector<unsigned int> m_counts;
         std::vector<double>       m_lengths;
+        std::vector<double>       m_hits_lengths;
         std::vector<double>       m_lengths_variance;
         std::vector<double>       m_pad;
         std::mutex                m_write_access;

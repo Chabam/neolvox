@@ -16,7 +16,7 @@ TEST(grid, index_of_point)
     lvox::Bounds point_cloud_bounds;
     const double         cell_size = .5;
     view->calculateBounds(point_cloud_bounds);
-    lvox::Grid grid{point_cloud_bounds, cell_size};
+    lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     std::set<lvox::Index3D> seen_idxs;
     const Eigen::Vector3d           vec = Eigen::Vector3d::Constant(-0.5);

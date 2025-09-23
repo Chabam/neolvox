@@ -20,7 +20,7 @@ TEST(grid, grid_traversal_x_axis)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    lvox::Grid grid{point_cloud_bounds, cell_size};
+    lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     {
         lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
@@ -79,7 +79,7 @@ TEST(grid, grid_traversal_y_axis)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    lvox::Grid grid{point_cloud_bounds, cell_size};
+    lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     {
         lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
@@ -138,7 +138,7 @@ TEST(grid, grid_traversal_z_axis)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    lvox::Grid grid{point_cloud_bounds, cell_size};
+    lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
     {
         lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
         lvox::Vector dir{0., 0., 1.};
@@ -196,7 +196,7 @@ TEST(grid, grid_traversal_diagonals)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    lvox::Grid grid{point_cloud_bounds, cell_size};
+    lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     // Since the line goes from the highest point to the lowest in diagonal, the ray should hit
     // every x, y, z levels.
@@ -290,7 +290,7 @@ TEST(grid, grid_traversal_max_distance)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    lvox::Grid grid{point_cloud_bounds, cell_size};
+    lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     {
         lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
@@ -328,7 +328,7 @@ TEST(grid, grid_traversal_exact_distance_in_voxel)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    lvox::Grid grid{point_cloud_bounds, cell_size};
+    lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     {
         lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};
@@ -395,7 +395,7 @@ TEST(grid, grid_traversal_rounding_distance_in_voxel)
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
     view->calculateBounds(point_cloud_bounds);
-    lvox::Grid grid{point_cloud_bounds, cell_size};
+    lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     {
         lvox::Point  pos{point_cloud_bounds.minx, point_cloud_bounds.miny, point_cloud_bounds.minz};

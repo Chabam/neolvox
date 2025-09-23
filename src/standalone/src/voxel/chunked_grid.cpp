@@ -4,7 +4,6 @@
 #include <format>
 #include <iterator>
 #include <mutex>
-#include <numbers>
 #include <ranges>
 
 #include <lvox/algorithms/pad_estimators.hpp>
@@ -46,6 +45,7 @@ ChunkedGrid::VoxelChunk::VoxelChunk(bool compute_variance)
     : m_hits{s_cell_count, std::allocator<unsigned int>{}}
     , m_counts{s_cell_count, std::allocator<unsigned int>{}}
     , m_lengths{s_cell_count, std::allocator<double>{}}
+    , m_hits_lengths{s_cell_count, std::allocator<double>{}}
     , m_lengths_variance{std::invoke([this, compute_variance]() -> std::vector<double> {
         if (compute_variance)
             return std::vector<double>{s_cell_count, std::allocator<double>{}};
@@ -104,7 +104,7 @@ auto ChunkedGrid::register_hit(const Index3D& idx) -> void
     chunk->m_hits[voxel_idx_in_chunk] += 1;
 }
 
-auto ChunkedGrid::add_length_and_count(const Index3D& idx, double length) -> void
+auto ChunkedGrid::add_length_and_count(const Index3D& idx, double length, bool is_hit) -> void
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx);
@@ -112,10 +112,15 @@ auto ChunkedGrid::add_length_and_count(const Index3D& idx, double length) -> voi
 
     std::lock_guard lock{chunk->m_write_access};
     chunk->m_lengths[voxel_idx_in_chunk] += length;
+
+    if (is_hit)
+        chunk->m_hits_lengths[voxel_idx_in_chunk] += length;
+
     chunk->m_counts[voxel_idx_in_chunk] += 1;
 }
 
-auto ChunkedGrid::add_length_count_and_variance(const Index3D& idx, double length) -> void
+auto ChunkedGrid::add_length_count_and_variance(const Index3D& idx, double length, bool is_hit)
+    -> void
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx);
@@ -127,15 +132,6 @@ auto ChunkedGrid::add_length_count_and_variance(const Index3D& idx, double lengt
     chunk->m_lengths[voxel_idx_in_chunk] += length;
     chunk->m_counts[voxel_idx_in_chunk] += 1;
     lock.unlock();
-
-    // TODO: make this configurable maybe, and based on a specific PAD estimation method
-    // So far it's based on Computree's NeedleFromDimension
-    constexpr double elem_length       = 0.06;
-    constexpr double elem_diameter     = 0.02;
-    constexpr double attenuation_coeff = (2. * std::numbers::pi * elem_length * elem_diameter) / 4.;
-
-    const double attenuated_length =
-        -(std::log(1. - attenuation_coeff * length) / attenuation_coeff);
 
     // No variance possible if the count is not big enough
     if (previous_counts < 2)

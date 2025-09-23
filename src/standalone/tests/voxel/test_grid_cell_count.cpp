@@ -11,6 +11,6 @@ TEST(grid, cell_count)
 
     lvox::Bounds bounds = create_bounds(dim_x, dim_y, dim_z);
 
-    lvox::Grid grid{bounds, cell_size};
+    lvox::BoundedGrid grid{bounds, cell_size};
     ASSERT_EQ(dim_x * dim_y * dim_z, grid.cell_count());
 }

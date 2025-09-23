@@ -3,7 +3,6 @@
 #include <atomic>
 #include <format>
 #include <iterator>
-#include <mutex>
 #include <numbers>
 #include <ranges>
 
@@ -21,6 +20,7 @@ DenseGrid::DenseGrid(const Bounds& bounds, double cell_size, bool compute_varian
     , m_hits{m_bounded_grid.m_cell_count, std::allocator<std::atomic_uint>{}}
     , m_counts{m_bounded_grid.m_cell_count, std::allocator<std::atomic_uint>{}}
     , m_lengths{m_bounded_grid.m_cell_count, std::allocator<atomic_f64>{}}
+    , m_hits_lengths{m_bounded_grid.m_cell_count, std::allocator<atomic_f64>{}}
     , m_lengths_variance{std::invoke([&]() -> std::vector<atomic_f64> {
         if (compute_variance)
             return std::vector<atomic_f64>{
@@ -38,6 +38,7 @@ DenseGrid::DenseGrid(DenseGrid&& other)
     , m_hits{std::move(other.m_hits)}
     , m_counts{std::move(other.m_counts)}
     , m_lengths{std::move(other.m_lengths)}
+    , m_hits_lengths{std::move(other.m_lengths_variance)}
     , m_lengths_variance{std::move(other.m_lengths_variance)}
     , m_pad{std::move(other.m_pad)}
 
@@ -57,30 +58,25 @@ auto DenseGrid::register_hit(const Index3D& voxel_idx) -> void
     m_hits[idx].fetch_add(1, std::memory_order_relaxed);
 }
 
-auto DenseGrid::add_length_and_count(const Index3D& voxel_idx, double length) -> void
+auto DenseGrid::add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit) -> void
 {
     auto idx = index3d_to_flat_idx(voxel_idx);
 
     m_lengths[idx].fetch_add(length, std::memory_order_relaxed);
+
+    if (is_hit)
+        m_hits_lengths[idx].fetch_add(length, std::memory_order_relaxed);
+
     m_counts[idx].fetch_add(1, std::memory_order_relaxed);
 }
 
 // TODO: make this work with memory consistency
-auto DenseGrid::add_length_count_and_variance(const Index3D& voxel_idx, double length) -> void
+auto DenseGrid::add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit) -> void
 {
     auto idx = index3d_to_flat_idx(voxel_idx);
 
     const double previous_lengths = m_lengths[idx].fetch_add(length, std::memory_order_acq_rel);
     const double previous_counts  = m_counts[idx].fetch_add(1, std::memory_order_acq_rel);
-
-    // TODO: make this configurable maybe, and based on a specific PAD estimation method
-    // So far it's based on Computree's NeedleFromDimension
-    constexpr double elem_length       = 0.06;
-    constexpr double elem_diameter     = 0.02;
-    constexpr double attenuation_coeff = (2. * std::numbers::pi * elem_length * elem_diameter) / 4.;
-
-    const double attenuated_length =
-        -(std::log(1. - attenuation_coeff * length) / attenuation_coeff);
 
     // No variance possible if the count is not big enough
     if (previous_counts < 2)

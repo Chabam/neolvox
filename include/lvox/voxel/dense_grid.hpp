@@ -26,8 +26,8 @@ class DenseGrid
     DenseGrid(DenseGrid&& other);
 
     auto register_hit(const Index3D& voxel_idx) -> void;
-    auto add_length_and_count(const Index3D& voxel_idx, double length) -> void;
-    auto add_length_count_and_variance(const Index3D& voxel_idx, double length) -> void;
+    auto add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit) -> void;
+    auto add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit) -> void;
 
     auto compute_pad(algorithms::pad_estimators::BeerLambert) -> void;
     auto compute_pad(algorithms::pad_estimators::ContactFrequency) -> void;
@@ -39,7 +39,7 @@ class DenseGrid
         bool                         include_all_data = false
     ) const -> void;
 
-    auto get_bounded_grid() const -> const BoundedGrid& { return m_bounded_grid; }
+    auto bounded_grid() const -> const BoundedGrid& { return m_bounded_grid; }
 
   private:
     BoundedGrid m_bounded_grid;
@@ -47,6 +47,7 @@ class DenseGrid
     std::vector<std::atomic_uint> m_hits;
     std::vector<std::atomic_uint> m_counts;
     std::vector<atomic_f64>       m_lengths;
+    std::vector<atomic_f64>       m_hits_lengths;
     std::vector<atomic_f64>       m_lengths_variance;
     std::vector<atomic_f64>       m_pad;
 

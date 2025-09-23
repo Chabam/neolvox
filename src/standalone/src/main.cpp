@@ -65,10 +65,9 @@ Options:
                                           from the grid (ray counts, lengths, etc.) in the
                                           exported file. [disabled by default]
 
-   -d, --dense        none                Whether or not to use dense grids for computation.
-                                          They should be faster, but will require a lot more
-                                          memory. [disabled by default]
-
+   -s, --sparse       none                Whether or not to use sparse grids for computation.
+                                          They are slower, but will require less memory.
+                                          [disabled by default]
 
    -h, --help                             Prints this message
     )";
@@ -87,7 +86,7 @@ std::mutex                 g_print_guard          = {};
 std::optional<fs::path>    g_traj_file            = {};
 fs::path                   g_grid_file            = "out.h5";
 bool                       g_include_all_info     = false;
-bool                       g_use_dense_grid       = false;
+bool                       g_use_sparse_grids     = false;
 fs::path                   g_file;
 
 struct PointCloudWithTheoriticalShots
@@ -369,9 +368,9 @@ auto main(int argc, char* argv[]) -> int
         {
             g_include_all_info = true;
         }
-        else if (*arg_it == "-d" || *arg_it == "--dense")
+        else if (*arg_it == "-s" || *arg_it == "--sparse")
         {
-            g_use_dense_grid = true;
+            g_use_sparse_grids = true;
         }
         else
         {
@@ -396,7 +395,7 @@ auto main(int argc, char* argv[]) -> int
         .m_job_limit            = g_job_count,
         .m_pad_estimator        = g_pad_estimator,
         .m_compute_theoriticals = g_compute_theoriticals,
-        .m_use_dense_grid       = g_use_dense_grid
+        .m_use_sparse_grid      = g_use_sparse_grids
     };
     const lvox::Grid result = lvox::algorithms::compute_pad(scans, compute_options);
 

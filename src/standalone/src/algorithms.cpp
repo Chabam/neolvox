@@ -24,9 +24,9 @@ auto compute_rays_count_and_length_impl(
     auto grid_traversal = std::visit(
         [](const auto& grid) {
             if constexpr (pe::is_uplbl<PadEstimator>::value)
-                return GridTraversalExactDistance{grid.get_bounded_grid()};
+                return GridTraversalExactDistance{grid.bounded_grid()};
             else
-                return GridTraversalVoxelRounding{grid.get_bounded_grid()};
+                return GridTraversalVoxelRounding{grid.bounded_grid()};
         },
         grid
     );
@@ -44,8 +44,8 @@ auto compute_rays_count_and_length_impl(
         auto end() const -> const_iterator { return m_end; }
     };
 
-    const auto ray_trace = [&](const PointRange& task) -> void {
-        for (const auto& timed_point : task)
+    const auto ray_trace = [&](const PointRange& points) -> void {
+        for (const auto& timed_point : points)
         {
             const double gps_time = timed_point.m_gps_time;
             const Point& pt       = timed_point.m_point;
@@ -86,17 +86,35 @@ auto compute_rays_count_and_length_impl(
                 [&grid, &is_hit_computed](const VoxelHitInfo& hit) {
                     if constexpr (pe::is_uplbl<PadEstimator>::value)
                         std::visit(
-                            [&hit](auto& grid) {
+                            [&hit, &is_hit_computed](auto& grid) {
+                                // TODO: make this configurable maybe, and
+                                // based on a specific PAD estimation method So far it's based on
+                                // Computree's NeedleFromDimension
+                                constexpr double elem_length   = 0.06;
+                                constexpr double elem_diameter = 0.02;
+                                constexpr double projected_area_of_single_element =
+                                    (2. * std::numbers::pi * elem_length * elem_diameter) / 4.;
+                                const double voxel_size = grid.bounded_grid().cell_size();
+                                const double attenuation_coeff =
+                                    projected_area_of_single_element /
+                                    (voxel_size * voxel_size * voxel_size);
+
+                                const double attenuated_length =
+                                    -(std::log(1. - attenuation_coeff * hit.m_distance_in_voxel) /
+                                      attenuation_coeff);
+
                                 grid.add_length_count_and_variance(
-                                    hit.m_index, hit.m_distance_in_voxel
+                                    hit.m_index, attenuated_length, !is_hit_computed
                                 );
                             },
                             grid
                         );
                     else
                         std::visit(
-                            [&hit](auto& grid) {
-                                grid.add_length_and_count(hit.m_index, hit.m_distance_in_voxel);
+                            [&hit, &is_hit_computed](auto& grid) {
+                                grid.add_length_and_count(
+                                    hit.m_index, hit.m_distance_in_voxel, !is_hit_computed
+                                );
                             },
                             grid
                         );
@@ -189,11 +207,10 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
         std::holds_alternative<pe::UnequalPathLengthBeerLambert>(options.m_pad_estimator);
 
     Grid grid = std::invoke([&]() -> Grid {
-        if (options.m_use_dense_grid)
-            return DenseGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
-        else
+        if (options.m_use_sparse_grid)
             return ChunkedGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
-
+        else
+            return DenseGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
     });
 
     auto scan_num = 1;

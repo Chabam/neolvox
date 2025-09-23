@@ -22,7 +22,7 @@ struct ComputeOptions
     unsigned int                 m_job_limit;
     pad_estimators::PADEstimator m_pad_estimator;
     bool                         m_compute_theoriticals;
-    bool                         m_use_dense_grid;
+    bool                         m_use_sparse_grid;
 };
 
 //  Wrapper for the whole PAD computation. Does the following:
