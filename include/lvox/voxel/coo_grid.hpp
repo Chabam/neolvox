@@ -1,5 +1,5 @@
-#ifndef LVOX_VOXEL_GRID_COO_VIEW_HPP
-#define LVOX_VOXEL_GRID_COO_VIEW_HPP
+#ifndef LVOX_VOXEL_COO_GRID_HPP
+#define LVOX_VOXEL_COO_GRID_HPP
 
 #include <execution>
 #include <filesystem>
@@ -21,11 +21,11 @@ struct UnequalPathLengthBeerLambert;
 class ChunkedGrid;
 class DenseGrid;
 
-class GridCOOView
+class COOGrid
 {
   public:
-    GridCOOView(const ChunkedGrid& grid);
-    GridCOOView(const DenseGrid& grid);
+    COOGrid(const ChunkedGrid& grid);
+    COOGrid(const DenseGrid& grid);
 
     auto export_to_h5(
         const std::string&           dataset_name,
@@ -74,4 +74,4 @@ class GridCOOView
 
 } // namespace lvox
 
-#endif // LVOX_VOXEL_GRID_COO_VIEW_HPP
+#endif // LVOX_VOXEL_COO_GRID_HPP

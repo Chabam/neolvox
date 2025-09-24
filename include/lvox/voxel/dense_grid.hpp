@@ -11,7 +11,7 @@ namespace lvox
 
 class DenseGrid
 {
-    friend class GridCOOView;
+    friend class COOGrid;
   public:
     DenseGrid(const Bounds& bounds, double cell_size, bool compute_variance);
     DenseGrid(DenseGrid&& other);

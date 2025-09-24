@@ -13,7 +13,7 @@
 #include <lvox/scanner/beam.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/voxel/grid.hpp>
-#include "lvox/voxel/grid_coo_view.hpp"
+#include <lvox/voxel/coo_grid.hpp>
 
 namespace lvox::algorithms
 {
@@ -200,7 +200,7 @@ auto compute_scene_bounds(const std::vector<lvox::Scan>& scans) -> lvox::Bounds
     return total_bounds;
 }
 
-auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options) -> GridCOOView
+auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options) -> COOGrid
 {
     Logger logger{"LVOX"};
     logger.info("Scan count {}", scans.size());
@@ -216,7 +216,7 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
     });
 
     auto scan_num = 1;
-    std::unique_ptr<GridCOOView> result;
+    std::unique_ptr<COOGrid> result;
     for (const auto& scan : scans)
     {
         if (options.m_compute_theoriticals && scan.m_blank_shots)
@@ -228,8 +228,8 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
         logger.info("Compute ray counts and length {}/{}", scan_num, scans.size());
         compute_rays_count_and_length(grid, scan, options);
 
-        result = std::visit([](const auto& grid) -> std::unique_ptr<GridCOOView>{
-            return std::make_unique<GridCOOView>(grid);
+        result = std::visit([](const auto& grid) -> std::unique_ptr<COOGrid>{
+            return std::make_unique<COOGrid>(grid);
         }, grid);
 
         logger.info("Estimating PAD {}/{}", scan_num, scans.size());

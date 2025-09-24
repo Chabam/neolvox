@@ -27,7 +27,7 @@
 #include <lvox/scanner/spherical_scanner.hpp>
 #include <lvox/scanner/trajectory.hpp>
 #include <lvox/types.hpp>
-#include <lvox/voxel/grid_coo_view.hpp>
+#include <lvox/voxel/coo_grid.hpp>
 
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
@@ -397,6 +397,6 @@ auto main(int argc, char* argv[]) -> int
         .m_compute_theoriticals = g_compute_theoriticals,
         .m_use_sparse_grid      = g_use_sparse_grids
     };
-    const lvox::GridCOOView result = lvox::algorithms::compute_pad(scans, compute_options);
+    const lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
     result.export_to_h5("lvox", g_grid_file, g_include_all_info);
 }

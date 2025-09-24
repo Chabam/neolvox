@@ -10,7 +10,7 @@ target_sources(lvox_common
   src/scanner/beam.cpp
   src/voxel/bounded_grid.cpp
   src/voxel/chunked_grid.cpp
-  src/voxel/grid_coo_view.cpp
+  src/voxel/coo_grid.cpp
   src/voxel/dense_grid.cpp
   src/scanner/scan.cpp
   src/scanner/spherical_scanner.cpp

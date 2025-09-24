@@ -11,7 +11,7 @@ namespace lvox
 
 class ChunkedGrid
 {
-    friend class GridCOOView;
+    friend class COOGrid;
   public:
     ChunkedGrid(const Bounds& bounds, double cell_size, bool compute_variance);
     ChunkedGrid(ChunkedGrid&& other);

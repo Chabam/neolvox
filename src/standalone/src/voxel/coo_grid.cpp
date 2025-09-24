@@ -5,13 +5,13 @@
 #include <lvox/logger/logger.hpp>
 #include <lvox/voxel/chunked_grid.hpp>
 #include <lvox/voxel/dense_grid.hpp>
-#include <lvox/voxel/grid_coo_view.hpp>
+#include <lvox/voxel/coo_grid.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
 
 namespace lvox
 {
 
-GridCOOView::GridCOOView(const ChunkedGrid& grid)
+COOGrid::COOGrid(const ChunkedGrid& grid)
     : m_xs{}
     , m_ys{}
     , m_zs{}
@@ -102,7 +102,7 @@ GridCOOView::GridCOOView(const ChunkedGrid& grid)
     m_pads.resize(m_counts.size());
 }
 
-GridCOOView::GridCOOView(const DenseGrid& grid)
+COOGrid::COOGrid(const DenseGrid& grid)
     : m_xs{}
     , m_ys{}
     , m_zs{}
@@ -178,7 +178,7 @@ GridCOOView::GridCOOView(const DenseGrid& grid)
     }
 }
 
-auto GridCOOView::compute_pad(algorithms::pe::BeerLambert) -> void
+auto COOGrid::compute_pad(algorithms::pe::BeerLambert) -> void
 {
     compute_pad_impl([this](unsigned int voxel_idx) -> double {
         const auto G = [](double val) -> double {
@@ -198,7 +198,7 @@ auto GridCOOView::compute_pad(algorithms::pe::BeerLambert) -> void
     });
 }
 
-auto GridCOOView::compute_pad(algorithms::pe::ContactFrequency) -> void
+auto COOGrid::compute_pad(algorithms::pe::ContactFrequency) -> void
 {
     compute_pad_impl([this](unsigned int voxel_idx) -> double {
         const auto G = [](double val) -> double {
@@ -217,7 +217,7 @@ auto GridCOOView::compute_pad(algorithms::pe::ContactFrequency) -> void
     });
 }
 
-auto GridCOOView::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
+auto COOGrid::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
 {
     compute_pad_impl([this](unsigned int voxel_idx) -> double {
         const auto G = [](double val) -> double {
@@ -277,7 +277,7 @@ auto GridCOOView::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> v
     });
 }
 
-auto GridCOOView::export_to_h5(
+auto COOGrid::export_to_h5(
     const std::string& dataset_name, const std::filesystem::path& filename, bool include_all_data
 ) const -> void
 {
