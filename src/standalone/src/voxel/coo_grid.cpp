@@ -1,12 +1,12 @@
 #include <H5Cpp.h>
-
+#include <iterator>
 #include <ranges>
 
+#include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/logger/logger.hpp>
 #include <lvox/voxel/chunked_grid.hpp>
-#include <lvox/voxel/dense_grid.hpp>
 #include <lvox/voxel/coo_grid.hpp>
-#include <lvox/algorithms/pad_estimators.hpp>
+#include <lvox/voxel/dense_grid.hpp>
 
 namespace lvox
 {
@@ -19,7 +19,7 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
     , m_hits{}
     , m_pads{}
     , m_lengths{}
-    , m_lengths_hits{}
+    , m_hits_lengths{}
     , m_lengths_variance{}
     , m_bounded_grid{grid.m_bounded_grid}
 {
@@ -32,15 +32,17 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
             continue;
 
         const auto chunk_x = static_cast<unsigned int>(chunk_idx % grid.m_chunks_x);
-        const auto chunk_y = static_cast<unsigned int>((chunk_idx / grid.m_chunks_x) % grid.m_chunks_y);
-        const auto chunk_z = static_cast<unsigned int>(chunk_idx / (grid.m_chunks_x * grid.m_chunks_y));
+        const auto chunk_y =
+            static_cast<unsigned int>((chunk_idx / grid.m_chunks_x) % grid.m_chunks_y);
+        const auto chunk_z =
+            static_cast<unsigned int>(chunk_idx / (grid.m_chunks_x * grid.m_chunks_y));
 
         std::vector<unsigned int> all_indexes;
         all_indexes.resize(chunk->m_counts.size());
         std::iota(all_indexes.begin(), all_indexes.end(), 0);
         auto index_with_data = all_indexes | std::views::filter([&chunk](auto idx) -> bool {
-                                   return chunk->m_counts[idx] != 0;
-                               });
+            return chunk->m_counts[idx] != 0;
+        });
         std::vector<Index3D> index3d_with_data;
         std::ranges::transform(
             index_with_data,
@@ -77,10 +79,20 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
         {
             std::ranges::copy(
                 index_with_data |
-                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                        return chunk->m_lengths[index];
-                    }),
+                std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                    return chunk->m_lengths[index];
+                }),
                 std::back_inserter(m_lengths)
+            );
+        }
+
+        {
+            std::ranges::copy(
+                index_with_data |
+                std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                    return chunk->m_hits_lengths[index];
+                }),
+                std::back_inserter(m_hits_lengths)
             );
         }
 
@@ -100,6 +112,14 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
         ++chunk_idx;
     }
     m_pads.resize(m_counts.size());
+    assert(
+        m_xs.size() == m_ys.size()
+        && m_ys.size() == m_counts.size()
+        && m_counts.size() == m_hits.size()
+        && m_hits.size() == m_pads.size()
+        && m_pads.size() == m_lengths.size()
+        && m_lengths.size() == m_hits_lengths.size()
+    );
 }
 
 COOGrid::COOGrid(const DenseGrid& grid)
@@ -110,7 +130,7 @@ COOGrid::COOGrid(const DenseGrid& grid)
     , m_hits{}
     , m_pads{}
     , m_lengths{}
-    , m_lengths_hits{}
+    , m_hits_lengths{}
     , m_lengths_variance{}
     , m_bounded_grid{grid.m_bounded_grid}
 {
@@ -135,24 +155,35 @@ COOGrid::COOGrid(const DenseGrid& grid)
         }
     );
 
+    const bool is_using_variance = !grid.m_lengths_variance.empty();
+    m_xs.resize(index3d_with_data.size());
+    m_ys.resize(index3d_with_data.size());
+    m_zs.resize(index3d_with_data.size());
+    m_counts.resize(index3d_with_data.size());
+    m_hits.resize(index3d_with_data.size());
+    m_pads.resize(index3d_with_data.size());
+    m_lengths.resize(index3d_with_data.size());
+    m_hits_lengths.resize(index3d_with_data.size());
+    if (is_using_variance)
+        m_lengths_variance.resize(index3d_with_data.size());
+
     // Copying indexes
     const auto h5_size_t = H5::PredType::NATIVE_UINT;
-    std::ranges::copy(index3d_with_data | std::views::elements<0>, std::back_inserter(m_xs));
-    std::ranges::copy(index3d_with_data | std::views::elements<1>, std::back_inserter(m_ys));
-    std::ranges::copy(index3d_with_data | std::views::elements<2>, std::back_inserter(m_zs));
-    m_pads.resize(index3d_with_data.size());
+    std::ranges::copy(index3d_with_data | std::views::elements<0>, m_xs.begin());
+    std::ranges::copy(index3d_with_data | std::views::elements<1>, m_ys.begin());
+    std::ranges::copy(index3d_with_data | std::views::elements<2>, m_zs.begin());
 
     std::ranges::copy(
         index_with_data | std::views::transform([&grid](const size_t& index) -> unsigned int {
             return grid.m_hits[index];
         }),
-        std::back_inserter(m_hits)
+        m_hits.begin()
     );
     std::ranges::copy(
         index_with_data | std::views::transform([&grid](const size_t& index) -> unsigned int {
             return grid.m_counts[index];
         }),
-        std::back_inserter(m_counts)
+        m_counts.begin()
     );
 
     {
@@ -160,22 +191,28 @@ COOGrid::COOGrid(const DenseGrid& grid)
             index_with_data | std::views::transform([&grid](const size_t& index) -> unsigned int {
                 return grid.m_lengths[index];
             }),
-            std::back_inserter(m_lengths)
+            m_lengths.begin()
         );
     }
 
-    if (!m_lengths_variance.empty())
+    if (is_using_variance)
     {
-        auto chunk_lengths_variance =
+        std::ranges::copy(
             index_with_data | std::views::transform([&grid](const size_t& index) -> unsigned int {
                 return grid.m_lengths_variance[index];
-            });
-        std::copy(
-            chunk_lengths_variance.begin(),
-            chunk_lengths_variance.end(),
-            std::back_inserter(m_lengths_variance)
+            }),
+            m_lengths_variance.begin()
         );
     }
+
+    assert(
+        m_xs.size() == m_ys.size()
+        && m_ys.size() == m_counts.size()
+        && m_counts.size() == m_hits.size()
+        && m_hits.size() == m_pads.size()
+        && m_pads.size() == m_lengths.size()
+        && m_lengths.size() == m_hits_lengths.size()
+    );
 }
 
 auto COOGrid::compute_pad(algorithms::pe::BeerLambert) -> void

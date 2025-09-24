@@ -1,10 +1,6 @@
 #include <H5Cpp.h>
 #include <H5Fpublic.h>
 #include <atomic>
-#include <format>
-#include <iterator>
-#include <numbers>
-#include <ranges>
 
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/logger/logger.hpp>

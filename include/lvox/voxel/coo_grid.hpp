@@ -45,7 +45,7 @@ class COOGrid
     std::vector<unsigned int> m_hits;
     std::vector<double>       m_pads;
     std::vector<double>       m_lengths;
-    std::vector<double>       m_lengths_hits;
+    std::vector<double>       m_hits_lengths;
     std::vector<double>       m_lengths_variance;
     lvox::BoundedGrid         m_bounded_grid;
 
