@@ -38,6 +38,16 @@ BoundedGrid::BoundedGrid(const Bounds& bounds, double cell_size, unsigned int vo
     );
 }
 
+BoundedGrid::BoundedGrid(const BoundedGrid& other)
+    : m_cell_size{other.m_cell_size}
+    , m_dim_x{other.m_dim_x}
+    , m_dim_y{other.m_dim_y}
+    , m_dim_z{other.m_dim_z}
+    , m_cell_count{other.m_cell_count}
+    , m_bounds{other.m_bounds}
+{
+}
+
 BoundedGrid::BoundedGrid(BoundedGrid&& other)
     : m_cell_size{std::move(other.m_cell_size)}
     , m_dim_x{std::move(other.m_dim_x)}

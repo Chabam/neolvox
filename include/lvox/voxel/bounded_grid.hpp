@@ -14,6 +14,7 @@ class BoundedGrid
         double        cell_size,
         unsigned int  voxel_alignment = 1
     );
+    BoundedGrid(const BoundedGrid& other);
     BoundedGrid(BoundedGrid&& other);
 
     // NOTE: no bounds check!

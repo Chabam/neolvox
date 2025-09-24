@@ -4,7 +4,7 @@
 #include <lvox/types.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
-#include <lvox/voxel/grid.hpp>
+#include <lvox/voxel/grid_coo_view.hpp>
 
 namespace lvox
 {
@@ -35,7 +35,7 @@ struct ComputeOptions
 //   - Compute the PAD values for each voxels using the values from the computed grids
 // - Averages the PAD values from every scans
 [[nodiscard]]
-auto compute_pad(const std::vector<Scan>& scans, const ComputeOptions& options) -> Grid;
+auto compute_pad(const std::vector<Scan>& scans, const ComputeOptions& options) -> GridCOOView;
 
 } // namespace algorithms
 

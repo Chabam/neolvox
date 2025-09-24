@@ -1,5 +1,6 @@
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <thread>
 #include <variant>
 
@@ -12,6 +13,7 @@
 #include <lvox/scanner/beam.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/voxel/grid.hpp>
+#include "lvox/voxel/grid_coo_view.hpp"
 
 namespace lvox::algorithms
 {
@@ -198,7 +200,7 @@ auto compute_scene_bounds(const std::vector<lvox::Scan>& scans) -> lvox::Bounds
     return total_bounds;
 }
 
-auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options) -> Grid
+auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options) -> GridCOOView
 {
     Logger logger{"LVOX"};
     logger.info("Scan count {}", scans.size());
@@ -214,6 +216,7 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
     });
 
     auto scan_num = 1;
+    std::unique_ptr<GridCOOView> result;
     for (const auto& scan : scans)
     {
         if (options.m_compute_theoriticals && scan.m_blank_shots)
@@ -225,22 +228,21 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
         logger.info("Compute ray counts and length {}/{}", scan_num, scans.size());
         compute_rays_count_and_length(grid, scan, options);
 
+        result = std::visit([](const auto& grid) -> std::unique_ptr<GridCOOView>{
+            return std::make_unique<GridCOOView>(grid);
+        }, grid);
+
         logger.info("Estimating PAD {}/{}", scan_num, scans.size());
         std::visit(
-            [&grid](auto&& chosen_estimator) -> void {
-                std::visit(
-                    [&chosen_estimator](auto& grid) {
-                        grid.compute_pad(chosen_estimator);
-                    },
-                    grid
-                );
+            [&result](auto&& chosen_estimator) -> void {
+                result->compute_pad(chosen_estimator);
             },
             options.m_pad_estimator
         );
         ++scan_num;
     }
 
-    return grid;
+    return *result;
 }
 
 } // namespace lvox::algorithms
