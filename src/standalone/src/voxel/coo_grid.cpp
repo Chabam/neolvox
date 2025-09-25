@@ -41,8 +41,8 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
         all_indexes.resize(chunk->m_counts.size());
         std::iota(all_indexes.begin(), all_indexes.end(), 0);
         auto index_with_data = all_indexes | std::views::filter([&chunk](auto idx) -> bool {
-            return chunk->m_counts[idx] != 0;
-        });
+                                   return chunk->m_counts[idx] != 0;
+                               });
         std::vector<Index3D> index3d_with_data;
         std::ranges::transform(
             index_with_data,
@@ -79,9 +79,9 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
         {
             std::ranges::copy(
                 index_with_data |
-                std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                    return chunk->m_lengths[index];
-                }),
+                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                        return chunk->m_lengths[index];
+                    }),
                 std::back_inserter(m_lengths)
             );
         }
@@ -89,9 +89,9 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
         {
             std::ranges::copy(
                 index_with_data |
-                std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                    return chunk->m_hits_lengths[index];
-                }),
+                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                        return chunk->m_hits_lengths[index];
+                    }),
                 std::back_inserter(m_hits_lengths)
             );
         }
@@ -113,12 +113,9 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
     }
     m_pads.resize(m_counts.size());
     assert(
-        m_xs.size() == m_ys.size()
-        && m_ys.size() == m_counts.size()
-        && m_counts.size() == m_hits.size()
-        && m_hits.size() == m_pads.size()
-        && m_pads.size() == m_lengths.size()
-        && m_lengths.size() == m_hits_lengths.size()
+        m_xs.size() == m_ys.size() && m_ys.size() == m_counts.size() &&
+        m_counts.size() == m_hits.size() && m_hits.size() == m_pads.size() &&
+        m_pads.size() == m_lengths.size() && m_lengths.size() == m_hits_lengths.size()
     );
 }
 
@@ -138,8 +135,8 @@ COOGrid::COOGrid(const DenseGrid& grid)
     all_indexes.resize(grid.m_counts.size());
     std::iota(all_indexes.begin(), all_indexes.end(), 0);
     auto index_with_data = all_indexes | std::views::filter([&grid](auto idx) -> bool {
-        return grid.m_counts[idx] != 0;
-    });
+                               return grid.m_counts[idx] != 0;
+                           });
     std::vector<Index3D> index3d_with_data;
     std::ranges::transform(
         index_with_data, std::back_inserter(index3d_with_data), [&grid](size_t idx) -> Index3D {
@@ -206,13 +203,163 @@ COOGrid::COOGrid(const DenseGrid& grid)
     }
 
     assert(
-        m_xs.size() == m_ys.size()
-        && m_ys.size() == m_counts.size()
-        && m_counts.size() == m_hits.size()
-        && m_hits.size() == m_pads.size()
-        && m_pads.size() == m_lengths.size()
-        && m_lengths.size() == m_hits_lengths.size()
+        m_xs.size() == m_ys.size() && m_ys.size() == m_counts.size() &&
+        m_counts.size() == m_hits.size() && m_hits.size() == m_pads.size() &&
+        m_pads.size() == m_lengths.size() && m_lengths.size() == m_hits_lengths.size()
     );
+}
+
+COOGrid::VoxelViewIterator::VoxelViewIterator()
+    : m_index{}
+    , m_grid{}
+    , m_value{}
+{
+}
+
+COOGrid::VoxelViewIterator::VoxelViewIterator(COOGrid& grid)
+    : m_index{0}
+    , m_grid{&grid}
+    , m_value{}
+{
+    update_value();
+}
+
+COOGrid::VoxelViewIterator::VoxelViewIterator(const VoxelViewIterator& other)
+    : m_index{other.m_index}
+    , m_grid{other.m_grid}
+    , m_value{other.m_value}
+{
+}
+
+auto COOGrid::VoxelViewIterator::operator=(const VoxelViewIterator& other) -> VoxelViewIterator&
+{
+    m_index = other.m_index;
+    m_grid  = other.m_grid;
+    m_value = other.m_value;
+
+    return *this;
+}
+
+auto COOGrid::VoxelViewIterator::operator+=(difference_type diff) -> VoxelViewIterator&
+{
+    m_index += diff;
+    update_value();
+    return *this;
+}
+
+auto COOGrid::VoxelViewIterator::operator-=(difference_type diff) -> VoxelViewIterator&
+{
+    m_index -= diff;
+    update_value();
+    return *this;
+}
+
+auto COOGrid::VoxelViewIterator::operator++() -> VoxelViewIterator&
+{
+    *this += 1;
+    return *this;
+}
+
+auto COOGrid::VoxelViewIterator::operator++(int) -> VoxelViewIterator
+{
+    auto tmp = *this;
+    ++*this;
+    return tmp;
+}
+
+auto COOGrid::VoxelViewIterator::operator--() -> VoxelViewIterator&
+{
+    *this -= 1;
+    return *this;
+}
+
+auto COOGrid::VoxelViewIterator::operator--(int) -> VoxelViewIterator
+{
+    auto tmp = *this;
+    ++*this;
+    return tmp;
+}
+
+auto COOGrid::VoxelViewIterator::operator+(difference_type diff) const -> VoxelViewIterator
+{
+    auto tmp = *this;
+    tmp += diff;
+    return tmp;
+}
+
+auto COOGrid::VoxelViewIterator::operator-(difference_type diff) const -> VoxelViewIterator
+{
+    auto tmp = *this;
+    tmp -= diff;
+    return tmp;
+}
+
+auto COOGrid::VoxelViewIterator::operator*() -> value_type
+{
+    return m_value;
+}
+
+auto COOGrid::VoxelViewIterator::operator->() -> pointer
+{
+    return &m_value;
+}
+
+auto COOGrid::VoxelViewIterator::operator==(const VoxelViewIterator& other) const -> bool
+{
+    return m_grid == other.m_grid && m_index == other.m_index;
+}
+
+auto COOGrid::VoxelViewIterator::operator!=(const VoxelViewIterator& other) const -> bool
+{
+    return !(*this == other);
+}
+
+auto COOGrid::VoxelViewIterator::operator<(const VoxelViewIterator& other) const -> bool
+{
+    return m_index < other.m_index;
+}
+
+auto COOGrid::VoxelViewIterator::operator>(const VoxelViewIterator& other) const -> bool
+{
+    return m_index > other.m_index;
+}
+
+auto COOGrid::VoxelViewIterator::operator<=(const VoxelViewIterator& other) const -> bool
+{
+    return (*this < other) || (*this == other);
+}
+
+auto COOGrid::VoxelViewIterator::operator>=(const VoxelViewIterator& other) const -> bool
+{
+    return (*this > other) || (*this == other);
+}
+
+auto COOGrid::VoxelViewIterator::operator[](size_t index) -> VoxelViewIterator
+{
+    auto tmp    = *this;
+    tmp.m_index = index;
+    tmp.update_value();
+    return tmp;
+}
+
+auto COOGrid::VoxelViewIterator::update_value() -> void
+{
+    m_value = value_type{
+        &m_grid->m_xs[m_index],
+        &m_grid->m_ys[m_index],
+        &m_grid->m_zs[m_index],
+        &m_grid->m_counts[m_index],
+        &m_grid->m_hits[m_index],
+        &m_grid->m_pads[m_index],
+        &m_grid->m_lengths[m_index],
+        &m_grid->m_hits_lengths[m_index],
+        nullptr
+    };
+
+    if (!m_grid->m_lengths_variance.empty())
+    {
+        m_value.length_variance = &m_grid->m_lengths_variance[m_index];
+    }
 }
 
 auto COOGrid::compute_pad(algorithms::pe::BeerLambert) -> void

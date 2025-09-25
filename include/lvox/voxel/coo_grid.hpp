@@ -1,8 +1,10 @@
 #ifndef LVOX_VOXEL_COO_GRID_HPP
 #define LVOX_VOXEL_COO_GRID_HPP
 
+#include <cstddef>
 #include <execution>
 #include <filesystem>
+#include <iterator>
 #include <vector>
 
 #include <lvox/types.hpp>
@@ -33,9 +35,73 @@ class COOGrid
         bool                         include_all_data = false
     ) const -> void;
 
+    struct VoxelView
+    {
+        unsigned int* x;
+        unsigned int* y;
+        unsigned int* z;
+        unsigned int* count;
+        unsigned int* hit;
+        double*       pad;
+        double*       length;
+        double*       hits_length;
+        double*       length_variance;
+    };
+
+    class VoxelViewIterator
+    {
+      public:
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type        = VoxelView;
+        using difference_type   = std::ptrdiff_t;
+        using pointer           = value_type*;
+        using reference         = value_type&;
+
+        VoxelViewIterator();
+        VoxelViewIterator(COOGrid&);
+        VoxelViewIterator(const VoxelViewIterator&);
+
+        auto operator=(const VoxelViewIterator&) -> VoxelViewIterator&;
+
+        auto operator++() -> VoxelViewIterator&;
+        auto operator++(int) -> VoxelViewIterator;
+
+        auto operator--() -> VoxelViewIterator&;
+        auto operator--(int) -> VoxelViewIterator;
+
+        auto operator+(difference_type diff) const -> VoxelViewIterator;
+        auto operator-(difference_type diff) const -> VoxelViewIterator;
+
+        auto operator+=(difference_type diff) -> VoxelViewIterator&;
+        auto operator-=(difference_type diff) -> VoxelViewIterator&;
+
+        auto operator*() -> value_type;
+        auto operator->() -> pointer;
+
+        auto operator==(const VoxelViewIterator&) const -> bool;
+        auto operator!=(const VoxelViewIterator&) const -> bool;
+
+        auto operator<(const VoxelViewIterator&) const -> bool;
+        auto operator>(const VoxelViewIterator&) const -> bool;
+
+        auto operator<=(const VoxelViewIterator&) const -> bool;
+        auto operator>=(const VoxelViewIterator&) const -> bool;
+
+        auto operator[](size_t index) -> VoxelViewIterator;
+
+      private:
+        auto       update_value() -> void;
+        size_t     m_index;
+        COOGrid*   m_grid;
+        value_type m_value;
+    };
+
     auto compute_pad(algorithms::pad_estimators::BeerLambert) -> void;
     auto compute_pad(algorithms::pad_estimators::ContactFrequency) -> void;
     auto compute_pad(algorithms::pad_estimators::UnequalPathLengthBeerLambert) -> void;
+
+    auto begin() -> VoxelViewIterator { return VoxelViewIterator{*this}; }
+    auto end() -> VoxelViewIterator { return VoxelViewIterator{}; }
 
   private:
     std::vector<unsigned int> m_xs;
