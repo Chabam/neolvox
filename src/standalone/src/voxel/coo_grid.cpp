@@ -216,12 +216,11 @@ COOGrid::VoxelViewIterator::VoxelViewIterator()
 {
 }
 
-COOGrid::VoxelViewIterator::VoxelViewIterator(COOGrid& grid)
-    : m_index{0}
+COOGrid::VoxelViewIterator::VoxelViewIterator(COOGrid& grid, size_t index)
+    : m_index{index}
     , m_grid{&grid}
     , m_value{}
 {
-    update_value();
 }
 
 COOGrid::VoxelViewIterator::VoxelViewIterator(const VoxelViewIterator& other)
@@ -276,32 +275,39 @@ auto COOGrid::VoxelViewIterator::operator--() -> VoxelViewIterator&
 auto COOGrid::VoxelViewIterator::operator--(int) -> VoxelViewIterator
 {
     auto tmp = *this;
-    ++*this;
+    --*this;
     return tmp;
 }
 
-auto COOGrid::VoxelViewIterator::operator+(difference_type diff) const -> VoxelViewIterator
+auto COOGrid::VoxelViewIterator::operator+(const VoxelViewIterator& other) const
+    -> VoxelViewIterator
 {
     auto tmp = *this;
-    tmp += diff;
+    tmp += other.m_index;
     return tmp;
 }
 
-auto COOGrid::VoxelViewIterator::operator-(difference_type diff) const -> VoxelViewIterator
+auto COOGrid::VoxelViewIterator::operator-(const VoxelViewIterator& other) const
+    -> VoxelViewIterator
 {
     auto tmp = *this;
-    tmp -= diff;
+    tmp -= other.m_index;
     return tmp;
 }
 
-auto COOGrid::VoxelViewIterator::operator*() -> value_type
+auto COOGrid::VoxelViewIterator::operator*() -> reference
+{
+    return m_value;
+}
+
+auto COOGrid::VoxelViewIterator::operator*() const -> const_reference
 {
     return m_value;
 }
 
 auto COOGrid::VoxelViewIterator::operator->() -> pointer
 {
-    return &m_value;
+    return &**this;
 }
 
 auto COOGrid::VoxelViewIterator::operator==(const VoxelViewIterator& other) const -> bool
@@ -334,11 +340,10 @@ auto COOGrid::VoxelViewIterator::operator>=(const VoxelViewIterator& other) cons
     return (*this > other) || (*this == other);
 }
 
-auto COOGrid::VoxelViewIterator::operator[](size_t index) -> VoxelViewIterator
+auto COOGrid::VoxelViewIterator::operator[](difference_type diff) -> VoxelViewIterator
 {
-    auto tmp    = *this;
-    tmp.m_index = index;
-    tmp.update_value();
+    auto tmp = *this;
+    tmp.m_index += diff;
     return tmp;
 }
 

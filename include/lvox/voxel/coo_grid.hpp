@@ -56,9 +56,10 @@ class COOGrid
         using difference_type   = std::ptrdiff_t;
         using pointer           = value_type*;
         using reference         = value_type&;
+        using const_reference   = const value_type&;
 
         VoxelViewIterator();
-        VoxelViewIterator(COOGrid&);
+        VoxelViewIterator(COOGrid&, size_t idx);
         VoxelViewIterator(const VoxelViewIterator&);
 
         auto operator=(const VoxelViewIterator&) -> VoxelViewIterator&;
@@ -69,13 +70,14 @@ class COOGrid
         auto operator--() -> VoxelViewIterator&;
         auto operator--(int) -> VoxelViewIterator;
 
-        auto operator+(difference_type diff) const -> VoxelViewIterator;
-        auto operator-(difference_type diff) const -> VoxelViewIterator;
+        auto operator+(const VoxelViewIterator&) const -> VoxelViewIterator;
+        auto operator-(const VoxelViewIterator&) const -> VoxelViewIterator;
 
-        auto operator+=(difference_type diff) -> VoxelViewIterator&;
-        auto operator-=(difference_type diff) -> VoxelViewIterator&;
+        auto operator+=(difference_type) -> VoxelViewIterator&;
+        auto operator-=(difference_type) -> VoxelViewIterator&;
 
-        auto operator*() -> value_type;
+        auto operator*() -> reference;
+        auto operator*() const -> const_reference;
         auto operator->() -> pointer;
 
         auto operator==(const VoxelViewIterator&) const -> bool;
@@ -87,21 +89,24 @@ class COOGrid
         auto operator<=(const VoxelViewIterator&) const -> bool;
         auto operator>=(const VoxelViewIterator&) const -> bool;
 
-        auto operator[](size_t index) -> VoxelViewIterator;
+        auto operator[](difference_type) -> VoxelViewIterator;
 
       private:
-        auto       update_value() -> void;
         size_t     m_index;
         COOGrid*   m_grid;
         value_type m_value;
+
+        auto update_value() -> void;
     };
+
+    static_assert(std::random_access_iterator<VoxelViewIterator>);
 
     auto compute_pad(algorithms::pad_estimators::BeerLambert) -> void;
     auto compute_pad(algorithms::pad_estimators::ContactFrequency) -> void;
     auto compute_pad(algorithms::pad_estimators::UnequalPathLengthBeerLambert) -> void;
 
-    auto begin() -> VoxelViewIterator { return VoxelViewIterator{*this}; }
-    auto end() -> VoxelViewIterator { return VoxelViewIterator{}; }
+    auto begin() -> VoxelViewIterator { return VoxelViewIterator{*this, 0}; }
+    auto end() -> VoxelViewIterator { return VoxelViewIterator{*this, m_counts.size()}; }
 
   private:
     std::vector<unsigned int> m_xs;
