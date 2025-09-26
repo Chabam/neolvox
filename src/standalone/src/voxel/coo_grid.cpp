@@ -40,7 +40,7 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
             static_cast<unsigned int>(chunk_idx / (grid.m_chunks_x * grid.m_chunks_y));
 
         std::vector<unsigned int> all_indexes;
-        all_indexes.resize(chunk->m_counts.size());
+        all_indexes.resize(ChunkedGrid::VoxelChunk::s_cell_count);
         std::iota(all_indexes.begin(), all_indexes.end(), 0);
         auto index_with_data = all_indexes | std::views::filter([&chunk](auto idx) -> bool {
                                    return chunk->m_counts[idx] != 0;
@@ -49,7 +49,7 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
         std::ranges::transform(
             index_with_data,
             std::back_inserter(index3d_with_data),
-            [&grid, chunk_x, chunk_y, chunk_z](size_t idx) -> Index3D {
+            [chunk_x, chunk_y, chunk_z](size_t idx) -> Index3D {
                 constexpr auto chunk_dim = ChunkedGrid::VoxelChunk::s_edge_size;
                 return {
                     chunk_x * chunk_dim + static_cast<unsigned int>(idx % chunk_dim),
@@ -71,6 +71,7 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
             }),
             std::back_inserter(m_hits)
         );
+
         std::ranges::copy(
             index_with_data | std::views::transform([&chunk](const size_t& index) -> unsigned int {
                 return chunk->m_counts[index];
@@ -78,25 +79,19 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
             std::back_inserter(m_counts)
         );
 
-        {
-            std::ranges::copy(
-                index_with_data |
-                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                        return chunk->m_lengths[index];
-                    }),
-                std::back_inserter(m_lengths)
-            );
-        }
+        std::ranges::copy(
+            index_with_data | std::views::transform([&chunk](const size_t& index) -> double {
+                return chunk->m_lengths[index];
+            }),
+            std::back_inserter(m_lengths)
+        );
 
-        {
-            std::ranges::copy(
-                index_with_data |
-                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                        return chunk->m_hits_lengths[index];
-                    }),
-                std::back_inserter(m_hits_lengths)
-            );
-        }
+        std::ranges::copy(
+            index_with_data | std::views::transform([&chunk](const size_t& index) -> double {
+                return chunk->m_hits_lengths[index];
+            }),
+            std::back_inserter(m_hits_lengths)
+        );
 
         if (!chunk->m_lengths_variance.empty())
         {
@@ -105,6 +100,7 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
                 std::views::transform([&chunk](const size_t& index) -> unsigned int {
                     return chunk->m_lengths_variance[index];
                 });
+
             std::copy(
                 chunk_lengths_variance.begin(),
                 chunk_lengths_variance.end(),
@@ -113,8 +109,10 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
         }
         ++chunk_idx;
     }
+
     m_size = m_xs.size();
     m_pads.resize(m_size);
+
     assert(
         m_xs.size() == m_size &&                                  //
         m_ys.size() == m_size &&                                  //
