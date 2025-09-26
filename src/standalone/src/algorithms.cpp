@@ -14,6 +14,7 @@
 #include <lvox/scanner/scan.hpp>
 #include <lvox/voxel/grid.hpp>
 #include <lvox/voxel/coo_grid.hpp>
+#include <lvox/algorithms/compute_pad.hpp>
 
 namespace lvox::algorithms
 {
@@ -215,7 +216,7 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
             return DenseGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
     });
 
-    auto scan_num = 1;
+    auto                     scan_num = 1;
     std::unique_ptr<COOGrid> result;
     for (const auto& scan : scans)
     {
@@ -228,17 +229,15 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
         logger.info("Compute ray counts and length {}/{}", scan_num, scans.size());
         compute_rays_count_and_length(grid, scan, options);
 
-        result = std::visit([](const auto& grid) -> std::unique_ptr<COOGrid>{
-            return std::make_unique<COOGrid>(grid);
-        }, grid);
+        result = std::visit(
+            [](const auto& grid) -> std::unique_ptr<COOGrid> {
+                return std::make_unique<COOGrid>(grid);
+            },
+            grid
+        );
 
         logger.info("Estimating PAD {}/{}", scan_num, scans.size());
-        std::visit(
-            [&result](auto&& chosen_estimator) -> void {
-                result->compute_pad(chosen_estimator);
-            },
-            options.m_pad_estimator
-        );
+        std::visit(ComputePAD{*result}, options.m_pad_estimator);
         ++scan_num;
     }
 

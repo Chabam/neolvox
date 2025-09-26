@@ -6,6 +6,7 @@ add_library(lvox_common)
 target_sources(lvox_common
   PUBLIC
   src/algorithms.cpp
+  src/compute_pad.cpp
   src/logger/logger.cpp
   src/scanner/beam.cpp
   src/voxel/bounded_grid.cpp

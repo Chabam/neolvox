@@ -12,7 +12,9 @@ namespace lvox
 {
 
 COOGrid::COOGrid(const ChunkedGrid& grid)
-    : m_xs{}
+    : m_size{}
+    , m_uses_variance{grid.m_compute_variance}
+    , m_xs{}
     , m_ys{}
     , m_zs{}
     , m_counts{}
@@ -111,16 +113,25 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
         }
         ++chunk_idx;
     }
-    m_pads.resize(m_counts.size());
+    m_size = m_xs.size();
+    m_pads.resize(m_size);
     assert(
-        m_xs.size() == m_ys.size() && m_ys.size() == m_counts.size() &&
-        m_counts.size() == m_hits.size() && m_hits.size() == m_pads.size() &&
-        m_pads.size() == m_lengths.size() && m_lengths.size() == m_hits_lengths.size()
+        m_xs.size() == m_size &&                                  //
+        m_ys.size() == m_size &&                                  //
+        m_zs.size() == m_size &&                                  //
+        m_counts.size() == m_size &&                              //
+        m_hits.size() == m_size &&                                //
+        m_pads.size() == m_size &&                                //
+        m_lengths.size() == m_size &&                             //
+        m_hits_lengths.size() == m_size &&                        //
+        (!m_uses_variance || m_lengths_variance.size() == m_size) //
     );
 }
 
 COOGrid::COOGrid(const DenseGrid& grid)
-    : m_xs{}
+    : m_size{}
+    , m_uses_variance{!grid.m_lengths_variance.empty()}
+    , m_xs{}
     , m_ys{}
     , m_zs{}
     , m_counts{}
@@ -152,17 +163,17 @@ COOGrid::COOGrid(const DenseGrid& grid)
         }
     );
 
-    const bool is_using_variance = !grid.m_lengths_variance.empty();
-    m_xs.resize(index3d_with_data.size());
-    m_ys.resize(index3d_with_data.size());
-    m_zs.resize(index3d_with_data.size());
-    m_counts.resize(index3d_with_data.size());
-    m_hits.resize(index3d_with_data.size());
-    m_pads.resize(index3d_with_data.size());
-    m_lengths.resize(index3d_with_data.size());
-    m_hits_lengths.resize(index3d_with_data.size());
-    if (is_using_variance)
-        m_lengths_variance.resize(index3d_with_data.size());
+    m_size = index3d_with_data.size();
+    m_xs.resize(m_size);
+    m_ys.resize(m_size);
+    m_zs.resize(m_size);
+    m_counts.resize(m_size);
+    m_hits.resize(m_size);
+    m_pads.resize(m_size);
+    m_lengths.resize(m_size);
+    m_hits_lengths.resize(m_size);
+    if (m_uses_variance)
+        m_lengths_variance.resize(m_size);
 
     // Copying indexes
     const auto h5_size_t = H5::PredType::NATIVE_UINT;
@@ -192,7 +203,7 @@ COOGrid::COOGrid(const DenseGrid& grid)
         );
     }
 
-    if (is_using_variance)
+    if (m_uses_variance)
     {
         std::ranges::copy(
             index_with_data | std::views::transform([&grid](const size_t& index) -> unsigned int {
@@ -201,269 +212,17 @@ COOGrid::COOGrid(const DenseGrid& grid)
             m_lengths_variance.begin()
         );
     }
-
     assert(
-        m_xs.size() == m_ys.size() && m_ys.size() == m_counts.size() &&
-        m_counts.size() == m_hits.size() && m_hits.size() == m_pads.size() &&
-        m_pads.size() == m_lengths.size() && m_lengths.size() == m_hits_lengths.size()
+        m_xs.size() == m_size &&                                  //
+        m_ys.size() == m_size &&                                  //
+        m_zs.size() == m_size &&                                  //
+        m_counts.size() == m_size &&                              //
+        m_hits.size() == m_size &&                                //
+        m_pads.size() == m_size &&                                //
+        m_lengths.size() == m_size &&                             //
+        m_hits_lengths.size() == m_size &&                        //
+        (!m_uses_variance || m_lengths_variance.size() == m_size) //
     );
-}
-
-COOGrid::VoxelViewIterator::VoxelViewIterator()
-    : m_index{}
-    , m_grid{}
-    , m_value{}
-{
-}
-
-COOGrid::VoxelViewIterator::VoxelViewIterator(COOGrid& grid, size_t index)
-    : m_index{index}
-    , m_grid{&grid}
-    , m_value{}
-{
-}
-
-COOGrid::VoxelViewIterator::VoxelViewIterator(const VoxelViewIterator& other)
-    : m_index{other.m_index}
-    , m_grid{other.m_grid}
-    , m_value{other.m_value}
-{
-}
-
-auto COOGrid::VoxelViewIterator::operator=(const VoxelViewIterator& other) -> VoxelViewIterator&
-{
-    m_index = other.m_index;
-    m_grid  = other.m_grid;
-    m_value = other.m_value;
-
-    return *this;
-}
-
-auto COOGrid::VoxelViewIterator::operator+=(difference_type diff) -> VoxelViewIterator&
-{
-    m_index += diff;
-    update_value();
-    return *this;
-}
-
-auto COOGrid::VoxelViewIterator::operator-=(difference_type diff) -> VoxelViewIterator&
-{
-    m_index -= diff;
-    update_value();
-    return *this;
-}
-
-auto COOGrid::VoxelViewIterator::operator++() -> VoxelViewIterator&
-{
-    *this += 1;
-    return *this;
-}
-
-auto COOGrid::VoxelViewIterator::operator++(int) -> VoxelViewIterator
-{
-    auto tmp = *this;
-    ++*this;
-    return tmp;
-}
-
-auto COOGrid::VoxelViewIterator::operator--() -> VoxelViewIterator&
-{
-    *this -= 1;
-    return *this;
-}
-
-auto COOGrid::VoxelViewIterator::operator--(int) -> VoxelViewIterator
-{
-    auto tmp = *this;
-    --*this;
-    return tmp;
-}
-
-auto COOGrid::VoxelViewIterator::operator+(const VoxelViewIterator& other) const
-    -> VoxelViewIterator
-{
-    auto tmp = *this;
-    tmp += other.m_index;
-    return tmp;
-}
-
-auto COOGrid::VoxelViewIterator::operator-(const VoxelViewIterator& other) const
-    -> VoxelViewIterator
-{
-    auto tmp = *this;
-    tmp -= other.m_index;
-    return tmp;
-}
-
-auto COOGrid::VoxelViewIterator::operator*() -> reference
-{
-    return m_value;
-}
-
-auto COOGrid::VoxelViewIterator::operator*() const -> const_reference
-{
-    return m_value;
-}
-
-auto COOGrid::VoxelViewIterator::operator->() -> pointer
-{
-    return &**this;
-}
-
-auto COOGrid::VoxelViewIterator::operator==(const VoxelViewIterator& other) const -> bool
-{
-    return m_grid == other.m_grid && m_index == other.m_index;
-}
-
-auto COOGrid::VoxelViewIterator::operator!=(const VoxelViewIterator& other) const -> bool
-{
-    return !(*this == other);
-}
-
-auto COOGrid::VoxelViewIterator::operator<(const VoxelViewIterator& other) const -> bool
-{
-    return m_index < other.m_index;
-}
-
-auto COOGrid::VoxelViewIterator::operator>(const VoxelViewIterator& other) const -> bool
-{
-    return m_index > other.m_index;
-}
-
-auto COOGrid::VoxelViewIterator::operator<=(const VoxelViewIterator& other) const -> bool
-{
-    return (*this < other) || (*this == other);
-}
-
-auto COOGrid::VoxelViewIterator::operator>=(const VoxelViewIterator& other) const -> bool
-{
-    return (*this > other) || (*this == other);
-}
-
-auto COOGrid::VoxelViewIterator::operator[](difference_type diff) -> VoxelViewIterator
-{
-    auto tmp = *this;
-    tmp.m_index += diff;
-    return tmp;
-}
-
-auto COOGrid::VoxelViewIterator::update_value() -> void
-{
-    m_value = value_type{
-        &m_grid->m_xs[m_index],
-        &m_grid->m_ys[m_index],
-        &m_grid->m_zs[m_index],
-        &m_grid->m_counts[m_index],
-        &m_grid->m_hits[m_index],
-        &m_grid->m_pads[m_index],
-        &m_grid->m_lengths[m_index],
-        &m_grid->m_hits_lengths[m_index],
-        nullptr
-    };
-
-    if (!m_grid->m_lengths_variance.empty())
-    {
-        m_value.length_variance = &m_grid->m_lengths_variance[m_index];
-    }
-}
-
-auto COOGrid::compute_pad(algorithms::pe::BeerLambert) -> void
-{
-    compute_pad_impl([this](unsigned int voxel_idx) -> double {
-        const auto G = [](double val) -> double {
-            return 0.5 * val;
-        };
-
-        const double hits            = m_hits[voxel_idx];
-        const double ray_count       = m_counts[voxel_idx];
-        const double RDI             = hits / static_cast<double>(ray_count);
-        const double ray_length      = m_lengths[voxel_idx];
-        const double mean_ray_length = ray_length / ray_count;
-
-        if (RDI >= 1.)
-            return 0.;
-
-        return -(std::log(1. - RDI) / G(mean_ray_length));
-    });
-}
-
-auto COOGrid::compute_pad(algorithms::pe::ContactFrequency) -> void
-{
-    compute_pad_impl([this](unsigned int voxel_idx) -> double {
-        const auto G = [](double val) -> double {
-            return 0.5 * val;
-        };
-
-        const double hits       = m_hits[voxel_idx];
-        const double ray_count  = m_counts[voxel_idx];
-        const double RDI        = hits / static_cast<double>(ray_count);
-        const double ray_length = m_lengths[voxel_idx];
-
-        if (RDI >= 1.)
-            return 0.;
-
-        return RDI / G(ray_length);
-    });
-}
-
-auto COOGrid::compute_pad(algorithms::pe::UnequalPathLengthBeerLambert) -> void
-{
-    compute_pad_impl([this](unsigned int voxel_idx) -> double {
-        const auto G = [](double val) -> double {
-            return 0.5 * val;
-        };
-
-        const double hits               = m_hits[voxel_idx];
-        const double ray_count          = m_counts[voxel_idx];
-        const double RDI                = hits / static_cast<double>(ray_count);
-        const double length             = m_lengths[voxel_idx];
-        const double variance           = m_lengths_variance[voxel_idx];
-        const double mean_ray_length    = length / ray_count;
-        const double unequal_path_ratio = variance / mean_ray_length;
-
-        double attenuation_coeff;
-
-        if (RDI < 1.)
-        {
-            const double inv_RDI = 1. - RDI;
-            attenuation_coeff =
-                (1. / mean_ray_length) * (std::log(inv_RDI) - (1. / (2 * ray_count * inv_RDI)));
-        }
-        else // RDI == 1.
-        {
-            attenuation_coeff = std::log(2 * ray_count + 2) / mean_ray_length;
-        }
-
-        const double res = (1. / G(attenuation_coeff)) *
-                           (1. - std::sqrt(1. - 2 * unequal_path_ratio * attenuation_coeff));
-
-        if (std::isnan(res))
-        {
-            std::cout << std::format(
-                             R"(
-    hits                = {}
-    ray_count           = {}
-    RDI                 = {}
-    ray_length          = {}
-    mean_ray_length     = {}
-    ray_length_variance = {}
-    unequal_path_ratio  = {}
-    attenuation_coeff   = {})",
-                             hits,
-                             ray_count,
-                             RDI,
-                             length,
-                             mean_ray_length,
-                             variance,
-                             unequal_path_ratio,
-                             attenuation_coeff
-                         )
-                      << std::endl;
-            return 0.;
-        }
-
-        return res;
-    });
 }
 
 auto COOGrid::export_to_h5(
