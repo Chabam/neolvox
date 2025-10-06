@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <execution>
 #include <filesystem>
 #include <format>
 #include <functional>
@@ -9,6 +10,7 @@
 #include <mutex>
 #include <sstream>
 #include <stdexcept>
+#include <exception>
 
 #include <pdal/Dimension.hpp>
 #include <pdal/Options.hpp>
@@ -27,7 +29,7 @@
 #include <lvox/scanner/spherical_scanner.hpp>
 #include <lvox/scanner/trajectory.hpp>
 #include <lvox/types.hpp>
-#include <lvox/voxel/grid.hpp>
+#include <lvox/voxel/coo_grid.hpp>
 
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
@@ -397,12 +399,11 @@ auto main(int argc, char* argv[]) -> int
         .m_compute_theoriticals = g_compute_theoriticals,
         .m_use_sparse_grid      = g_use_sparse_grids
     };
-    const lvox::Grid result = lvox::algorithms::compute_pad(scans, compute_options);
+    lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
+    auto          max    = 0U;
+    std::for_each(std::execution::par, result.begin(), result.end(), [&max](const auto& test) {
+        max = std::max(max, *test.x);
+    });
 
-    std::visit(
-        [](auto& result) {
-            result.export_as_coo_to_h5("lvox", g_grid_file, g_include_all_info);
-        },
-        result
-    );
+    result.export_to_h5("lvox", g_grid_file, g_include_all_info);
 }

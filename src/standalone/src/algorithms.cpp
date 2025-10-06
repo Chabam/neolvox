@@ -1,5 +1,6 @@
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <thread>
 #include <variant>
 
@@ -12,6 +13,8 @@
 #include <lvox/scanner/beam.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/voxel/grid.hpp>
+#include <lvox/voxel/coo_grid.hpp>
+#include <lvox/algorithms/compute_pad.hpp>
 
 namespace lvox::algorithms
 {
@@ -198,7 +201,7 @@ auto compute_scene_bounds(const std::vector<lvox::Scan>& scans) -> lvox::Bounds
     return total_bounds;
 }
 
-auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options) -> Grid
+auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options) -> COOGrid
 {
     Logger logger{"LVOX"};
     logger.info("Scan count {}", scans.size());
@@ -213,7 +216,8 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
             return DenseGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
     });
 
-    auto scan_num = 1;
+    auto                     scan_num = 1;
+    std::unique_ptr<COOGrid> result;
     for (const auto& scan : scans)
     {
         if (options.m_compute_theoriticals && scan.m_blank_shots)
@@ -225,22 +229,19 @@ auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& opt
         logger.info("Compute ray counts and length {}/{}", scan_num, scans.size());
         compute_rays_count_and_length(grid, scan, options);
 
-        logger.info("Estimating PAD {}/{}", scan_num, scans.size());
-        std::visit(
-            [&grid](auto&& chosen_estimator) -> void {
-                std::visit(
-                    [&chosen_estimator](auto& grid) {
-                        grid.compute_pad(chosen_estimator);
-                    },
-                    grid
-                );
+        result = std::visit(
+            [](const auto& grid) -> std::unique_ptr<COOGrid> {
+                return std::make_unique<COOGrid>(grid);
             },
-            options.m_pad_estimator
+            grid
         );
+
+        logger.info("Estimating PAD {}/{}", scan_num, scans.size());
+        std::visit(ComputePAD{*result}, options.m_pad_estimator);
         ++scan_num;
     }
 
-    return grid;
+    return *result;
 }
 
 } // namespace lvox::algorithms
