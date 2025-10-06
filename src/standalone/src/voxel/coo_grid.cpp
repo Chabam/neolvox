@@ -31,7 +31,10 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
         auto chunk = a_chunk.load(std::memory_order_relaxed);
 
         if (!chunk)
+        {
+            ++chunk_idx;
             continue;
+        }
 
         const auto chunk_x = static_cast<unsigned int>(chunk_idx % grid.m_chunks_x);
         const auto chunk_y =
