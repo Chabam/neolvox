@@ -1,5 +1,6 @@
 #include <H5Cpp.h>
 #include <iterator>
+#include <numeric>
 #include <ranges>
 
 #include <lvox/algorithms/pad_estimators.hpp>

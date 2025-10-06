@@ -2,6 +2,7 @@
 #define LVOX_VOXEL_CHUNKED_GRID_HPP
 
 #include <atomic>
+#include <mutex>
 
 #include <lvox/types.hpp>
 #include <lvox/voxel/bounded_grid.hpp>
