@@ -1,4 +1,6 @@
 #include <H5Cpp.h>
+#include <atomic>
+#include <cmath>
 #include <iterator>
 #include <numeric>
 #include <ranges>
@@ -209,7 +211,13 @@ COOGrid::COOGrid(const DenseGrid& grid)
     {
         std::ranges::copy(
             index_with_data | std::views::transform([&grid](const size_t& index) -> unsigned int {
-                return grid.m_lengths_variance[index];
+                auto aggregate = grid.m_lengths_variance[index].load(std::memory_order_relaxed);
+                if (aggregate->m_count < 2)
+                {
+                    return NAN;
+                }
+
+                return aggregate->m_m2 / aggregate->m_count;
             }),
             m_lengths_variance.begin()
         );

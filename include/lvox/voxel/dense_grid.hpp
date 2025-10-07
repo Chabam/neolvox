@@ -12,25 +12,36 @@ namespace lvox
 class DenseGrid
 {
     friend class COOGrid;
+
   public:
     DenseGrid(const Bounds& bounds, double cell_size, bool compute_variance);
     DenseGrid(DenseGrid&& other);
 
     auto register_hit(const Index3D& voxel_idx) -> void;
     auto add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit) -> void;
-    auto add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit) -> void;
+    auto add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit)
+        -> void;
 
     auto bounded_grid() const -> const BoundedGrid& { return m_bounded_grid; }
 
   private:
-    BoundedGrid m_bounded_grid;
+    struct WelfordAggregate
+    {
+        double m_count;
+        double m_mean;
+        double m_m2;
+    };
+    using wa_ptr = std::shared_ptr<WelfordAggregate>;
+    using atomic_wa_ptr = std::atomic<wa_ptr>;
     using atomic_f64 = std::atomic<double>;
-    std::vector<std::atomic_uint> m_hits;
-    std::vector<std::atomic_uint> m_counts;
-    std::vector<atomic_f64>       m_lengths;
-    std::vector<atomic_f64>       m_hits_lengths;
-    std::vector<atomic_f64>       m_lengths_variance;
-    std::vector<atomic_f64>       m_pad;
+
+    BoundedGrid m_bounded_grid;
+    std::vector<std::atomic_uint>              m_hits;
+    std::vector<std::atomic_uint>              m_counts;
+    std::vector<atomic_f64>                    m_lengths;
+    std::vector<atomic_f64>                    m_hits_lengths;
+    std::vector<atomic_wa_ptr>                 m_lengths_variance;
+    std::vector<atomic_f64>                    m_pad;
 
     auto index3d_to_flat_idx(const Index3D& voxel_idx) const -> size_t;
 };

@@ -17,10 +17,10 @@ DenseGrid::DenseGrid(const Bounds& bounds, double cell_size, bool compute_varian
     , m_counts{m_bounded_grid.m_cell_count, std::allocator<std::atomic_uint>{}}
     , m_lengths{m_bounded_grid.m_cell_count, std::allocator<atomic_f64>{}}
     , m_hits_lengths{m_bounded_grid.m_cell_count, std::allocator<atomic_f64>{}}
-    , m_lengths_variance{std::invoke([&]() -> std::vector<atomic_f64> {
+    , m_lengths_variance{std::invoke([&]() -> std::vector<atomic_wa_ptr> {
         if (compute_variance)
-            return std::vector<atomic_f64>{
-                m_bounded_grid.m_cell_count, std::allocator<atomic_f64>{}
+            return std::vector<atomic_wa_ptr>{
+                m_bounded_grid.m_cell_count, std::allocator<atomic_wa_ptr>{}
             };
         else
             return {};
@@ -67,26 +67,41 @@ auto DenseGrid::add_length_and_count(const Index3D& voxel_idx, double length, bo
 }
 
 // TODO: make this work with memory consistency
-auto DenseGrid::add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit) -> void
+auto DenseGrid::add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit)
+    -> void
 {
     auto idx = index3d_to_flat_idx(voxel_idx);
 
-    const double previous_lengths = m_lengths[idx].fetch_add(length, std::memory_order_acq_rel);
-    const double previous_counts  = m_counts[idx].fetch_add(1, std::memory_order_acq_rel);
+    add_length_and_count(voxel_idx, length, is_hit);
 
-    // No variance possible if the count is not big enough
-    if (previous_counts < 2)
-        return;
+    bool exchanged = false;
+    while (!exchanged)
+    {
+        // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+        auto   existing_aggregate = m_lengths_variance[idx].load(std::memory_order_acquire);
+        wa_ptr aggregate;
+        if (existing_aggregate)
+        {
+            aggregate = std::make_shared<WelfordAggregate>(*existing_aggregate);
+            aggregate->m_count += 1;
+            const double delta = length - aggregate->m_mean;
+            aggregate->m_mean += delta / aggregate->m_count;
+            const double delta_2 = length - aggregate->m_mean;
+            aggregate->m_m2 += delta * delta_2;
+        }
+        else
+        {
+            aggregate = std::make_shared<WelfordAggregate>(
+                1,      // count
+                length, // mean
+                0       // M2
+            );
+        }
 
-    // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
-    const double previous_mean = previous_lengths / previous_counts;
-    const double delta         = length - previous_mean;
-    const double new_count     = previous_counts + 1;
-    const double new_mean      = previous_mean + (delta / new_count);
-    const double delta_2       = length - new_mean;
-
-    // -1 on the count here because we are computing a variance sample.
-    m_lengths_variance[idx].fetch_add((delta * delta_2) / (new_count - 1), std::memory_order_acq_rel);
+        exchanged = m_lengths_variance[idx].compare_exchange_weak(
+            existing_aggregate, aggregate, std::memory_order_acq_rel
+        );
+    }
 }
 
 } // namespace lvox

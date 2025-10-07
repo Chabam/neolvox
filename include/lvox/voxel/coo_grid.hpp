@@ -194,7 +194,7 @@ class COOGrid
                 {}
             };
 
-            if (!m_grid->m_uses_variance)
+            if (m_grid->m_uses_variance)
             {
                 m_value.lengths_variance = m_grid->m_lengths_variance.begin() + m_index;
             }
