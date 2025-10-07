@@ -400,10 +400,5 @@ auto main(int argc, char* argv[]) -> int
         .m_use_sparse_grid      = g_use_sparse_grids
     };
     lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
-    auto          max    = 0U;
-    std::for_each(std::execution::par, result.begin(), result.end(), [&max](const auto& test) {
-        max = std::max(max, *test.x);
-    });
-
     result.export_to_h5("lvox", g_grid_file, g_include_all_info);
 }
