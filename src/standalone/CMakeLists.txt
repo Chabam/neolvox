@@ -26,6 +26,10 @@ target_link_libraries(lvox_common
   hdf5::hdf5
 )
 
+if (TBB_FOUND)
+  target_link_libraries(lvox_common PUBLIC tbb)
+endif()
+
 target_include_directories(lvox_common
   PUBLIC
   ${neolvox_SOURCE_DIR}/include

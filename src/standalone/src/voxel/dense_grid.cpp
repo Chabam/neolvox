@@ -74,17 +74,16 @@ auto DenseGrid::add_length_count_and_variance(const Index3D& voxel_idx, double l
 
     add_length_and_count(voxel_idx, length, is_hit);
 
-    bool exchanged = false;
-    while (!exchanged)
+    auto   existing_aggregate = m_lengths_variance[idx].load(std::memory_order_acquire);
+    wa_ptr aggregate;
+    do
     {
         // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
-        auto   existing_aggregate = m_lengths_variance[idx].load(std::memory_order_acquire);
-        wa_ptr aggregate;
         if (existing_aggregate)
         {
-            aggregate = std::make_shared<WelfordAggregate>(*existing_aggregate);
-            aggregate->m_count += 1;
+            aggregate          = std::make_shared<WelfordAggregate>(*existing_aggregate);
             const double delta = length - aggregate->m_mean;
+            aggregate->m_count += 1;
             aggregate->m_mean += delta / aggregate->m_count;
             const double delta_2 = length - aggregate->m_mean;
             aggregate->m_m2 += delta * delta_2;
@@ -98,10 +97,9 @@ auto DenseGrid::add_length_count_and_variance(const Index3D& voxel_idx, double l
             );
         }
 
-        exchanged = m_lengths_variance[idx].compare_exchange_weak(
-            existing_aggregate, aggregate, std::memory_order_acq_rel
-        );
-    }
+    } while (m_lengths_variance[idx].compare_exchange_weak(
+        existing_aggregate, aggregate, std::memory_order_release, std::memory_order_acquire
+    ));
 }
 
 } // namespace lvox

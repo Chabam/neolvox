@@ -64,7 +64,9 @@ auto ChunkedGrid::get_or_create_chunk(size_t chunk_idx) -> chunk_ptr
 
     auto new_chunk = std::make_shared<VoxelChunk>(m_compute_variance);
 
-    if (chunk_ref.compare_exchange_strong(existing_chunk, new_chunk, std::memory_order_acq_rel))
+    if (chunk_ref.compare_exchange_strong(
+            existing_chunk, new_chunk, std::memory_order_release, std::memory_order_acquire
+        ))
         return new_chunk;
 
     return existing_chunk;

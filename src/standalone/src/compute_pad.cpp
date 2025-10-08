@@ -1,9 +1,10 @@
 #include <algorithm>
-#include <format>
 #include <execution>
+#include <format>
 
 #include <lvox/algorithms/compute_pad.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
+#include <lvox/logger/logger.hpp>
 #include <lvox/voxel/coo_grid.hpp>
 
 namespace lvox::algorithms
@@ -67,6 +68,7 @@ auto ComputePAD::operator()(algorithms::pe::UnequalPathLengthBeerLambert) -> voi
 {
     std::for_each(
         std::execution::par, m_grid.begin(), m_grid.end(), [this](COOGrid::VoxelData voxel_view) -> void {
+            Logger logger{"ComputePAD UPLBL"};
             const auto G = [](double val) -> double {
                 return 0.5 * val;
             };
@@ -97,7 +99,7 @@ auto ComputePAD::operator()(algorithms::pe::UnequalPathLengthBeerLambert) -> voi
 
             if (std::isnan(res))
             {
-                std::cout << std::format(
+                logger.debug(
                                  R"(
     hits                = {}
     ray_count           = {}
@@ -115,8 +117,7 @@ auto ComputePAD::operator()(algorithms::pe::UnequalPathLengthBeerLambert) -> voi
                                  variance,
                                  unequal_path_ratio,
                                  attenuation_coeff
-                             )
-                          << std::endl;
+                             );
                 *voxel_view.pad = 0.;
                 return;
             }
