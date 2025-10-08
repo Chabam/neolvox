@@ -11,7 +11,6 @@ namespace lvox
 
 class Scan;
 class Beam;
-class VoxelsMetrics;
 
 namespace algorithms
 {
