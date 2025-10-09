@@ -14,7 +14,7 @@
 
 #include "lvox/logger/logger.hpp"
 
-static auto bm_job_count(benchmark::State& state) -> void
+static auto bm_job_count(benchmark::State& state, bool is_sparse) -> void
 {
     for (auto _ : state)
     {
@@ -23,7 +23,7 @@ static auto bm_job_count(benchmark::State& state) -> void
         lvox::Logger     logger{"Benchmark"};
         logger.info("Generating point cloud");
         const auto view =
-            generate_cubic_point_cloud_with_random_points(table, 1'000'000, 100, 100, 100);
+            generate_cubic_point_cloud_with_random_points(table, 1'000'000, 30, 40, 20);
 
         lvox::Bounds point_cloud_bounds;
         view->calculateBounds(point_cloud_bounds);
@@ -46,11 +46,11 @@ static auto bm_job_count(benchmark::State& state) -> void
             std::move(lvox_point_cloud), lvox::Point{0., 0., 0.}, point_cloud_bounds
         );
         lvox::algorithms::ComputeOptions options{
-            .m_voxel_size           = 0.3,
+            .m_voxel_size           = 0.1,
             .m_job_limit            = static_cast<unsigned int>(state.range(0)),
             .m_pad_estimator        = lvox::algorithms::pad_estimators::BeerLambert{},
             .m_compute_theoriticals = false,
-            .m_use_dense_grid       = true
+            .m_use_sparse_grid      = is_sparse
         };
         logger.info("Starting computation");
         lvox::Logger::set_global_level(lvox::Logger::Level::Error);
@@ -60,4 +60,5 @@ static auto bm_job_count(benchmark::State& state) -> void
     }
 }
 
-BENCHMARK(bm_job_count)->Arg(1)->Arg(2)->Arg(4)->Arg(8)->Arg(12);
+BENCHMARK_CAPTURE(bm_job_count, sparse, true)->Arg(1)->Arg(2)->Arg(4)->Arg(8)->Arg(16);
+BENCHMARK_CAPTURE(bm_job_count, dense, false)->Arg(1)->Arg(2)->Arg(4)->Arg(8)->Arg(16);
