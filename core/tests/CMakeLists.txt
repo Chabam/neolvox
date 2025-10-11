@@ -24,7 +24,7 @@ target_link_libraries(lvox_tests
     GTest::Main
     pdalcpp
     Eigen3::Eigen
-    lvox_common
+    lvox::core
 )
 
 if (WIN32)

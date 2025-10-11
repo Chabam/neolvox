@@ -17,4 +17,12 @@ if (BUILD_TESTING)
     enable_testing()
 endif()
 
-add_subdirectory(src)
+add_subdirectory(core)
+
+if (LVOX_COMPUTREE_BINDINGS)
+    add_subdirectory(computree/lvox)
+endif()
+
+if (LVOX_STANDALONE)
+    add_subdirectory(standalone)
+endif()
