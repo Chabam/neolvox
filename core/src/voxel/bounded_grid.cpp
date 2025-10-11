@@ -66,10 +66,10 @@ auto BoundedGrid::voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -
     return Bounds{
         //
         min_x,
-        min_y,
-        min_z,
         min_x + m_cell_size,
+        min_y,
         min_y + m_cell_size,
+        min_z,
         min_z + m_cell_size
     };
 }

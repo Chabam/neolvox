@@ -5,9 +5,9 @@
 
 TEST(grid, creation_from_box3d)
 {
-    const double dim_x = 24;
+    const double dim_x = 20;
     const double dim_y = 40;
-    const double dim_z = 64;
+    const double dim_z = 60;
 
     lvox::Bounds bounds = create_bounds(dim_x, dim_y, dim_z);
 
@@ -20,12 +20,12 @@ TEST(grid, creation_from_box3d)
 
         const lvox::Bounds grid_bounds = grid.bounds();
 
-        EXPECT_EQ(-12., grid_bounds.m_min_x);
-        EXPECT_EQ(12., grid_bounds.m_max_x);
+        EXPECT_EQ(-10., grid_bounds.m_min_x);
+        EXPECT_EQ(10., grid_bounds.m_max_x);
         EXPECT_EQ(-20., grid_bounds.m_min_y);
         EXPECT_EQ(20., grid_bounds.m_max_y);
-        EXPECT_EQ(-32., grid_bounds.m_min_z);
-        EXPECT_EQ(32., grid_bounds.m_max_z);
+        EXPECT_EQ(-30., grid_bounds.m_min_z);
+        EXPECT_EQ(30., grid_bounds.m_max_z);
     }
 
     {
@@ -38,12 +38,12 @@ TEST(grid, creation_from_box3d)
 
         const lvox::Bounds grid_bounds = grid.bounds();
 
-        EXPECT_EQ(-12., grid_bounds.m_min_x);
-        EXPECT_EQ(12., grid_bounds.m_max_x);
+        EXPECT_EQ(-10., grid_bounds.m_min_x);
+        EXPECT_EQ(10., grid_bounds.m_max_x);
         EXPECT_EQ(-20., grid_bounds.m_min_y);
         EXPECT_EQ(20., grid_bounds.m_max_y);
-        EXPECT_EQ(-32., grid_bounds.m_min_z);
-        EXPECT_EQ(32., grid_bounds.m_max_z);
+        EXPECT_EQ(-30., grid_bounds.m_min_z);
+        EXPECT_EQ(30., grid_bounds.m_max_z);
     }
 
     {
