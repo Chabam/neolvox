@@ -50,6 +50,16 @@
             }
         },
         {
+            "name": "R",
+            "inherits": [ "linux" ],
+            "cacheVariables": {
+                "LVOX_COMPUTREE_BINDINGS": "OFF",
+                "LVOX_STANDALONE": "OFF",
+                "LVOX_R": "ON",
+                "BUILD_TESTING": "ON"
+            }
+        },
+        {
             "name": "windows-standalone",
             "inherits": [ "windows-vcpkg" ],
             "cacheVariables": {

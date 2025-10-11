@@ -4,6 +4,7 @@ project(neolvox VERSION 0.0.1 LANGUAGES CXX)
 
 option("LVOX_COMPUTREE_BINDINGS" "Enables binding with the Computree's platform" ON)
 option("LVOX_STANDALONE" "Enables building LVOX as a standalone executable" OFF)
+option("LVOX_R" "Enables building LVOX as R package" OFF)
 option("BUILD_TESTING" "Enables the unit tests" OFF)
 
 if (!PROJECT_IS_TOP_LEVEL)
@@ -22,6 +23,11 @@ add_subdirectory(core)
 if (LVOX_COMPUTREE_BINDINGS)
     add_subdirectory(computree/lvox)
 endif()
+
+if (LVOX_R)
+    add_subdirectory(R)
+endif()
+
 
 if (LVOX_STANDALONE)
     add_subdirectory(standalone)

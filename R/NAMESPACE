@@ -1,0 +1,3 @@
+useDynLib(lvoxr, .registration=TRUE)
+importFrom(Rcpp, evalCpp)
+exportPattern("^[[:alpha:]]+")

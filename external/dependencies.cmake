@@ -21,7 +21,7 @@ if (LVOX_COMPUTREE_BINDINGS)
     endif()
 endif()
 
-if (LVOX_STANDALONE)
+if (LVOX_STANDALONE OR LVOX_R)
     find_package(PDAL REQUIRED CONFIG)
     find_package(Eigen3 REQUIRED CONFIG)
     find_package(HDF5 COMPONENTS REQUIRED C CXX)
