@@ -1,5 +1,6 @@
 #include <H5Cpp.h>
 #include <atomic>
+#include <cassert>
 #include <cmath>
 #include <iterator>
 #include <numeric>
@@ -357,7 +358,9 @@ auto COOGrid::export_to_h5(
     );
 
     const std::array<double, 3> min_coords = {
-        m_bounded_grid.m_bounds.minx, m_bounded_grid.m_bounds.miny, m_bounded_grid.m_bounds.minz
+        m_bounded_grid.m_bounds.m_min_x,
+        m_bounded_grid.m_bounds.m_min_y,
+        m_bounded_grid.m_bounds.m_min_z
     };
     min_coord_attr.write(h5_voxel_size_t, min_coords.data());
 

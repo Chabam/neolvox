@@ -16,22 +16,22 @@ TEST(grid, voxel_bounds)
 
     {
         const lvox::Bounds bound = grid.voxel_bounds(0, 0, 0);
-        EXPECT_EQ(-5., bound.minx);
-        EXPECT_EQ(-5. + cell_size, bound.maxx);
-        EXPECT_EQ(-10., bound.miny);
-        EXPECT_EQ(-10. + cell_size, bound.maxy);
-        EXPECT_EQ(-15., bound.minz);
-        EXPECT_EQ(-15. + cell_size, bound.maxz);
+        EXPECT_EQ(-5., bound.m_min_x);
+        EXPECT_EQ(-5. + cell_size, bound.m_max_x);
+        EXPECT_EQ(-10., bound.m_min_y);
+        EXPECT_EQ(-10. + cell_size, bound.m_max_y);
+        EXPECT_EQ(-15., bound.m_min_z);
+        EXPECT_EQ(-15. + cell_size, bound.m_max_z);
     }
 
     {
         const lvox::Bounds bound = grid.voxel_bounds(dim_x / 2., dim_y / 2., dim_z / 2.);
-        EXPECT_EQ(0., bound.minx);
-        EXPECT_EQ(0. + cell_size, bound.maxx);
-        EXPECT_EQ(0., bound.miny);
-        EXPECT_EQ(0. + cell_size, bound.maxy);
-        EXPECT_EQ(0., bound.minz);
-        EXPECT_EQ(0. + cell_size, bound.maxz);
+        EXPECT_EQ(0., bound.m_min_x);
+        EXPECT_EQ(0. + cell_size, bound.m_max_x);
+        EXPECT_EQ(0., bound.m_min_y);
+        EXPECT_EQ(0. + cell_size, bound.m_max_y);
+        EXPECT_EQ(0., bound.m_min_z);
+        EXPECT_EQ(0. + cell_size, bound.m_max_z);
     }
 
     for (size_t x = 0; x < dim_x; x++)

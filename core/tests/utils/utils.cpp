@@ -4,18 +4,15 @@
 #include <pdal/PointView.hpp>
 
 #include <lvox/types.hpp>
+#include "lvox/voxel/bounds.hpp"
 
-auto create_bounds(double dim_x, double dim_y, double dim_z) -> pdal::BOX3D
+auto create_bounds(double dim_x, double dim_y, double dim_z) -> lvox::Bounds
 {
-    pdal::BOX3D  bounds;
     const double half_dim_x = dim_x / 2.0;
     const double half_dim_y = dim_y / 2.0;
     const double half_dim_z = dim_z / 2.0;
 
-    bounds.grow(half_dim_x, half_dim_y, half_dim_z);
-    bounds.grow(-half_dim_x, -half_dim_y, -half_dim_z);
-
-    return bounds;
+    return lvox::Bounds{-half_dim_x, half_dim_x, -half_dim_y, half_dim_y, -half_dim_z, half_dim_z};
 }
 
 auto generate_cubic_point_cloud(pdal::PointTableRef table, double dim_x, double dim_y, double dim_z)

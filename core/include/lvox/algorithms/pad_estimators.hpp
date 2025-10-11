@@ -1,5 +1,5 @@
-#ifndef LVOX_PAD_ESTIMATORS
-#define LVOX_PAD_ESTIMATORS
+#ifndef LVOX_PAD_ESTIMATORS_HPP
+#define LVOX_PAD_ESTIMATORS_HPP
 
 #include <variant>
 
@@ -41,4 +41,4 @@ namespace pe = pad_estimators;
 
 } // namespace lvox::algorithms
 
-#endif // LVOX_PAD_ESTIMATORS
+#endif // LVOX_PAD_ESTIMATORS_HPP

@@ -2,6 +2,7 @@
 #define LVOX_BOUNDED_GRID_HPP
 
 #include <lvox/types.hpp>
+#include <lvox/voxel/bounds.hpp>
 
 namespace lvox
 {

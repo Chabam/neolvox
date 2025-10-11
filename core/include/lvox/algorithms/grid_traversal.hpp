@@ -1,5 +1,5 @@
-#ifndef LVOX_GRID_TRAVERSAL
-#define LVOX_GRID_TRAVERSAL
+#ifndef LVOX_GRID_TRAVERSAL_HPP
+#define LVOX_GRID_TRAVERSAL_HPP
 
 #include <format>
 #include <limits>
@@ -102,22 +102,22 @@ struct GridTraversal
             compute_t_max_component(
                 beam_direction.x(),
                 beam_origin.x(),
-                voxel_bounds.minx,
-                voxel_bounds.maxx,
+                voxel_bounds.m_min_x,
+                voxel_bounds.m_max_x,
                 inv_dir.x()
             ),
             compute_t_max_component(
                 beam_direction.y(),
                 beam_origin.y(),
-                voxel_bounds.miny,
-                voxel_bounds.maxy,
+                voxel_bounds.m_min_y,
+                voxel_bounds.m_max_y,
                 inv_dir.y()
             ),
             compute_t_max_component(
                 beam_direction.z(),
                 beam_origin.z(),
-                voxel_bounds.minz,
-                voxel_bounds.maxz,
+                voxel_bounds.m_min_z,
+                voxel_bounds.m_max_z,
                 inv_dir.z()
             )
         };
@@ -218,4 +218,4 @@ using GridTraversalExactDistance = GridTraversal<true>;
 
 } // namespace lvox
 
-#endif // LVOX_GRID_TRAVERSAL
+#endif // LVOX_GRID_TRAVERSAL_HPP

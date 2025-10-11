@@ -4,8 +4,6 @@
 #include <Eigen/Eigen>
 #include <vector>
 
-#include <pdal/PDALUtils.hpp>
-
 namespace lvox
 {
 using Vector         = Eigen::Vector3d;
@@ -19,7 +17,6 @@ struct TimedPoint
 
 using PointCloud     = std::vector<TimedPoint>;
 using PointCloudView = std::unique_ptr<PointCloud>;
-using Bounds         = pdal::BOX3D;
 using Index3D        = std::array<unsigned int, 3>;
 } // namespace lvox
 

@@ -6,17 +6,17 @@ namespace lvox
 
 BoundedGrid::BoundedGrid(const Bounds& bounds, double cell_size, unsigned int voxel_alignment)
     : m_cell_size{cell_size}
-    , m_dim_x{BoundedGrid::adjust_dim_to_grid(bounds.maxx - bounds.minx, voxel_alignment)}
-    , m_dim_y{BoundedGrid::adjust_dim_to_grid(bounds.maxy - bounds.miny, voxel_alignment)}
-    , m_dim_z{BoundedGrid::adjust_dim_to_grid(bounds.maxz - bounds.minz, voxel_alignment)}
+    , m_dim_x{BoundedGrid::adjust_dim_to_grid(bounds.m_max_x - bounds.m_min_x, voxel_alignment)}
+    , m_dim_y{BoundedGrid::adjust_dim_to_grid(bounds.m_max_y - bounds.m_min_y, voxel_alignment)}
+    , m_dim_z{BoundedGrid::adjust_dim_to_grid(bounds.m_max_z - bounds.m_min_z, voxel_alignment)}
     , m_cell_count{m_dim_x * m_dim_y * m_dim_z}
     , m_bounds{
-          bounds.minx,
-          bounds.miny,
-          bounds.minz,
-          BoundedGrid::adjust_bounds_to_grid(m_dim_x, bounds.minx),
-          BoundedGrid::adjust_bounds_to_grid(m_dim_y, bounds.miny),
-          BoundedGrid::adjust_bounds_to_grid(m_dim_z, bounds.minz)
+          bounds.m_min_x,
+          BoundedGrid::adjust_bounds_to_grid(m_dim_x, bounds.m_min_x),
+          bounds.m_min_y,
+          BoundedGrid::adjust_bounds_to_grid(m_dim_y, bounds.m_min_y),
+          bounds.m_min_z,
+          BoundedGrid::adjust_bounds_to_grid(m_dim_z, bounds.m_min_z)
       }
 {
 
@@ -29,12 +29,12 @@ BoundedGrid::BoundedGrid(const Bounds& bounds, double cell_size, unsigned int vo
         m_dim_z,
         m_cell_size,
         cell_count(),
-        m_bounds.minx,
-        m_bounds.maxx,
-        m_bounds.miny,
-        m_bounds.maxy,
-        m_bounds.minz,
-        m_bounds.maxz
+        m_bounds.m_min_x,
+        m_bounds.m_max_x,
+        m_bounds.m_min_y,
+        m_bounds.m_max_y,
+        m_bounds.m_min_z,
+        m_bounds.m_max_z
     );
 }
 
@@ -60,9 +60,9 @@ BoundedGrid::BoundedGrid(BoundedGrid&& other)
 
 auto BoundedGrid::voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> Bounds
 {
-    const double min_x = m_bounds.minx + idx_x * m_cell_size;
-    const double min_y = m_bounds.miny + idx_y * m_cell_size;
-    const double min_z = m_bounds.minz + idx_z * m_cell_size;
+    const double min_x = m_bounds.m_min_x + idx_x * m_cell_size;
+    const double min_y = m_bounds.m_min_y + idx_y * m_cell_size;
+    const double min_z = m_bounds.m_min_z + idx_z * m_cell_size;
     return Bounds{
         //
         min_x,
@@ -103,9 +103,9 @@ auto BoundedGrid::index3d_of_point(const Point& point) const -> Index3D
     };
 
     return {
-        coords_to_index(m_bounds.minx, m_bounds.maxx, x),
-        coords_to_index(m_bounds.miny, m_bounds.maxy, y),
-        coords_to_index(m_bounds.minz, m_bounds.maxz, z)
+        coords_to_index(m_bounds.m_min_x, m_bounds.m_max_x, x),
+        coords_to_index(m_bounds.m_min_y, m_bounds.m_max_y, y),
+        coords_to_index(m_bounds.m_min_z, m_bounds.m_max_z, z)
     };
 }
 

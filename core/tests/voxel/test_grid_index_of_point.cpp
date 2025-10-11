@@ -14,12 +14,19 @@ TEST(grid, index_of_point)
     const auto view = generate_cubic_point_cloud(table);
 
     lvox::Bounds point_cloud_bounds;
-    const double         cell_size = .5;
-    view->calculateBounds(point_cloud_bounds);
+    const double cell_size = .5;
+    for (const auto pt : *view)
+    {
+        const double x = pt.getFieldAs<double>(pdal::Dimension::Id::X);
+        const double y = pt.getFieldAs<double>(pdal::Dimension::Id::Y);
+        const double z = pt.getFieldAs<double>(pdal::Dimension::Id::Z);
+        point_cloud_bounds.grow(x, y, z);
+    }
+
     lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     std::set<lvox::Index3D> seen_idxs;
-    const Eigen::Vector3d           vec = Eigen::Vector3d::Constant(-0.5);
+    const Eigen::Vector3d   vec = Eigen::Vector3d::Constant(-0.5);
     for (size_t x = 0; x < dim_x; x++)
     {
         for (size_t y = 0; y < dim_y; y++)

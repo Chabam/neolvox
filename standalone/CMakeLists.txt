@@ -8,7 +8,7 @@ target_sources(lvox
   main.cpp
 )
 
-target_link_libraries(lvox PUBLIC lvox::core)
+target_link_libraries(lvox PUBLIC lvox::core pdalcpp)
 
 set_target_properties(lvox
   PROPERTIES

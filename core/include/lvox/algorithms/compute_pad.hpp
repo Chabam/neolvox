@@ -1,5 +1,5 @@
-#ifndef LVOX_COMPUTE_PAD
-#define LVOX_COMPUTE_PAD
+#ifndef LVOX_COMPUTE_PAD_HPP
+#define LVOX_COMPUTE_PAD_HPP
 
 namespace lvox
 {
@@ -32,4 +32,4 @@ class ComputePAD
 
 } // namespace lvox
 
-#endif // LVOX_COMPUTE_PAD
+#endif // LVOX_COMPUTE_PAD_HPP

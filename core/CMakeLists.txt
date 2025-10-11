@@ -10,6 +10,7 @@ target_sources(lvox_core
   src/logger/logger.cpp
   src/scanner/beam.cpp
   src/voxel/bounded_grid.cpp
+  src/voxel/bounds.cpp
   src/voxel/chunked_grid.cpp
   src/voxel/coo_grid.cpp
   src/voxel/dense_grid.cpp
@@ -20,7 +21,6 @@ target_sources(lvox_core
 
 target_link_libraries(lvox_core
   PUBLIC
-  pdalcpp
   Eigen3::Eigen
   hdf5::hdf5_cpp
   hdf5::hdf5

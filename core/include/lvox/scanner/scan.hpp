@@ -5,6 +5,7 @@
 #include <optional>
 
 #include <lvox/types.hpp>
+#include <lvox/voxel/bounds.hpp>
 
 namespace lvox
 {

@@ -20,12 +20,12 @@ TEST(grid, creation_from_box3d)
 
         const lvox::Bounds grid_bounds = grid.bounds();
 
-        EXPECT_EQ(-12., grid_bounds.minx);
-        EXPECT_EQ(12., grid_bounds.maxx);
-        EXPECT_EQ(-20., grid_bounds.miny);
-        EXPECT_EQ(20., grid_bounds.maxy);
-        EXPECT_EQ(-32., grid_bounds.minz);
-        EXPECT_EQ(32., grid_bounds.maxz);
+        EXPECT_EQ(-12., grid_bounds.m_min_x);
+        EXPECT_EQ(12., grid_bounds.m_max_x);
+        EXPECT_EQ(-20., grid_bounds.m_min_y);
+        EXPECT_EQ(20., grid_bounds.m_max_y);
+        EXPECT_EQ(-32., grid_bounds.m_min_z);
+        EXPECT_EQ(32., grid_bounds.m_max_z);
     }
 
     {
@@ -38,12 +38,12 @@ TEST(grid, creation_from_box3d)
 
         const lvox::Bounds grid_bounds = grid.bounds();
 
-        EXPECT_EQ(-12., grid_bounds.minx);
-        EXPECT_EQ(12., grid_bounds.maxx);
-        EXPECT_EQ(-20., grid_bounds.miny);
-        EXPECT_EQ(20., grid_bounds.maxy);
-        EXPECT_EQ(-32., grid_bounds.minz);
-        EXPECT_EQ(32., grid_bounds.maxz);
+        EXPECT_EQ(-12., grid_bounds.m_min_x);
+        EXPECT_EQ(12., grid_bounds.m_max_x);
+        EXPECT_EQ(-20., grid_bounds.m_min_y);
+        EXPECT_EQ(20., grid_bounds.m_max_y);
+        EXPECT_EQ(-32., grid_bounds.m_min_z);
+        EXPECT_EQ(32., grid_bounds.m_max_z);
     }
 
     {
@@ -58,14 +58,14 @@ TEST(grid, creation_from_box3d)
 
         lvox::Bounds grid_bounds = grid.bounds();
 
-        EXPECT_EQ(-10., grid_bounds.minx);
+        EXPECT_EQ(-10., grid_bounds.m_min_x);
         // -10 + 2 * 15 = 20
-        EXPECT_EQ(20., grid_bounds.maxx);
-        EXPECT_EQ(-20., grid_bounds.miny);
+        EXPECT_EQ(20., grid_bounds.m_max_x);
+        EXPECT_EQ(-20., grid_bounds.m_min_y);
         // -20 + 3 * 15 = 25
-        EXPECT_EQ(25., grid_bounds.maxy);
-        EXPECT_EQ(-30., grid_bounds.minz);
+        EXPECT_EQ(25., grid_bounds.m_max_y);
+        EXPECT_EQ(-30., grid_bounds.m_min_z);
         // -30 + 4 * 15 = 30
-        EXPECT_EQ(30., grid_bounds.maxz);
+        EXPECT_EQ(30., grid_bounds.m_max_z);
     }
 }
