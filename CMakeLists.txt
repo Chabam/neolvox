@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.26)
 
 project(neolvox VERSION 0.0.1 LANGUAGES CXX)
 
-option("LVOX_COMPUTREE_BINDINGS" "Enables binding with the Computree's platform" ON)
-option("LVOX_STANDALONE" "Enables building LVOX as a standalone executable" OFF)
+option("LVOX_COMPUTREE_BINDINGS" "Enables binding with the Computree's platform" OFF)
+option("LVOX_STANDALONE" "Enables building LVOX as a standalone executable" ON)
+option("LVOX_R" "Enables the packaging of LVOX as a R package " OFF)
 option("BUILD_TESTING" "Enables the unit tests" OFF)
 
 if (!PROJECT_IS_TOP_LEVEL)
@@ -25,4 +26,8 @@ endif()
 
 if (LVOX_STANDALONE)
     add_subdirectory(standalone)
+endif()
+
+if (LVOX_R)
+    add_subdirectory(R)
 endif()
