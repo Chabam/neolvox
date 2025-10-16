@@ -19,12 +19,7 @@ target_sources(lvox_core
   src/scanner/trajectory.cpp
 )
 
-target_link_libraries(lvox_core
-  PUBLIC
-  Eigen3::Eigen
-  hdf5::hdf5_cpp
-  hdf5::hdf5
-)
+target_link_libraries(lvox_core PUBLIC Eigen3::Eigen)
 
 if (TBB_FOUND)
   target_link_libraries(lvox_core PUBLIC tbb)

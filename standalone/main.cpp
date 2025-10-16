@@ -1,3 +1,4 @@
+#include <H5Cpp.h>
 #include <algorithm>
 #include <execution>
 #include <filesystem>
@@ -292,6 +293,159 @@ auto create_scan_using_pdal(
     return scans;
 }
 
+auto export_to_h5(
+    lvox::COOGrid&&              grid,
+    const std::string&           dataset_name,
+    const std::filesystem::path& filename,
+    bool                         include_all_data = false
+) -> void
+{
+    lvox::Logger     logger{"Grid HDF5 export"};
+    H5::H5File file;
+    if (std::filesystem::exists(filename))
+        std::filesystem::remove(filename);
+
+    file = H5::H5File{filename.string(), H5F_ACC_TRUNC};
+    std::vector<unsigned int> xs = std::move(grid.xs());
+    std::vector<unsigned int> ys = std::move(grid.ys());
+    std::vector<unsigned int> zs = std::move(grid.zs());
+    std::vector<unsigned int> counts = std::move(grid.counts());
+    std::vector<unsigned int> hits = std::move(grid.hits());
+    std::vector<double>       pads = std::move(grid.pads());
+    std::vector<double>       lengths = std::move(grid.lengths());
+    std::vector<double>       hits_lengths = std::move(grid.hits_lengths());
+    std::vector<double>       lengths_variance = std::move(grid.lengths_variance());
+    lvox::BoundedGrid         bounded_grid     = std::move(grid.bounds());
+
+    const hsize_t voxels_with_data = std::ranges::distance(pads);
+
+    using h5_dimension_t = std::array<hsize_t, 1>;
+    const h5_dimension_t voxel_count_dim{voxels_with_data};
+
+    const H5::DataSpace data_space{std::tuple_size_v<h5_dimension_t>, voxel_count_dim.data()};
+
+    H5::Group plot_group;
+    if (file.nameExists(dataset_name))
+        plot_group = file.openGroup(dataset_name);
+    else
+        plot_group = file.createGroup(dataset_name, 8);
+
+    H5::DSetCreatPropList create_prop_list{};
+    h5_dimension_t        chunk_dims{std::min(static_cast<hsize_t>(2 << 13), voxels_with_data)};
+    create_prop_list.setChunk(1, chunk_dims.data());
+
+    const auto get_or_create_dataset =
+        [&plot_group, &dataset_name, &create_prop_list](
+            const std::string& name, const H5::PredType& type, const H5::DataSpace& dataspace
+        ) -> H5::DataSet {
+        if (plot_group.nameExists(name))
+        {
+            return plot_group.openDataSet(name);
+        }
+
+        return plot_group.createDataSet(name, type, dataspace, create_prop_list);
+    };
+
+    logger.info("Exporting grid to '{}'", filename.string());
+
+    const H5::PredType h5_index_t = H5::PredType::NATIVE_UINT;
+    {
+        H5::DataSet xs_data = get_or_create_dataset("x", h5_index_t, data_space);
+        xs_data.write(xs.data(), h5_index_t);
+    }
+
+    {
+        H5::DataSet ys_data = get_or_create_dataset("y", h5_index_t, data_space);
+        ys_data.write(ys.data(), h5_index_t);
+    }
+
+    {
+        H5::DataSet zs_data = get_or_create_dataset("z", h5_index_t, data_space);
+        zs_data.write(zs.data(), h5_index_t);
+    }
+
+    {
+        H5::PredType h5_pad_t    = H5::PredType::NATIVE_DOUBLE;
+        H5::DataSet  values_data = get_or_create_dataset("pad", h5_pad_t, data_space);
+        values_data.write(pads.data(), h5_pad_t);
+    }
+
+    if (include_all_data)
+    {
+        {
+            H5::PredType h5_hits_t = H5::PredType::NATIVE_UINT;
+            H5::DataSet  hits_data = get_or_create_dataset("hits", h5_hits_t, data_space);
+            hits_data.write(hits.data(), h5_hits_t);
+        }
+
+        {
+            H5::PredType h5_counts_t = H5::PredType::NATIVE_UINT;
+            H5::DataSet  counts_data = get_or_create_dataset("counts", h5_counts_t, data_space);
+            counts_data.write(counts.data(), h5_counts_t);
+        }
+
+        {
+            H5::PredType h5_lengths_t = H5::PredType::NATIVE_DOUBLE;
+            H5::DataSet  lengths_data = get_or_create_dataset("lengths", h5_lengths_t, data_space);
+            lengths_data.write(lengths.data(), h5_lengths_t);
+        }
+
+        if (!lengths_variance.empty())
+        {
+            H5::PredType h5_lengths_var_t = H5::PredType::NATIVE_DOUBLE;
+            H5::DataSet  length_variances_data =
+                get_or_create_dataset("lengths variance", h5_lengths_var_t, data_space);
+            length_variances_data.write(lengths_variance.data(), h5_lengths_var_t);
+        }
+    }
+
+    // Minimum coordinate attribute
+    const std::array<hsize_t, 1> scalar_value_dim{1};
+    H5::DataSpace                scalar_data_space{1, scalar_value_dim.data()};
+    const std::array<hsize_t, 1> singular_3d_coord_count = {3};
+    H5::DataSpace                singular_3d_coord_data_space{1, singular_3d_coord_count.data()};
+
+    const auto get_or_create_attribute =
+        [&plot_group](
+            const std::string& name, const H5::PredType& type, const H5::DataSpace& dataspace
+        ) -> H5::Attribute {
+        if (plot_group.attrExists(name))
+        {
+            return plot_group.openAttribute(name);
+        }
+
+        return plot_group.createAttribute(name, type, dataspace);
+    };
+    const auto    h5_voxel_size_t = H5::PredType::NATIVE_DOUBLE;
+    H5::Attribute voxel_size_attr =
+        get_or_create_attribute("Voxel size", h5_voxel_size_t, H5::DataSpace{});
+    voxel_size_attr.write(h5_voxel_size_t, &bounded_grid.m_cell_size);
+
+    const auto h5_min_coords_t = H5::PredType::NATIVE_DOUBLE;
+
+    H5::Attribute min_coord_attr = get_or_create_attribute(
+        "Minimal coordinates values", h5_min_coords_t, singular_3d_coord_data_space
+    );
+
+    const std::array<double, 3> min_coords = {
+        bounded_grid.bounds().m_min_x,
+        bounded_grid.bounds().m_min_y,
+        bounded_grid.bounds().m_min_z
+    };
+    min_coord_attr.write(h5_voxel_size_t, min_coords.data());
+
+    // Grid dimensions
+    const auto    h5_grid_dim_t = H5::PredType::NATIVE_UINT64;
+    H5::Attribute grid_dims_attr =
+        get_or_create_attribute("Dimensions", h5_grid_dim_t, singular_3d_coord_data_space);
+    const std::array<size_t, 3> grid_dims = {
+        bounded_grid.dim_x(), bounded_grid.dim_y(), bounded_grid.dim_z()
+    };
+    grid_dims_attr.write(h5_grid_dim_t, grid_dims.data());
+
+    file.close();
+}
+
 auto main(int argc, char* argv[]) -> int
 {
     std::vector<std::string> args{argv + 1, argv + argc};
@@ -400,5 +554,5 @@ auto main(int argc, char* argv[]) -> int
         .m_use_sparse_grid      = g_use_sparse_grids
     };
     lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
-    result.export_to_h5("lvox", g_grid_file, g_include_all_info);
+    export_to_h5(std::move(result), "lvox", g_grid_file, g_include_all_info);
 }

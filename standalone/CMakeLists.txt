@@ -8,7 +8,12 @@ target_sources(lvox
   main.cpp
 )
 
-target_link_libraries(lvox PUBLIC lvox::core pdalcpp)
+target_link_libraries(lvox PUBLIC
+  lvox::core
+  pdalcpp
+  hdf5::hdf5_cpp
+  hdf5::hdf5
+)
 
 set_target_properties(lvox
   PROPERTIES

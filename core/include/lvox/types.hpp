@@ -2,17 +2,18 @@
 #define LVOX_TYPES_HPP
 
 #include <Eigen/Eigen>
+#include <memory>
 #include <vector>
 
 namespace lvox
 {
-using Vector         = Eigen::Vector3d;
-using Point          = Eigen::Vector3d;
+using Vector = Eigen::Vector3d;
+using Point  = Eigen::Vector3d;
 
 struct TimedPoint
 {
     double m_gps_time;
-    Point m_point;
+    Point  m_point;
 };
 
 using PointCloud     = std::vector<TimedPoint>;

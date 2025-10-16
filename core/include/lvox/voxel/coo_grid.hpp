@@ -214,6 +214,19 @@ class COOGrid
 
     auto size() const -> size_t { return m_size; }
 
+    // These are returned by values to do move operations, hopefully
+    // the compiler applies RVO
+    auto xs() const -> std::vector<unsigned int> { return m_xs; }
+    auto ys() const -> std::vector<unsigned int> { return m_ys; }
+    auto zs() const -> std::vector<unsigned int> { return m_zs; }
+    auto counts() const -> std::vector<unsigned int> { return m_counts; }
+    auto hits() const -> std::vector<unsigned int> { return m_hits; }
+    auto pads() const -> std::vector<double> { return m_pads; }
+    auto lengths() const -> std::vector<double> { return m_lengths; }
+    auto hits_lengths() const -> std::vector<double> { return m_hits_lengths; }
+    auto lengths_variance() const -> std::vector<double> { return m_lengths_variance; }
+    auto bounds() const -> lvox::BoundedGrid { return m_bounded_grid; }
+
   private:
     bool                      m_uses_variance;
     size_t                    m_size;
