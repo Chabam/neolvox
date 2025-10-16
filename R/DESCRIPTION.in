@@ -1,7 +1,7 @@
 Package: lvoxr
 Type: Package
 Title: LVox bindings for R
-Version: 0.0.1
+Version: @PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@
 Date: 2025-07-30
 Authors@R: person("Félix", "Chabot", role = c("aut", "cre"), email =
         "fchabot1337@gmail.com")

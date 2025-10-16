@@ -8,6 +8,11 @@
 # TODO: Investigate if cmake could also be used to build the package
 # using R commands? Not sure this is a good idea, feels a bit cursed.
 
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/DESCRIPTION.in
+  ${CMAKE_CURRENT_SOURCE_DIR}/DESCRIPTION
+  @ONLY
+)
 
 get_target_property(LVOX_CORE_INCLUDE_DIR lvox::core INCLUDE_DIRECTORIES)
 
