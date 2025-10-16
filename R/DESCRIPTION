@@ -1,0 +1,14 @@
+Package: lvoxr
+Type: Package
+Title: LVox bindings for R
+Version: 0.0.1
+Date: 2025-07-30
+Authors@R: person("Félix", "Chabot", role = c("aut", "cre"), email =
+        "fchabot1337@gmail.com")
+Description: Lvox is an algorithm that computes Pland Area Density from lidar data.
+URL: https://github.com/chabam/lvoxr
+BugReports: https://github.com/chabam/lvoxr/issues
+License: GPL (>= 2)
+Imports: Rcpp (>= 1.1.0)
+LinkingTo: Rcpp, RcppEigen
+SystemRequirements: TBB

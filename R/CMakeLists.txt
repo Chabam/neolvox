@@ -12,7 +12,7 @@
 get_target_property(LVOX_CORE_INCLUDE_DIR lvox::core INCLUDE_DIRECTORIES)
 
 file(COPY
-  "${LVOX_CORE_INCLUDE_DIR}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}"
+  "${LVOX_CORE_INCLUDE_DIR}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
 get_target_property(LVOX_CORE_SOURCES lvox::core SOURCES)
@@ -20,6 +20,6 @@ get_target_property(LVOX_CORE_SOURCE_DIR lvox::core SOURCE_DIR)
 
 foreach(path ${LVOX_CORE_SOURCES})
   file(COPY
-    "${LVOX_CORE_SOURCE_DIR}/${path}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${LVOX_CORE_SOURCE_DIR}/${path}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/src"
   )
 endforeach()
