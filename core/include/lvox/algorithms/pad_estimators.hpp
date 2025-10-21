@@ -13,9 +13,12 @@ struct PadComputeData;
 namespace pad_estimators
 {
 
+// clang-format off
+
 struct BeerLambert {};
 struct ContactFrequency {};
 struct UnequalPathLengthBeerLambert {};
+struct BiasCorrectedMaximumLikelyhoodEstimator {};
 
 template <typename T>
 struct is_bl : std::is_same<T, BeerLambert> {};
@@ -27,13 +30,17 @@ template <typename T>
 struct is_uplbl : std::is_same<T, UnequalPathLengthBeerLambert> {};
 
 template <typename T>
-struct estimator_uses_effective_lengths : is_uplbl<T> {};
+struct is_bcmle : std::is_same<T, BiasCorrectedMaximumLikelyhoodEstimator> {};
 
-using PADEstimator = std::variant<BeerLambert, ContactFrequency, UnequalPathLengthBeerLambert>;
+template <typename T>
+struct estimator_uses_effective_lengths : std::disjunction<is_uplbl<T>, is_bcmle<T>> {};
 
-auto beer_lambert(const PadComputeData& data) -> double;
-auto contact_frequency(const PadComputeData& data) -> double;
-auto unequal_path_length_beer_lambert(const PadComputeData& data) -> double;
+// clang-format on
+using PADEstimator = std::variant<
+    BeerLambert,
+    ContactFrequency,
+    UnequalPathLengthBeerLambert,
+    BiasCorrectedMaximumLikelyhoodEstimator>;
 
 } // namespace pad_estimators
 

@@ -14,6 +14,7 @@ namespace pad_estimators
 struct BeerLambert;
 struct ContactFrequency;
 struct UnequalPathLengthBeerLambert;
+struct BiasCorrectedMaximumLikelyhoodEstimator;
 } // namespace pad_estimators
 
 class ComputePAD
@@ -23,6 +24,7 @@ class ComputePAD
     auto operator()(algorithms::pad_estimators::BeerLambert) -> void;
     auto operator()(algorithms::pad_estimators::ContactFrequency) -> void;
     auto operator()(algorithms::pad_estimators::UnequalPathLengthBeerLambert) -> void;
+    auto operator()(algorithms::pad_estimators::BiasCorrectedMaximumLikelyhoodEstimator) -> void;
 
   private:
     COOGrid& m_grid;

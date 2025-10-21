@@ -9,13 +9,13 @@
 #include <pdal/PointView.hpp>
 
 #include <lvox/algorithms/algorithms.hpp>
+#include <lvox/algorithms/compute_pad.hpp>
 #include <lvox/algorithms/grid_traversal.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/scanner/beam.hpp>
 #include <lvox/scanner/scan.hpp>
-#include <lvox/voxel/grid.hpp>
 #include <lvox/voxel/coo_grid.hpp>
-#include <lvox/algorithms/compute_pad.hpp>
+#include <lvox/voxel/grid.hpp>
 
 namespace lvox::algorithms
 {
@@ -27,7 +27,7 @@ auto compute_rays_count_and_length_impl(
 {
     auto grid_traversal = std::visit(
         [](const auto& grid) {
-            if constexpr (pe::is_uplbl<PadEstimator>::value)
+            if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
                 return GridTraversalExactDistance{grid.bounded_grid()};
             else
                 return GridTraversalVoxelRounding{grid.bounded_grid()};
@@ -88,7 +88,7 @@ auto compute_rays_count_and_length_impl(
             grid_traversal(
                 Beam{point_origin, beam_dir},
                 [&grid, &is_hit_computed](const VoxelHitInfo& hit) {
-                    if constexpr (pe::is_uplbl<PadEstimator>::value)
+                    if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
                         std::visit(
                             [&hit, &is_hit_computed](auto& grid) {
                                 // TODO: make this configurable maybe, and
@@ -107,9 +107,14 @@ auto compute_rays_count_and_length_impl(
                                     -(std::log(1. - attenuation_coeff * hit.m_distance_in_voxel) /
                                       attenuation_coeff);
 
-                                grid.add_length_count_and_variance(
-                                    hit.m_index, attenuated_length, !is_hit_computed
-                                );
+                                if constexpr (pe::is_uplbl<PadEstimator>::value)
+                                    grid.add_length_count_and_variance(
+                                        hit.m_index, attenuated_length, !is_hit_computed
+                                    );
+                                else
+                                    grid.add_length_and_count(
+                                        hit.m_index, attenuated_length, !is_hit_computed
+                                    );
                             },
                             grid
                         );

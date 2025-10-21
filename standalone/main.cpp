@@ -57,12 +57,14 @@ Options:
    -j, --jobs         number              A number of parallel jobs to use.
                                           [defaults to the amount of core]
 
-   -m, --method       BL, CF, ULPBL       The PAD estimator to use. Here's the
-                                          description of each values:
-                                             - BL: Beer-Lambert [default]
-                                             - CF: Contact Frequency
-                                             - UPLBL: Unequal Path Length
-                                               Beer Lambert
+   -m, --method       BL, CF, ULPBL,      The PAD estimator to use. Here's the
+                      BCMLE               description of each values:
+                                            - BL: Beer-Lambert [default]
+                                            - CF: Contact Frequency
+                                            - UPLBL: Unequal Path Length
+                                              Beer Lambert
+                                            - BCMLE: Bias Corrected Maximum
+                                              Likelyhood Estimator
 
    -a, --all          none                Whether or not to include all the information
                                           from the grid (ray counts, lengths, etc.) in the
@@ -500,6 +502,11 @@ auto main(int argc, char* argv[]) -> int
             {
                 g_pad_estimator = lvox_pe::UnequalPathLengthBeerLambert{};
             }
+            else if (pad_compute_method_str == "BCMLE")
+            {
+                g_pad_estimator = lvox_pe::BiasCorrectedMaximumLikelyhoodEstimator{};
+            }
+
             else
             {
                 logger.error("Unkown PAD compute method '{}'", pad_compute_method_str);

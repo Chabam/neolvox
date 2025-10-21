@@ -29,12 +29,6 @@ auto ComputePAD::operator()(algorithms::pe::BeerLambert) -> void
             const double       ray_length      = *voxel_view.lengths;
             const double       mean_ray_length = ray_length / ray_count;
 
-            if (RDI >= 1.)
-            {
-                *voxel_view.pad = 0.;
-                return;
-            }
-
             *voxel_view.pad = -(std::log(1. - RDI) / G(mean_ray_length));
         }
     );
@@ -53,12 +47,6 @@ auto ComputePAD::operator()(algorithms::pe::ContactFrequency) -> void
             const double       RDI        = hits / static_cast<double>(ray_count);
             const double       ray_length = *voxel_view.lengths;
 
-            if (RDI >= 1.)
-            {
-                *voxel_view.pad = 0.;
-                return;
-            }
-
             *voxel_view.pad = RDI / G(ray_length);
         }
     );
@@ -67,8 +55,11 @@ auto ComputePAD::operator()(algorithms::pe::ContactFrequency) -> void
 auto ComputePAD::operator()(algorithms::pe::UnequalPathLengthBeerLambert) -> void
 {
     std::for_each(
-        std::execution::par, m_grid.begin(), m_grid.end(), [this](COOGrid::VoxelData voxel_view) -> void {
-            Logger logger{"ComputePAD UPLBL"};
+        std::execution::par,
+        m_grid.begin(),
+        m_grid.end(),
+        [this](COOGrid::VoxelData voxel_view) -> void {
+            Logger     logger{"ComputePAD UPLBL"};
             const auto G = [](double val) -> double {
                 return 0.5 * val;
             };
@@ -100,7 +91,7 @@ auto ComputePAD::operator()(algorithms::pe::UnequalPathLengthBeerLambert) -> voi
             if (std::isnan(res))
             {
                 logger.debug(
-                                 R"(
+                    R"(
     hits                = {}
     ray_count           = {}
     RDI                 = {}
@@ -109,18 +100,39 @@ auto ComputePAD::operator()(algorithms::pe::UnequalPathLengthBeerLambert) -> voi
     ray_length_variance = {}
     unequal_path_ratio  = {}
     attenuation_coeff   = {})",
-                                 hits,
-                                 ray_count,
-                                 RDI,
-                                 ray_length,
-                                 mean_ray_length,
-                                 variance,
-                                 unequal_path_ratio,
-                                 attenuation_coeff
-                             );
-                *voxel_view.pad = 0.;
-                return;
+                    hits,
+                    ray_count,
+                    RDI,
+                    ray_length,
+                    mean_ray_length,
+                    variance,
+                    unequal_path_ratio,
+                    attenuation_coeff
+                );
             }
+
+            *voxel_view.pad = res;
+        }
+    );
+}
+
+auto ComputePAD::operator()(algorithms::pe::BiasCorrectedMaximumLikelyhoodEstimator) -> void
+{
+    std::for_each(
+        std::execution::par,
+        m_grid.begin(),
+        m_grid.end(),
+        [this](COOGrid::VoxelData voxel_view) -> void {
+            const auto G = [](double val) -> double {
+                return 0.5 * val;
+            };
+
+            const double       hits        = *voxel_view.hit;
+            const unsigned int ray_count   = *voxel_view.count;
+            const double       hits_length = *voxel_view.hits_length;
+            const double       lengths     = *voxel_view.lengths;
+
+            double res = (1. / G(lengths)) * (hits - (hits_length / lengths));
 
             *voxel_view.pad = res;
         }
