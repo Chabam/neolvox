@@ -28,3 +28,5 @@ foreach(path ${LVOX_CORE_SOURCES})
     "${LVOX_CORE_SOURCE_DIR}/${path}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/src"
   )
 endforeach()
+
+execute_process(COMMAND R -e "Rcpp::compileAttributes('${CMAKE_CURRENT_SOURCE_DIR}')")
