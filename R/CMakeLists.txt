@@ -16,17 +16,43 @@ configure_file(
 
 get_target_property(LVOX_CORE_INCLUDE_DIR lvox::core INCLUDE_DIRECTORIES)
 
-file(COPY
-  "${LVOX_CORE_INCLUDE_DIR}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+  file(COPY
+    "${LVOX_CORE_INCLUDE_DIR}"
+    DESTINATION
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+  )
+else()
+  file(CREATE_LINK
+    "${LVOX_CORE_INCLUDE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/include"
+    SYMBOLIC
+  )
+
+endif()
 
 get_target_property(LVOX_CORE_SOURCES lvox::core SOURCES)
 get_target_property(LVOX_CORE_SOURCE_DIR lvox::core SOURCE_DIR)
 
-foreach(path ${LVOX_CORE_SOURCES})
-  file(COPY
-    "${LVOX_CORE_SOURCE_DIR}/${path}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/src"
-  )
-endforeach()
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+  foreach(path ${LVOX_CORE_SOURCES})
+    file(COPY
+      "${LVOX_CORE_SOURCE_DIR}/${path}"
+      DESTINATION
+      "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    )
+  endforeach()
+else()
+  foreach(path ${LVOX_CORE_SOURCES})
+    get_filename_component(filename ${path} NAME)
+    file(CREATE_LINK
+      "${LVOX_CORE_SOURCE_DIR}/${path}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/${filename}"
+      SYMBOLIC
+    )
+  endforeach()
+
+endif()
+
 
 execute_process(COMMAND R -e "Rcpp::compileAttributes('${CMAKE_CURRENT_SOURCE_DIR}')")
