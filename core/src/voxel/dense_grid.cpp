@@ -1,5 +1,3 @@
-#include <H5Cpp.h>
-#include <H5Fpublic.h>
 #include <atomic>
 
 #include <lvox/algorithms/pad_estimators.hpp>

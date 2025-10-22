@@ -1,11 +1,6 @@
 #ifndef LVOX_TRAJECTORY_HPP
 #define LVOX_TRAJECTORY_HPP
 
-#include <filesystem>
-
-#include <pdal/PointTable.hpp>
-#include <pdal/PointView.hpp>
-
 #include <lvox/types.hpp>
 
 namespace lvox

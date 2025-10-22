@@ -5,9 +5,6 @@
 #include <thread>
 #include <variant>
 
-#include <pdal/Dimension.hpp>
-#include <pdal/PointView.hpp>
-
 #include <lvox/algorithms/algorithms.hpp>
 #include <lvox/algorithms/compute_pad.hpp>
 #include <lvox/algorithms/grid_traversal.hpp>

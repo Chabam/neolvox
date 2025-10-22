@@ -2,11 +2,9 @@
 #include <filesystem>
 #include <ranges>
 
-#include <pdal/StageFactory.hpp>
-
 #include <lvox/scanner/trajectory.hpp>
 
-#include "lvox/types.hpp"
+#include <lvox/types.hpp>
 
 namespace lvox
 {
@@ -26,7 +24,6 @@ Trajectory::Trajectory(PointCloudView&& trajectory_points)
 
 auto Trajectory::interpolate_point_from_gps_time(double gps_time) const -> std::optional<lvox::Point>
 {
-    using DimId = pdal::Dimension::Id;
     auto upper  = std::lower_bound(
         m_traj_points->begin(),
         m_traj_points->end(),
