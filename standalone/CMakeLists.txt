@@ -36,6 +36,7 @@ include(GNUInstallDirs)
 set(CMAKE_INSTALL_RPATH $ORIGIN $ORIGIN/${CMAKE_INSTALL_BINDIR})
 
 set(CMAKE_INSTALL_LIBDIR lib)
+set(CPACK_GENERATOR "ZIP")
 set(CPACK_PACKAGE_NAME "Neolvox")
 set(CPACK_PACKAGE_VENDOR "Félix Chabot")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "An application that computes PAD for lidar scans in forests")
