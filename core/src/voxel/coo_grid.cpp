@@ -159,7 +159,7 @@ COOGrid::COOGrid(const DenseGrid& grid)
 
             return {
                 static_cast<unsigned int>(idx % dim_x),
-                static_cast<unsigned int>((idx / dim_x) % dim_x),
+                static_cast<unsigned int>((idx / dim_x) % dim_y),
                 static_cast<unsigned int>(idx / (dim_x * dim_y))
             };
         }
