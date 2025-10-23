@@ -25,6 +25,13 @@ is a command line utility. It consists of a single binary file to which
 you can provide your arguments. Use the =--help= or =-h= flag in the
 command line to see the available options.
 
+*** Note about the standalone version
+
+The standalone version uses PDAL for reading the point cloud files,
+make sure your files follow the convention required by this tool. This
+mainly an issue for ASCII files, which require a proper header
+row. See [[https://pdal.io/en/stable/dimensions.html][PDAL's supported dimensions]] for more information
+
 ** What can it do?
 
 Neolvox can process points cloud from two types of lidar scanner:
@@ -105,14 +112,20 @@ Which you can use for further analysis.
 *Note for Windows users:* It is recommended to use [[https://github.com/microsoft/vcpkg][vcpkg]] for managing
 dependencies. Refer to Microsoft's [[https://learn.microsoft.com/en-us/vcpkg/get_started/get-started?pivots=shell-powershell][official documentation]] for more information.
 
+**** Core
+:PROPERTIES:
+:ID:       Core
+:END:
+- [[https://eigen.tuxfamily.org/index.php?title=Main_Page][Eigen3]] for vector maths
+
 **** Standalone
-- *Required*:
-  - [[https://github.com/PDAL/PDAL][PDAL]] used for loading point cloud files
-  - [[https://eigen.tuxfamily.org/index.php?title=Main_Page][Eigen3]] for vector maths
-  - [[https://github.com/HDFGroup/hdf5][hdf5]] for the output files
-- *Development*
-  - [[https://github.com/google/googletest][googletest]] for unit tests
-  - [[https://github.com/google/benchmark][benchmark]] for benchmarking
+- Same as [[id:Core][Core]] and:
+  - *Required*:
+    - [[https://github.com/PDAL/PDAL][PDAL]] used for loading point cloud files
+    - [[https://github.com/HDFGroup/hdf5][hdf5]] for the output files
+  - *Development*
+    - [[https://github.com/google/googletest][googletest]] for unit tests
+    - [[https://github.com/google/benchmark][benchmark]] for benchmarking
 
 **** Computree bindings
 Same as Computree itself. Refer to this [[https://computree.onf.fr/?page_id=1662][page]] for information
@@ -145,7 +158,7 @@ $ cmake --build build/
   - [X] Beer-Lambert
   - [X] Modified Contact Frequency
   - [-] Unequal Path Length Beer-Lambert estimator
-  - [ ] Bias corrected maximum likelihood estimator
+  - [X] Bias corrected maximum likelihood estimator
 - [X] Support for "blank shots" impact analysis using virtual scene
 - [ ] Porting all options from Computree's original version
   - [ ] Assess all options
