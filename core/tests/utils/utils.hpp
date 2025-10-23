@@ -3,7 +3,8 @@
 
 #include <pdal/PDALUtils.hpp>
 #include <pdal/PointTable.hpp>
-#include <pdal/util/Bounds.hpp>
+
+#include <lvox/voxel/bounds.hpp>
 
 auto get_current_time_as_gps_time() -> double;
 
@@ -27,8 +28,11 @@ auto generate_cubic_point_cloud(
 
 // Generates a point cloud of N points all located within the given cubic bounds.
 auto generate_cubic_point_cloud_with_random_points(
-    pdal::PointTableRef table, size_t point_count, double dim_x = 2., double dim_y = 2., double dim_z = 2.
+    pdal::PointTableRef table,
+    size_t              point_count,
+    double              dim_x = 2.,
+    double              dim_y = 2.,
+    double              dim_z = 2.
 ) -> pdal::PointViewPtr;
-
 
 #endif // !LVOX_TEST_GRID_HELPERS

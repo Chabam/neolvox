@@ -5,6 +5,7 @@
 
 #include <pdal/Dimension.hpp>
 #include <pdal/PointView.hpp>
+#include <pdal/util/Bounds.hpp>
 
 #include <lvox/algorithms/algorithms.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
@@ -25,7 +26,7 @@ static auto bm_job_count(benchmark::State& state, bool is_sparse) -> void
         const auto view =
             generate_cubic_point_cloud_with_random_points(table, 1'000'000, 30, 40, 20);
 
-        lvox::Bounds point_cloud_bounds;
+        pdal::BOX3D point_cloud_bounds;
         view->calculateBounds(point_cloud_bounds);
 
         using dim = pdal::Dimension::Id;
@@ -43,7 +44,16 @@ static auto bm_job_count(benchmark::State& state, bool is_sparse) -> void
 
         std::vector<lvox::Scan> scans;
         scans.emplace_back(
-            std::move(lvox_point_cloud), lvox::Point{0., 0., 0.}, point_cloud_bounds
+            std::move(lvox_point_cloud),
+            lvox::Point{0., 0., 0.},
+            lvox::Bounds{
+                point_cloud_bounds.minx,
+                point_cloud_bounds.maxx,
+                point_cloud_bounds.miny,
+                point_cloud_bounds.maxy,
+                point_cloud_bounds.minz,
+                point_cloud_bounds.maxz
+            }
         );
         lvox::algorithms::ComputeOptions options{
             .m_voxel_size           = 0.1,

@@ -20,7 +20,7 @@ set_target_properties(lvox_test_utils
 target_link_libraries(lvox_test_utils PUBLIC
     pdalcpp
     Eigen3::Eigen
-    lvox_common
+    lvox::core
 )
 
 # Tests

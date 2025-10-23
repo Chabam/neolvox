@@ -34,6 +34,7 @@ auto create_bounds(double dim_x, double dim_y, double dim_z) -> lvox::Bounds
     return lvox::Bounds{-half_dim_x, half_dim_x, -half_dim_y, half_dim_y, -half_dim_z, half_dim_z};
 }
 
+// TODO: Maybe stop using PDAL for these
 auto generate_cubic_point_cloud(pdal::PointTableRef table, double dim_x, double dim_y, double dim_z)
     -> pdal::PointViewPtr
 {
