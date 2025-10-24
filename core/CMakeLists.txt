@@ -19,6 +19,9 @@ target_sources(lvox_core
   src/scanner/trajectory.cpp
 )
 
+find_package(Eigen3 REQUIRED CONFIG)
+find_package(TBB CONFIG)
+
 target_link_libraries(lvox_core PUBLIC Eigen3::Eigen)
 
 if (TBB_FOUND)

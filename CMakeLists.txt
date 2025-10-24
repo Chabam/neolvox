@@ -12,8 +12,6 @@ if (!PROJECT_IS_TOP_LEVEL)
   set(LVOX_STANDALONE OFF)
 endif()
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/external/dependencies.cmake)
-
 if (BUILD_TESTING)
     enable_testing()
 endif()

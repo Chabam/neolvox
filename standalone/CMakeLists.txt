@@ -8,6 +8,10 @@ target_sources(lvox
   main.cpp
 )
 
+find_package(PDAL REQUIRED CONFIG)
+find_package(Eigen3 REQUIRED CONFIG)
+find_package(HDF5 COMPONENTS REQUIRED C CXX)
+
 target_link_libraries(lvox PUBLIC
   lvox::core
   pdalcpp
@@ -20,14 +24,8 @@ set_target_properties(lvox
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-
 if (WIN32)
   target_compile_definitions(lvox PRIVATE NOMINMAX)
-
-  install(FILES
-    $<TARGET_RUNTIME_DLLS:lvox>
-    DESTINATION bin
-  )
 endif()
 
 include(InstallRequiredSystemLibraries)

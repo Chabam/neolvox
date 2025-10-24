@@ -36,7 +36,6 @@
       },
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_INSTALL_PREFIX": "$env{QT_INSTALL_DIR}",
         "X_VCPKG_APPLOCAL_DEPS_INSTALL": "ON"
       }
     },

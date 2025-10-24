@@ -1,3 +1,20 @@
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+find_package(Qt5 COMPONENTS REQUIRED Widgets Core Gui Xml)
+
+find_package(muparser REQUIRED)
+
+if (PROJECT_IS_TOP_LEVEL)
+    include(FetchContent)
+
+    FetchContent_Declare(ctlibs
+        GIT_REPOSITORY https://github.com/Chabam/computreelibs
+        GIT_TAG        main
+    )
+    FetchContent_MakeAvailable(ctlibs)
+endif()
+
 set(LVOX_HEADERS
     # TODO: find a better way to handle this...
     # NOTE: We need to explicitly add this header in order
