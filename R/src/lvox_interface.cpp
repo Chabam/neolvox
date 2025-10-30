@@ -104,7 +104,7 @@ Rcpp::List do_lvox_computation(
 // [[Rcpp::depends(RcppParallel)]]
 
 // [[Rcpp::export]]
-Rcpp::List LvoxComputeMLS(
+Rcpp::List lvoxComputeMLS(
     const SEXP&   pointCloud,
     const Rcpp::List& trajectory,
     std::string       padEstimator  = "BCMLE",
@@ -144,7 +144,7 @@ Rcpp::List lvoxComputeTLS(
     unsigned int      threadCount   = 8
 )
 {
-    if (pointClouds.size() == scannersOrigin.size())
+    if (pointClouds.size() != scannersOrigin.size())
         stop(
             "The amount of provided pointClouds doesn't match the amount of provided scanner's "
             "origin"
