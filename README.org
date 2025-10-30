@@ -20,17 +20,36 @@ in several ways:
 
 ** Using Neolvox
 
+*** R Package
+Neolvox, is now available as an R package. Look at the [[https://github.com/Chabam/neolvox/releases][releases]] to get
+the source package. It is not on CRAN yet, so you will need to compile
+it first. For Windows users, that means installing [[https://cran.r-project.org/bin/windows/Rtools/][RTools]] for your R
+version. If you have downloaded the package, to install it use the
+following R code:
+
+#+begin_src R
+install.packages("/path/to/lvox_X.X.X.tar.gz", repos = NULL, type = "source")
+#+end_src
+
+Otherwise you can use the following command:
+
+#+begin_src
+$ R CMD INSTALL lvox_X.X.X.tar.gz
+#+end_src
+
+*** Standalone
 The easiest way to use Neolvox, is with the standalone version which
 is a command line utility. It consists of a single binary file to which
 you can provide your arguments. Use the =--help= or =-h= flag in the
 command line to see the available options.
 
-*** Note about the standalone version
+**** Note about the standalone version
 
 The standalone version uses PDAL for reading the point cloud files,
 make sure your files follow the convention required by this tool. This
 mainly an issue for ASCII files, which require a proper header
 row. See [[https://pdal.io/en/stable/dimensions.html][PDAL's supported dimensions]] for more information
+
 
 ** What can it do?
 
@@ -102,7 +121,7 @@ in =Python=. The =pad= dataset also has the following attributes:
 
 Which you can use for further analysis.
 
-** Developing on Neolvox
+** Developing Neolvox
 
 *** Depedencies
 :PROPERTIES:

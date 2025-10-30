@@ -1,6 +1,6 @@
-\name{lvoxr-package}
-\alias{lvoxr-package}
-\alias{lvoxr}
+\name{lvoxR-package}
+\alias{lvoxR-package}
+\alias{lvoxR}
 \docType{package}
 \title{
   A short title line describing what the package does
