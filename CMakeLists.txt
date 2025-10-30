@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.26)
 
-project(neolvox VERSION 0.0.5 LANGUAGES CXX)
+project(neolvox VERSION 0.0.6 LANGUAGES CXX)
 
 option("LVOX_COMPUTREE_BINDINGS" "Enables binding with the Computree's platform" OFF)
 option("LVOX_STANDALONE" "Enables building LVOX as a standalone executable" ON)
