@@ -31,6 +31,7 @@ lvox::PointCloudView readPointCloudFromLidR(const Rcpp::S4& point_cloud)
     return points;
 }
 
+// [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::export]]
 Rcpp::List lvox_compute_pad(
     const Rcpp::S4& point_cloud,

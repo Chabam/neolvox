@@ -50,8 +50,7 @@
       }
     },
     {
-      "name": "linux-R",
-      "inherits": [ "linux" ],
+      "name": "R",
       "cacheVariables": {
         "LVOX_COMPUTREE_BINDINGS": "OFF",
         "LVOX_STANDALONE": "OFF",
