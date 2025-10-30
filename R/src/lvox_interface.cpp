@@ -2,25 +2,22 @@
 #include <lvox/types.hpp>
 #include <lvox/algorithms/algorithms.hpp>
 #include <lvox/scanner/scan.hpp>
+#include <lvox/scanner/trajectory.hpp>
 #include <lvox/voxel/bounds.hpp>
-#include "Rcpp/DataFrame.h"
-#include "Rcpp/vector/instantiation.h"
-#include <thread>
+#include <Rcpp/DataFrame.h>
+#include <Rcpp/macros/module.h>
+#include <Rcpp/vector/instantiation.h>
 
 using namespace Rcpp;
 
-lvox::PointCloudView readPointCloudFromLidR(const Rcpp::S4& point_cloud)
-{
-    if (!point_cloud.is("LAS"))
-    {
-        stop("compute pad supports only value from Rlas");
-    }
+namespace lvox_pe = lvox::algorithms::pad_estimators;
 
-    const Rcpp::List&          data     = point_cloud.slot("data");
-    const Rcpp::NumericVector& xs       = data["X"];
-    const Rcpp::NumericVector& ys       = data["Y"];
-    const Rcpp::NumericVector& zs       = data["Z"];
-    const Rcpp::NumericVector& gpstimes = data["gpstime"];
+lvox::PointCloudView read_point_cloud_from_raw_data(const Rcpp::List& raw_data)
+{
+    const Rcpp::NumericVector& xs       = raw_data["X"];
+    const Rcpp::NumericVector& ys       = raw_data["Y"];
+    const Rcpp::NumericVector& zs       = raw_data["Z"];
+    const Rcpp::NumericVector& gpstimes = raw_data["gpstime"];
 
     lvox::PointCloudView points = std::make_unique<lvox::PointCloud>(xs.size());
     for (size_t i = 0; i < points->size(); ++i)
@@ -31,35 +28,56 @@ lvox::PointCloudView readPointCloudFromLidR(const Rcpp::S4& point_cloud)
     return points;
 }
 
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::export]]
-Rcpp::List lvox_compute_pad(
-    const Rcpp::S4& point_cloud,
-    double          voxel_size           = 0.5,
-    bool            use_sparse_grid      = false,
-    bool            compute_theoriticals = false,
-    unsigned int    thread_count         = 8
-)
+lvox::PointCloudView try_read_point_cloud_as_las(const SEXP& expr)
 {
-
-    std::vector<lvox::Scan> scans;
-    lvox::Bounds            bounds;
-    lvox::PointCloudView    points = readPointCloudFromLidR(point_cloud);
-
-    for (auto& pt : *points)
+    try
     {
-        bounds.grow(pt.m_point.x(), pt.m_point.y(), pt.m_point.z());
+        Rcpp::S4 las{expr};
+        if (!las.is("LAS"))
+            stop("Point cloud data type is not supported");
+
+        return read_point_cloud_from_raw_data(las.slot("data"));
+    }
+    catch (std::exception _)
+    {
+        // We tried ¯\_(ツ)_/¯
     }
 
-    scans.push_back(lvox::Scan{std::move(points), lvox::Vector::Constant(0.), bounds, {}});
+    return read_point_cloud_from_raw_data(expr);
+}
 
-    namespace lvox_pe = lvox::algorithms::pad_estimators;
+lvox_pe::PADEstimator get_estimator_from_string(std::string pe)
+{
+    std::ranges::transform(pe, pe.begin(), [](const unsigned char c) {
+        return std::toupper(c);
+    });
+
+    if (pe == "BL")
+        return lvox_pe::BeerLambert{};
+    else if (pe == "CF")
+        return lvox_pe::ContactFrequency{};
+    else if (pe == "UPLBL")
+        return lvox_pe::UnequalPathLengthBeerLambert{};
+    else if (pe == "BCMLE")
+        return lvox_pe::BiasCorrectedMaximumLikelyhoodEstimator{};
+    else
+        stop("Unkown PAD estimator ");
+}
+
+Rcpp::List do_lvox_computation(
+    const std::vector<lvox::Scan>& scans,
+    std::string                    padEstimator,
+    double                         voxelSize,
+    bool                           useSparseGrid,
+    unsigned int                   threadCount
+)
+{
     const lvox::algorithms::ComputeOptions compute_options{
-        .m_voxel_size           = voxel_size,
-        .m_job_limit            = thread_count,
-        .m_pad_estimator        = lvox_pe::BeerLambert{},
-        .m_compute_theoriticals = compute_theoriticals,
-        .m_use_sparse_grid      = use_sparse_grid
+        .m_voxel_size           = voxelSize,
+        .m_job_limit            = threadCount,
+        .m_pad_estimator        = get_estimator_from_string(padEstimator),
+        .m_compute_theoriticals = false, // TODO: support theoriticals
+        .m_use_sparse_grid      = useSparseGrid
     };
 
     lvox::COOGrid grid = lvox::algorithms::compute_pad(scans, compute_options);
@@ -71,7 +89,7 @@ Rcpp::List lvox_compute_pad(
             Rcpp::Named("Z")   = grid.zs(),
             Rcpp::Named("PAD") = grid.pads()
         ),
-        Rcpp::Named("Voxel Size") = voxel_size,
+        Rcpp::Named("Voxel Size") = voxelSize,
         Rcpp::Named("Dimensions") = Rcpp::DoubleVector::create(
             grid.bounds().dim_x(), grid.bounds().dim_y(), grid.bounds().dim_z()
         ),
@@ -81,4 +99,79 @@ Rcpp::List lvox_compute_pad(
             grid.bounds().bounds().m_min_z
         )
     );
+}
+
+// [[Rcpp::depends(RcppParallel)]]
+
+// [[Rcpp::export]]
+Rcpp::List LvoxComputeMLS(
+    const SEXP&   pointCloud,
+    const Rcpp::List& trajectory,
+    std::string       padEstimator  = "BCMLE",
+    double            voxelSize     = 0.5,
+    bool              useSparseGrid = false,
+    unsigned int      threadCount   = 8
+)
+{
+    lvox::Bounds         bounds;
+    lvox::PointCloudView points = try_read_point_cloud_as_las(pointCloud);
+
+    for (auto& pt : *points)
+    {
+        bounds.grow(pt.m_point.x(), pt.m_point.y(), pt.m_point.z());
+    }
+
+    std::vector<lvox::Scan> scans;
+    scans.push_back(
+        lvox::Scan{
+            std::move(points),
+            std::make_shared<lvox::Trajectory>(read_point_cloud_from_raw_data(trajectory)),
+            bounds,
+            {}
+        }
+    );
+
+    return do_lvox_computation(scans, padEstimator, voxelSize, useSparseGrid, threadCount);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lvoxComputeTLS(
+    const Rcpp::List& pointClouds,
+    const Rcpp::List& scannersOrigin,
+    std::string       padEstimator  = "BCMLE",
+    double            voxelSize     = 0.5,
+    bool              useSparseGrid = false,
+    unsigned int      threadCount   = 8
+)
+{
+    if (pointClouds.size() == scannersOrigin.size())
+        stop(
+            "The amount of provided pointClouds doesn't match the amount of provided scanner's "
+            "origin"
+        );
+
+    lvox::Bounds            bounds;
+    std::vector<lvox::Scan> scans;
+    for (size_t i = 0; i < pointClouds.size(); ++i)
+    {
+        lvox::PointCloudView points = try_read_point_cloud_as_las(pointClouds[i]);
+
+        for (auto& pt : *points)
+        {
+            bounds.grow(pt.m_point.x(), pt.m_point.y(), pt.m_point.z());
+        }
+
+        const Rcpp::DoubleVector& scanners_origin = scannersOrigin[i];
+
+        scans.push_back(
+            lvox::Scan{
+                std::move(points),
+                lvox::Point{scanners_origin[0], scanners_origin[1], scanners_origin[2]},
+                bounds,
+                {}
+            }
+        );
+    }
+
+    return do_lvox_computation(scans, padEstimator, voxelSize, useSparseGrid, threadCount);
 }

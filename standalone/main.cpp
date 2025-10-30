@@ -490,6 +490,7 @@ auto main(int argc, char* argv[]) -> int
                     return std::toupper(c);
                 }
             );
+
             if (pad_compute_method_str == "BL")
             {
                 g_pad_estimator = lvox_pe::BeerLambert{};
@@ -506,7 +507,6 @@ auto main(int argc, char* argv[]) -> int
             {
                 g_pad_estimator = lvox_pe::BiasCorrectedMaximumLikelyhoodEstimator{};
             }
-
             else
             {
                 logger.error("Unkown PAD compute method '{}'", pad_compute_method_str);
