@@ -51,6 +51,7 @@
     },
     {
       "name": "R",
+      "inherits": [ "base" ],
       "cacheVariables": {
         "LVOX_COMPUTREE_BINDINGS": "OFF",
         "LVOX_STANDALONE": "OFF",
