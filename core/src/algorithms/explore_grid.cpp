@@ -1,6 +1,7 @@
 #include <atomic>
 #include <sstream>
 #include <thread>
+#include <numbers>
 
 #include <lvox/algorithms/compute_options.hpp>
 #include <lvox/algorithms/explore_grid.hpp>
