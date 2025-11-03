@@ -69,7 +69,8 @@ Rcpp::List do_lvox_computation(
     std::string                    padEstimator,
     double                         voxelSize,
     bool                           useSparseGrid,
-    unsigned int                   threadCount
+    unsigned int                   threadCount,
+    bool                           exportAllGridMetadata
 )
 {
     const lvox::algorithms::ComputeOptions compute_options{
@@ -80,15 +81,25 @@ Rcpp::List do_lvox_computation(
         .m_use_sparse_grid      = useSparseGrid
     };
 
-    lvox::COOGrid grid = lvox::algorithms::compute_pad(scans, compute_options);
+    lvox::COOGrid   grid = lvox::algorithms::compute_pad(scans, compute_options);
+    Rcpp::DataFrame df   = Rcpp::DataFrame::create(
+        Rcpp::Named("X")   = grid.xs(),
+        Rcpp::Named("Y")   = grid.ys(),
+        Rcpp::Named("Z")   = grid.zs(),
+        Rcpp::Named("PAD") = grid.pads()
+    );
+
+    if (exportAllGridMetadata)
+    {
+        df.push_back(grid.hits(), "Hits");
+        df.push_back(grid.lengths(), "Lengths");
+        df.push_back(grid.hits_lengths(), "Hits Lengths");
+        if (!grid.lengths_variance().empty())
+            df.push_back(grid.lengths_variance(), "Lengths variance");
+    }
 
     return Rcpp::List::create(
-        Rcpp::Named("data") = Rcpp::DataFrame::create(
-            Rcpp::Named("X")   = grid.xs(),
-            Rcpp::Named("Y")   = grid.ys(),
-            Rcpp::Named("Z")   = grid.zs(),
-            Rcpp::Named("PAD") = grid.pads()
-        ),
+        Rcpp::Named("data")       = df,
         Rcpp::Named("Voxel Size") = voxelSize,
         Rcpp::Named("Dimensions") = Rcpp::DoubleVector::create(
             grid.bounds().dim_x(), grid.bounds().dim_y(), grid.bounds().dim_z()
@@ -111,15 +122,17 @@ Rcpp::List do_lvox_computation(
 //' @param voxelSize The size of the voxels in the grid in meters
 //' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory
 //' @param threadCount The amount of parallel processing thread to use. Set this to your core count for best performance.
+//' @param exportAllGridMetadata Whether or not to export all intermediate data from the Lvox computation
 //' @return A list containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeMLS(
-    const SEXP&   pointCloud,
+    const SEXP&       pointCloud,
     const Rcpp::List& trajectory,
-    std::string       padEstimator  = "BCMLE",
-    double            voxelSize     = 0.5,
-    bool              useSparseGrid = false,
-    unsigned int      threadCount   = 8
+    std::string       padEstimator          = "BCMLE",
+    double            voxelSize             = 0.5,
+    bool              useSparseGrid         = false,
+    bool              exportAllGridMetadata = false,
+    unsigned int      threadCount           = 8
 )
 {
     lvox::Bounds         bounds;
@@ -140,7 +153,9 @@ Rcpp::List lvoxComputeMLS(
         }
     );
 
-    return do_lvox_computation(scans, padEstimator, voxelSize, useSparseGrid, threadCount);
+    return do_lvox_computation(
+        scans, padEstimator, voxelSize, useSparseGrid, threadCount, exportAllGridMetadata
+    );
 }
 
 //' Perform the PAD estimation for TLS multi-scans
@@ -151,15 +166,17 @@ Rcpp::List lvoxComputeMLS(
 //' @param voxelSize The size of the voxels in the grid in meters
 //' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory
 //' @param threadCount The amount of parallel processing thread to use. Set this to your core count for best performance.
+//' @param exportAllGridMetadata Whether or not to export all intermediate data from the Lvox computation
 //' @return A list containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeTLS(
     const Rcpp::List& pointClouds,
     const Rcpp::List& scannersOrigin,
-    std::string       padEstimator  = "BCMLE",
-    double            voxelSize     = 0.5,
-    bool              useSparseGrid = false,
-    unsigned int      threadCount   = 8
+    std::string       padEstimator          = "BCMLE",
+    double            voxelSize             = 0.5,
+    bool              useSparseGrid         = false,
+    bool              exportAllGridMetadata = false,
+    unsigned int      threadCount           = 8
 )
 {
     if (pointClouds.size() != scannersOrigin.size())
@@ -191,5 +208,7 @@ Rcpp::List lvoxComputeTLS(
         );
     }
 
-    return do_lvox_computation(scans, padEstimator, voxelSize, useSparseGrid, threadCount);
+    return do_lvox_computation(
+        scans, padEstimator, voxelSize, useSparseGrid, threadCount, exportAllGridMetadata
+    );
 }
