@@ -56,3 +56,4 @@ endif()
 
 
 execute_process(COMMAND R -e "Rcpp::compileAttributes('${CMAKE_CURRENT_SOURCE_DIR}')")
+execute_process(COMMAND R -e "roxygen2::roxygenise('${CMAKE_CURRENT_SOURCE_DIR}')")

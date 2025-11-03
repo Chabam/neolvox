@@ -103,6 +103,15 @@ Rcpp::List do_lvox_computation(
 
 // [[Rcpp::depends(RcppParallel)]]
 
+//' Perform the PAD estimation for a MLS scan
+//'
+//' @param pointCloud A point cloud acquired from a mobile lidar, this can be LAS object or a list containing X, Y, Z and gpstime.
+//' @param trajectory A trajectory point cloud acquired from a mobile lidar, this can be LAS object or a list containing X, Y, Z and gpstime.
+//' @param padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE)
+//' @param voxelSize The size of the voxels in the grid in meters
+//' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory
+//' @param threadCount The amount of parallel processing thread to use. Set this to your core count for best performance.
+//' @return A list containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeMLS(
     const SEXP&   pointCloud,
@@ -134,6 +143,15 @@ Rcpp::List lvoxComputeMLS(
     return do_lvox_computation(scans, padEstimator, voxelSize, useSparseGrid, threadCount);
 }
 
+//' Perform the PAD estimation for TLS multi-scans
+//'
+//' @param pointClouds A list of point clouds acquired from a mobile lidar, this can be  LAS object or a list containing X, Y, Z and gpstime.
+//' @param scannersOrigin A list of corresponding scanner's origins coordinates.
+//' @param padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE)
+//' @param voxelSize The size of the voxels in the grid in meters
+//' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory
+//' @param threadCount The amount of parallel processing thread to use. Set this to your core count for best performance.
+//' @return A list containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeTLS(
     const Rcpp::List& pointClouds,
