@@ -74,6 +74,9 @@ Options:
                                           They are slower, but will require less memory.
                                           [disabled by default]
 
+   -l, --log-level    debug, info,        Max log level to display [defaults to info]
+                      warning, error
+
    -h, --help                             Prints this message
     )";
 
@@ -534,6 +537,38 @@ auto main(int argc, char* argv[]) -> int
         else if (*arg_it == "-s" || *arg_it == "--sparse")
         {
             g_use_sparse_grids = true;
+        }
+        else if (*arg_it == "-l" || *arg_it == "--log-level")
+        {
+            std::string log_level_str = *++arg_it;
+            std::ranges::transform(
+                log_level_str, log_level_str.begin(), [](const unsigned char c) {
+                    return std::toupper(c);
+                }
+            );
+
+            if (log_level_str == "DEBUG")
+            {
+                lvox::Logger::set_global_level(lvox::Logger::Level::Debug);
+            }
+            else if (log_level_str == "INFO")
+            {
+                lvox::Logger::set_global_level(lvox::Logger::Level::Info);
+            }
+            else if (log_level_str == "WARNING")
+            {
+                lvox::Logger::set_global_level(lvox::Logger::Level::Warn);
+            }
+            else if (log_level_str == "ERROR")
+            {
+                lvox::Logger::set_global_level(lvox::Logger::Level::Error);
+            }
+            else
+            {
+                logger.error("Unkown log level '{}'", log_level_str);
+                std::cout << g_usage_info << std::endl;
+                return 1;
+            }
         }
         else
         {
