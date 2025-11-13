@@ -2,6 +2,7 @@
 
 #include <lvox/scanner/scan.hpp>
 #include <lvox/scanner/trajectory.hpp>
+#include <lvox/logger/logger.hpp>
 
 namespace lvox
 {
@@ -18,8 +19,10 @@ auto Scan::ComputeBeamOrigin::operator()(const std::shared_ptr<Trajectory>& traj
     [[unlikely]]
     if (!point)
     {
+        constexpr auto err_msg = "requested gps time for point not in trajectory {}!";
+        Logger{"Compute beam origin"}.error(err_msg, gps_time);
         throw std::runtime_error(
-            std::format("requested gps time for point not in trajectory {}!", gps_time)
+            std::format(err_msg, gps_time)
         );
     }
 

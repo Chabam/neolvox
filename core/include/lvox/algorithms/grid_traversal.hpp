@@ -36,7 +36,7 @@ struct GridTraversal
 
     template <typename HitCallback>
     auto operator()(
-        const Beam& beam,
+        const Beam&   beam,
         HitCallback&& callback,
         const double  max_distance = std::numeric_limits<double>::infinity()
     ) -> void
@@ -49,9 +49,9 @@ struct GridTraversal
         constexpr double inf = std::numeric_limits<double>::infinity();
 
         const Bounds bounds    = m_grid.bounds();
-        const size_t  dim_x     = m_grid.dim_x();
-        const size_t  dim_y     = m_grid.dim_y();
-        const size_t  dim_z     = m_grid.dim_z();
+        const size_t dim_x     = m_grid.dim_x();
+        const size_t dim_y     = m_grid.dim_y();
+        const size_t dim_z     = m_grid.dim_z();
         const double cell_size = m_grid.cell_size();
 
         const Point  beam_origin    = beam.origin();
@@ -59,12 +59,14 @@ struct GridTraversal
 
         if (!bounds.contains(beam_origin.x(), beam_origin.y(), beam_origin.z()))
         {
-            throw std::runtime_error{std::format(
-                "Beam of beam_origin ({},{},{}) is outside the grid",
-                beam_origin.x(),
-                beam_origin.y(),
-                beam_origin.z()
-            )};
+            constexpr auto err_msg = "Beam of beam_origin ({},{},{}) is outside the grid";
+            Logger{"Grid Traversal"}.error(
+                err_msg, beam_origin.x(), beam_origin.y(), beam_origin.z()
+            );
+
+            throw std::runtime_error{
+                std::format(err_msg, beam_origin.x(), beam_origin.y(), beam_origin.z())
+            };
         }
 
         // Source: https://stackoverflow.com/a/4609795
@@ -75,7 +77,8 @@ struct GridTraversal
 
         const Step step = beam_direction.unaryExpr(get_axis_dir);
 
-        auto [current_voxel_x, current_voxel_y, current_voxel_z] = m_grid.index3d_of_point(beam_origin);
+        auto [current_voxel_x, current_voxel_y, current_voxel_z] =
+            m_grid.index3d_of_point(beam_origin);
 
         const Bounds voxel_bounds =
             m_grid.voxel_bounds(current_voxel_x, current_voxel_y, current_voxel_z);
@@ -122,8 +125,8 @@ struct GridTraversal
             )
         };
         const Vector delta = (cell_size * step.unaryExpr([](const double val) -> double {
-            return val == 0. ? inf : val;
-        })).array() *
+                                 return val == 0. ? inf : val;
+                             })).array() *
                              inv_dir.array();
 
         logger.verbose(
