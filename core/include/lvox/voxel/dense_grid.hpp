@@ -17,12 +17,11 @@ class DenseGrid
     DenseGrid(const Bounds& bounds, double cell_size, bool compute_variance);
     DenseGrid(DenseGrid&& other);
 
-    auto register_hit(const Index3D& voxel_idx) -> void;
-    auto add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit) -> void;
-    auto add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit)
-        -> void;
+    void register_hit(const Index3D& voxel_idx);
+    void add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit);
+    void add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit);
 
-    auto bounded_grid() const -> const BoundedGrid& { return m_bounded_grid; }
+    const BoundedGrid& bounded_grid() const { return m_bounded_grid; }
 
   private:
     struct WelfordAggregate
@@ -43,7 +42,7 @@ class DenseGrid
     std::vector<atomic_wa_ptr>                 m_lengths_variance;
     std::vector<atomic_f64>                    m_pad;
 
-    auto index3d_to_flat_idx(const Index3D& voxel_idx) const -> size_t;
+    size_t index3d_to_flat_idx(const Index3D& voxel_idx) const;
 };
 
 } // namespace lvox

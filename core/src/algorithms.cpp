@@ -18,9 +18,9 @@ namespace lvox::algorithms
 {
 
 template <bool limit_ray_length, bool compute_hits, typename PadEstimator>
-auto compute_rays_count_and_length_impl(
+void compute_rays_count_and_length_impl(
     Grid& grid, const Scan& scan, const ComputeOptions& options, Logger logger
-) -> void
+)
 {
     auto grid_traversal = std::visit(
         [](const auto& grid) {
@@ -41,8 +41,8 @@ auto compute_rays_count_and_length_impl(
         const_iterator m_start;
         const_iterator m_end;
 
-        auto begin() const -> const_iterator { return m_start; }
-        auto end() const -> const_iterator { return m_end; }
+        const_iterator begin() const { return m_start; }
+        const_iterator end() const { return m_end; }
     };
 
     const auto ray_trace = [&](const PointRange& points) -> void {
@@ -161,8 +161,7 @@ auto compute_rays_count_and_length_impl(
     }
 }
 
-auto compute_rays_count_and_length(Grid& grid, const Scan& scan, const ComputeOptions& options)
-    -> void
+void compute_rays_count_and_length(Grid& grid, const Scan& scan, const ComputeOptions& options)
 {
     constexpr bool limit_ray_length = true;
     constexpr bool compute_hits     = true;
@@ -178,7 +177,7 @@ auto compute_rays_count_and_length(Grid& grid, const Scan& scan, const ComputeOp
     );
 }
 
-auto compute_theoriticals(Grid& grid, const Scan& scan, const ComputeOptions& options) -> void
+void compute_theoriticals(Grid& grid, const Scan& scan, const ComputeOptions& options)
 {
     constexpr bool limit_ray_length = false;
     constexpr bool compute_hits     = false;
@@ -194,7 +193,7 @@ auto compute_theoriticals(Grid& grid, const Scan& scan, const ComputeOptions& op
     );
 }
 
-auto compute_scene_bounds(const std::vector<lvox::Scan>& scans) -> lvox::Bounds
+lvox::Bounds compute_scene_bounds(const std::vector<lvox::Scan>& scans)
 {
     Bounds total_bounds;
 
@@ -204,7 +203,7 @@ auto compute_scene_bounds(const std::vector<lvox::Scan>& scans) -> lvox::Bounds
     return total_bounds;
 }
 
-auto compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options) -> COOGrid
+COOGrid compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options)
 {
     Logger logger{"LVOX"};
     logger.info("Scan count {}", scans.size());

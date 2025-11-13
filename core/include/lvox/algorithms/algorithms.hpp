@@ -34,7 +34,7 @@ struct ComputeOptions
 //   - Compute the PAD values for each voxels using the values from the computed grids
 // - Averages the PAD values from every scans
 [[nodiscard]]
-auto compute_pad(const std::vector<Scan>& scans, const ComputeOptions& options) -> COOGrid;
+COOGrid compute_pad(const std::vector<Scan>& scans, const ComputeOptions& options);
 
 } // namespace algorithms
 

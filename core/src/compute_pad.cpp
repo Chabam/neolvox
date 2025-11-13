@@ -15,7 +15,7 @@ ComputePAD::ComputePAD(COOGrid& grid)
 {
 }
 
-auto ComputePAD::operator()(algorithms::pe::BeerLambert) -> void
+void ComputePAD::operator()(algorithms::pe::BeerLambert)
 {
     std::for_each(
         std::execution::par, m_grid.begin(), m_grid.end(), [this](COOGrid::VoxelData voxel_view) -> void {
@@ -34,7 +34,7 @@ auto ComputePAD::operator()(algorithms::pe::BeerLambert) -> void
     );
 }
 
-auto ComputePAD::operator()(algorithms::pe::ContactFrequency) -> void
+void ComputePAD::operator()(algorithms::pe::ContactFrequency)
 {
     std::for_each(
         std::execution::par, m_grid.begin(), m_grid.end(), [this](COOGrid::VoxelData voxel_view) -> void {
@@ -52,7 +52,7 @@ auto ComputePAD::operator()(algorithms::pe::ContactFrequency) -> void
     );
 }
 
-auto ComputePAD::operator()(algorithms::pe::UnequalPathLengthBeerLambert) -> void
+void ComputePAD::operator()(algorithms::pe::UnequalPathLengthBeerLambert)
 {
     std::for_each(
         std::execution::par,
@@ -116,7 +116,7 @@ auto ComputePAD::operator()(algorithms::pe::UnequalPathLengthBeerLambert) -> voi
     );
 }
 
-auto ComputePAD::operator()(algorithms::pe::BiasCorrectedMaximumLikelyhoodEstimator) -> void
+void ComputePAD::operator()(algorithms::pe::BiasCorrectedMaximumLikelyhoodEstimator)
 {
     std::for_each(
         std::execution::par,

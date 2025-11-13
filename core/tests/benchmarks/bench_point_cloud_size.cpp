@@ -15,7 +15,7 @@
 
 #include "lvox/logger/logger.hpp"
 
-static auto bm_point_cloud_size(benchmark::State& state, bool is_sparse) -> void
+static void bm_point_cloud_size(benchmark::State& state, bool is_sparse)
 {
     for (auto _ : state)
     {

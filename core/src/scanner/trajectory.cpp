@@ -22,7 +22,7 @@ Trajectory::Trajectory(PointCloudView&& trajectory_points)
     });
 }
 
-auto Trajectory::interpolate_point_from_gps_time(double gps_time) const -> std::optional<lvox::Point>
+std::optional<lvox::Point> Trajectory::interpolate_point_from_gps_time(double gps_time) const
 {
     auto upper  = std::lower_bound(
         m_traj_points->begin(),

@@ -16,11 +16,11 @@ class Beam
 
     Beam(Beam&&);
     Beam(const Beam&);
-    auto operator=(Beam&&) -> Beam&;
-    auto operator=(const Beam&) -> Beam&;
+    Beam& operator=(Beam&&);
+    Beam& operator=(const Beam&);
 
-    auto origin() const -> Point { return m_origin; };
-    auto direction() const -> Point { return m_direction; };
+    Point origin() const { return m_origin; };
+    Point direction() const { return m_direction; };
 
   private:
     Point  m_origin;

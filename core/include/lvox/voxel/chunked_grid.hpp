@@ -17,11 +17,11 @@ class ChunkedGrid
     ChunkedGrid(const Bounds& bounds, double cell_size, bool compute_variance);
     ChunkedGrid(ChunkedGrid&& other);
 
-    auto register_hit(const Index3D& idx) -> void;
-    auto add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit) -> void;
-    auto add_length_count_and_variance(const Index3D& idx, double length, bool is_hit) -> void;
+    void register_hit(const Index3D& idx);
+    void add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit);
+    void add_length_count_and_variance(const Index3D& idx, double length, bool is_hit);
 
-    auto bounded_grid() const -> const BoundedGrid& { return m_bounded_grid; }
+    const BoundedGrid& bounded_grid() const { return m_bounded_grid; }
 
   private:
     struct VoxelChunk
@@ -33,7 +33,7 @@ class ChunkedGrid
 
         VoxelChunk(bool compute_variance);
 
-        static auto index3d_to_flat_idx(const Index3D& voxel_idx) -> size_t;
+        static size_t index3d_to_flat_idx(const Index3D& voxel_idx);
 
         std::vector<unsigned int> m_hits;
         std::vector<unsigned int> m_counts;
@@ -54,9 +54,9 @@ class ChunkedGrid
     size_t                   m_chunk_count;
     std::vector<a_chunk_ptr> m_chunks;
 
-    auto get_or_create_chunk(size_t chunk_idx) -> chunk_ptr;
+    chunk_ptr get_or_create_chunk(size_t chunk_idx);
     // Returns a pair of the chunk index in the index of the voxel in the chunk
-    auto index3d_to_chunk_idx(const Index3D& voxel_idx) const -> size_t;
+    size_t index3d_to_chunk_idx(const Index3D& voxel_idx) const;
 };
 
 } // namespace lvox

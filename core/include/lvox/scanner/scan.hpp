@@ -1,8 +1,8 @@
 #ifndef LVOX_SCAN_HPP
 #define LVOX_SCAN_HPP
 
-#include <variant>
 #include <optional>
+#include <variant>
 
 #include <lvox/types.hpp>
 #include <lvox/voxel/bounds.hpp>
@@ -12,7 +12,7 @@ namespace lvox
 
 class Trajectory;
 
-using ScannerOrigin  = std::variant<Point, std::shared_ptr<Trajectory>>;
+using ScannerOrigin = std::variant<Point, std::shared_ptr<Trajectory>>;
 
 struct Scan
 {
@@ -24,8 +24,8 @@ struct Scan
     struct ComputeBeamOrigin
     {
         const double gps_time;
-        auto   operator()(const Point& scan_origin) -> Point;
-        auto   operator()(const std::shared_ptr<Trajectory>& trajectory) -> Point;
+        Point        operator()(const Point& scan_origin);
+        Point        operator()(const std::shared_ptr<Trajectory>& trajectory);
     };
 };
 

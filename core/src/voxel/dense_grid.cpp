@@ -39,20 +39,20 @@ DenseGrid::DenseGrid(DenseGrid&& other)
 {
 }
 
-auto DenseGrid::index3d_to_flat_idx(const Index3D& voxel_idx) const -> size_t
+size_t DenseGrid::index3d_to_flat_idx(const Index3D& voxel_idx) const
 {
     const auto& [x, y, z] = voxel_idx;
 
     return x + y * m_bounded_grid.dim_x() + z * m_bounded_grid.dim_x() * m_bounded_grid.dim_y();
 }
 
-auto DenseGrid::register_hit(const Index3D& voxel_idx) -> void
+void DenseGrid::register_hit(const Index3D& voxel_idx)
 {
     auto idx = index3d_to_flat_idx(voxel_idx);
     m_hits[idx].fetch_add(1, std::memory_order_relaxed);
 }
 
-auto DenseGrid::add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit) -> void
+void DenseGrid::add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit)
 {
     auto idx = index3d_to_flat_idx(voxel_idx);
 
@@ -65,8 +65,7 @@ auto DenseGrid::add_length_and_count(const Index3D& voxel_idx, double length, bo
 }
 
 // TODO: make this work with memory consistency
-auto DenseGrid::add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit)
-    -> void
+void DenseGrid::add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit)
 {
     auto idx = index3d_to_flat_idx(voxel_idx);
 

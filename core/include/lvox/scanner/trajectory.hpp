@@ -1,6 +1,7 @@
 #ifndef LVOX_TRAJECTORY_HPP
 #define LVOX_TRAJECTORY_HPP
 
+#include <optional>
 #include <lvox/types.hpp>
 
 namespace lvox
@@ -8,11 +9,10 @@ namespace lvox
 class Trajectory
 {
   public:
-    // TODO: Make this more flexible with reader options
     Trajectory(PointCloudView&& trajectory_points);
 
-    auto interpolate_point_from_gps_time(double gps_time) const -> std::optional<lvox::Point>;
-    auto get_points() const -> const PointCloud& { return *m_traj_points; }
+    std::optional<lvox::Point> interpolate_point_from_gps_time(double gps_time) const;
+    const PointCloud&          get_points() const { return *m_traj_points; }
 
   private:
     PointCloudView m_traj_points;

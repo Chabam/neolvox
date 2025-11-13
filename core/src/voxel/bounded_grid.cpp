@@ -58,7 +58,7 @@ BoundedGrid::BoundedGrid(BoundedGrid&& other)
 {
 }
 
-auto BoundedGrid::voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -> Bounds
+Bounds BoundedGrid::voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const
 {
     const double min_x = m_bounds.m_min_x + idx_x * m_cell_size;
     const double min_y = m_bounds.m_min_y + idx_y * m_cell_size;
@@ -74,14 +74,14 @@ auto BoundedGrid::voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const -
     };
 }
 
-auto BoundedGrid::voxel_bounds_from_point(const Point& point) -> Bounds
+Bounds BoundedGrid::voxel_bounds_from_point(const Point& point)
 {
     const auto [idx_x, idx_y, idx_z] = index3d_of_point(point);
     return voxel_bounds(idx_x, idx_y, idx_z);
 }
 
 // Return an index tuple of this layout (x, y, z)
-auto BoundedGrid::index3d_of_point(const Point& point) const -> Index3D
+Index3D BoundedGrid::index3d_of_point(const Point& point) const
 {
     const double x = point.x();
     const double y = point.y();
@@ -109,7 +109,7 @@ auto BoundedGrid::index3d_of_point(const Point& point) const -> Index3D
     };
 }
 
-auto BoundedGrid::adjust_dim_to_grid(double distance, unsigned int voxel_alignment) -> unsigned int
+unsigned int BoundedGrid::adjust_dim_to_grid(double distance, unsigned int voxel_alignment)
 {
     const auto     new_dim   = static_cast<unsigned int>(std::ceil(distance / m_cell_size));
 
@@ -120,7 +120,7 @@ auto BoundedGrid::adjust_dim_to_grid(double distance, unsigned int voxel_alignme
     return new_dim + voxel_alignment - (new_dim % voxel_alignment);
 }
 
-auto BoundedGrid::adjust_bounds_to_grid(size_t dim, double min) const -> double
+double BoundedGrid::adjust_bounds_to_grid(size_t dim, double min) const
 {
     return min + dim * m_cell_size;
 }

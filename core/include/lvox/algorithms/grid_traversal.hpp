@@ -35,11 +35,11 @@ struct GridTraversal
     GridTraversal(const BoundedGrid& grid) : m_grid{grid} {};
 
     template <typename HitCallback>
-    auto operator()(
+    void operator()(
         const Beam&   beam,
         HitCallback&& callback,
         const double  max_distance = std::numeric_limits<double>::infinity()
-    ) -> void
+    )
     {
 
         Logger logger{"Grid traversal"};

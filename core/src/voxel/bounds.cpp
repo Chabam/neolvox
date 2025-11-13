@@ -46,7 +46,7 @@ Bounds::Bounds(double min_x, double max_x, double min_y, double max_y, double mi
 {
 }
 
-auto Bounds::operator=(const Bounds& other) -> Bounds&
+Bounds& Bounds::operator=(const Bounds& other)
 {
     m_min_x = other.m_min_x;
     m_max_x = other.m_max_x;
@@ -58,7 +58,7 @@ auto Bounds::operator=(const Bounds& other) -> Bounds&
     return *this;
 }
 
-auto Bounds::operator=(Bounds&& other) -> Bounds&
+Bounds& Bounds::operator=(Bounds&& other)
 {
     m_min_x = std::move(other.m_min_x);
     m_max_x = std::move(other.m_max_x);
@@ -70,7 +70,7 @@ auto Bounds::operator=(Bounds&& other) -> Bounds&
     return *this;
 }
 
-auto Bounds::grow(double x, double y, double z) -> void
+void Bounds::grow(double x, double y, double z)
 {
     m_min_x = std::min(x, m_min_x);
     m_max_x = std::max(x, m_max_x);
@@ -82,13 +82,13 @@ auto Bounds::grow(double x, double y, double z) -> void
     m_max_z = std::max(z, m_max_z);
 }
 
-auto Bounds::grow(const Bounds& other) -> void
+void Bounds::grow(const Bounds& other)
 {
     grow(other.m_min_x, other.m_min_y, other.m_min_z);
     grow(other.m_max_x, other.m_max_y, other.m_max_z);
 }
 
-auto Bounds::contains(double x, double y, double z) const -> bool
+bool Bounds::contains(double x, double y, double z) const
 {
     const auto is_within_dimension = [](double val, double min, double max) -> bool {
         return val >= min && val <= max;
@@ -99,13 +99,13 @@ auto Bounds::contains(double x, double y, double z) const -> bool
            is_within_dimension(z, m_min_z, m_max_z);
 }
 
-auto Bounds::contains(const Bounds& other) const -> bool
+bool Bounds::contains(const Bounds& other) const
 {
     return contains(other.m_min_x, other.m_min_y, other.m_min_z) &&
            contains(other.m_max_x, other.m_max_y, other.m_max_z);
 }
 
-auto Bounds::operator==(const Bounds& other) const -> bool
+bool Bounds::operator==(const Bounds& other) const
 {
     return m_min_x == other.m_min_x && m_max_x == other.m_max_x && m_min_y == other.m_min_y &&
            m_max_y == other.m_max_y && m_min_z == other.m_min_z && m_max_z == other.m_max_z;

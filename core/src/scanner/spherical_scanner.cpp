@@ -92,14 +92,14 @@ SphericalScanner::SphericalScanner(const SphericalScanner& other)
 {
 }
 
-auto SphericalScanner::operator=(SphericalScanner&& other) -> SphericalScanner&
+SphericalScanner& SphericalScanner::operator=(SphericalScanner&& other)
 {
     m_beams = std::move(other.m_beams);
 
     return *this;
 }
 
-auto SphericalScanner::operator=(const SphericalScanner& other) -> SphericalScanner&
+SphericalScanner& SphericalScanner::operator=(const SphericalScanner& other)
 {
     m_beams = other.m_beams;
 

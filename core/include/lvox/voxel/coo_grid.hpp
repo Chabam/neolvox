@@ -21,11 +21,11 @@ class COOGrid
     COOGrid(const ChunkedGrid& grid);
     COOGrid(const DenseGrid& grid);
 
-    auto export_to_h5(
+    void export_to_h5(
         const std::string&           dataset_name,
         const std::filesystem::path& filename,
         bool                         include_all_data = false
-    ) const -> void;
+    );
 
     struct VoxelData
     {
@@ -68,35 +68,35 @@ class COOGrid
         VoxelDataIterator() = default;
         VoxelDataIterator(const VoxelDataIterator&)                    = default;
 
-        auto operator=(const VoxelDataIterator&) -> VoxelDataIterator& = default;
+        VoxelDataIterator& operator=(const VoxelDataIterator&) = default;
 
-        auto operator++() -> VoxelDataIterator&
+        VoxelDataIterator& operator++()
         {
             *this += 1;
             return *this;
         }
 
-        auto operator++(int) -> VoxelDataIterator
+        VoxelDataIterator operator++(int)
         {
             auto tmp = *this;
             ++*this;
             return tmp;
         }
 
-        auto operator--() -> VoxelDataIterator&
+        VoxelDataIterator& operator--()
         {
             *this -= 1;
             return *this;
         }
 
-        auto operator--(int) -> VoxelDataIterator
+        VoxelDataIterator operator--(int)
         {
             auto tmp = *this;
             --*this;
             return tmp;
         }
 
-        auto operator+(difference_type diff) const -> VoxelDataIterator
+        VoxelDataIterator operator+(difference_type diff) const
         {
             auto tmp = *this;
             tmp.m_index += diff;
@@ -104,13 +104,12 @@ class COOGrid
             return tmp;
         }
 
-        friend auto operator+(difference_type other, const VoxelDataIterator& diff)
-            -> VoxelDataIterator
+        friend VoxelDataIterator operator+(difference_type other, const VoxelDataIterator& diff)
         {
             return other + diff;
         }
 
-        auto operator-(difference_type diff) const -> VoxelDataIterator
+        VoxelDataIterator operator-(difference_type diff) const
         {
             auto tmp = *this - diff;
             tmp.m_index -= diff;
@@ -118,48 +117,48 @@ class COOGrid
             return tmp;
         }
 
-        auto operator-(const VoxelDataIterator& other) const -> difference_type
+        difference_type operator-(const VoxelDataIterator& other) const
         {
             return m_index - other.m_index;
         }
 
-        auto operator+=(difference_type diff) -> VoxelDataIterator&
+        VoxelDataIterator& operator+=(difference_type diff)
         {
             m_index += diff;
             update_value();
             return *this;
         }
 
-        auto operator-=(difference_type diff) -> VoxelDataIterator&
+        VoxelDataIterator& operator-=(difference_type diff)
         {
             m_index -= diff;
             update_value();
             return *this;
         }
 
-        auto operator*() const -> value_type { return m_value; }
-        auto operator->() -> pointer { return &m_value; }
+        value_type operator*() const { return m_value; }
+        pointer operator->() { return &m_value; }
 
-        auto operator==(const VoxelDataIterator& other) const -> bool
+        bool operator==(const VoxelDataIterator& other) const
         {
             return m_grid == other.m_grid && m_index == other.m_index;
         }
 
-        auto operator!=(const VoxelDataIterator& other) const -> bool { return !(*this == other); }
+        bool operator!=(const VoxelDataIterator& other) const { return !(*this == other); }
 
-        auto operator<(const VoxelDataIterator& other) const -> bool
+        bool operator<(const VoxelDataIterator& other) const
         {
             return m_index < other.m_index;
         }
-        auto operator>(const VoxelDataIterator& other) const -> bool
+        bool operator>(const VoxelDataIterator& other) const
         {
             return m_index > other.m_index;
         }
 
-        auto operator<=(const VoxelDataIterator& other) const -> bool { return !(*this > other); }
-        auto operator>=(const VoxelDataIterator& other) const -> bool { return !(*this < other); }
+        bool operator<=(const VoxelDataIterator& other) const { return !(*this > other); }
+        bool operator>=(const VoxelDataIterator& other) const { return !(*this < other); }
 
-        auto operator[](difference_type diff) const -> value_type { return *(*this + diff); }
+        value_type operator[](difference_type diff) const { return *(*this + diff); }
 
       private:
         size_t     m_index;
@@ -174,7 +173,7 @@ class COOGrid
             update_value();
         }
 
-        auto update_value() -> void
+        void update_value()
         {
             if (m_index >= m_grid->m_size || m_index < 0)
             {
@@ -207,25 +206,25 @@ class COOGrid
     static_assert(std::random_access_iterator<iterator>);
     static_assert(std::random_access_iterator<const_iterator>);
 
-    auto begin() -> iterator { return iterator{this, 0}; }
-    auto end() -> iterator { return iterator{this, m_size}; }
-    auto cbegin() const -> const_iterator { return const_iterator{this, 0}; }
-    auto cend() const -> const_iterator { return const_iterator{this, m_size}; }
+    iterator begin() { return iterator{this, 0}; }
+    iterator end() { return iterator{this, m_size}; }
+    const_iterator cbegin() const { return const_iterator{this, 0}; }
+    const_iterator cend() const { return const_iterator{this, m_size}; }
 
-    auto size() const -> size_t { return m_size; }
+    size_t size() const { return m_size; }
 
     // These are returned by values to do move operations, hopefully
     // the compiler applies RVO
-    auto xs() const -> std::vector<unsigned int> { return m_xs; }
-    auto ys() const -> std::vector<unsigned int> { return m_ys; }
-    auto zs() const -> std::vector<unsigned int> { return m_zs; }
-    auto counts() const -> std::vector<unsigned int> { return m_counts; }
-    auto hits() const -> std::vector<unsigned int> { return m_hits; }
-    auto pads() const -> std::vector<double> { return m_pads; }
-    auto lengths() const -> std::vector<double> { return m_lengths; }
-    auto hits_lengths() const -> std::vector<double> { return m_hits_lengths; }
-    auto lengths_variance() const -> std::vector<double> { return m_lengths_variance; }
-    auto bounds() const -> lvox::BoundedGrid { return m_bounded_grid; }
+    std::vector<unsigned int> xs() const { return m_xs; }
+    std::vector<unsigned int> ys() const { return m_ys; }
+    std::vector<unsigned int> zs() const { return m_zs; }
+    std::vector<unsigned int> counts() const { return m_counts; }
+    std::vector<unsigned int> hits() const { return m_hits; }
+    std::vector<double> pads() const { return m_pads; }
+    std::vector<double> lengths() const { return m_lengths; }
+    std::vector<double> hits_lengths() const { return m_hits_lengths; }
+    std::vector<double> lengths_variance() const { return m_lengths_variance; }
+    lvox::BoundedGrid bounds() const { return m_bounded_grid; }
 
   private:
     bool                      m_uses_variance;

@@ -103,10 +103,10 @@ struct PointCloudWithTheoriticalShots
     std::optional<lvox::PointCloudView> m_blank_shots;
 };
 
-auto load_point_cloud_from_file(
+PointCloudWithTheoriticalShots load_point_cloud_from_file(
     const std::filesystem::path&                        file,
     std::optional<std::reference_wrapper<lvox::Bounds>> bounds = {}
-) -> PointCloudWithTheoriticalShots
+)
 {
     using dim = pdal::Dimension::Id;
 
@@ -200,7 +200,7 @@ auto load_point_cloud_from_file(
     return out;
 }
 
-auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox::Scan>
+std::vector<lvox::Scan> read_dot_in_file(const std::filesystem::path& in_file)
 {
     namespace fs = std::filesystem;
     std::ifstream  fstream{in_file};
@@ -253,11 +253,11 @@ auto read_dot_in_file(const std::filesystem::path& in_file) -> std::vector<lvox:
     return out_scans;
 }
 
-auto create_scan_using_pdal(
+std::vector<lvox::Scan> create_scan_using_pdal(
     const std::filesystem::path&         file,
     std::optional<std::filesystem::path> traj_file   = {},
     std::optional<lvox::Point>           scan_origin = {}
-) -> std::vector<lvox::Scan>
+)
 {
     lvox::Logger            logger{"Point cloud loader"};
     lvox::Bounds            scan_bounds;
@@ -298,12 +298,12 @@ auto create_scan_using_pdal(
     return scans;
 }
 
-auto export_to_h5(
+void export_to_h5(
     lvox::COOGrid&&              grid,
     const std::string&           dataset_name,
     const std::filesystem::path& filename,
     bool                         include_all_data = false
-) -> void
+)
 {
     lvox::Logger     logger{"Grid HDF5 export"};
     H5::H5File file;
@@ -451,7 +451,7 @@ auto export_to_h5(
     file.close();
 }
 
-auto main(int argc, char* argv[]) -> int
+int main(int argc, char* argv[])
 {
     std::vector<std::string> args{argv + 1, argv + argc};
     lvox::Logger             logger{"LVOX"};

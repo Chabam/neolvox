@@ -15,7 +15,7 @@
 
 #include "lvox/logger/logger.hpp"
 
-static auto bm_job_count(benchmark::State& state, bool is_sparse) -> void
+static void bm_job_count(benchmark::State& state, bool is_sparse)
 {
     for (auto _ : state)
     {

@@ -14,7 +14,7 @@ class BeamGenerator
     BeamGenerator()          = default;
     virtual ~BeamGenerator() = default;
 
-    virtual auto get_beams() const -> const std::vector<Beam>& = 0;
+    virtual const std::vector<Beam>& get_beams() const = 0;
 };
 
 } // namespace lvox

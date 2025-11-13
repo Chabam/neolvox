@@ -20,7 +20,7 @@ class SphericalScanner : public BeamGenerator
     SphericalScanner& operator=(SphericalScanner&&);
     SphericalScanner& operator=(const SphericalScanner&);
 
-    virtual auto get_beams() const -> const std::vector<Beam>& final { return m_beams; }
+    virtual const std::vector<Beam>& get_beams() const final { return m_beams; }
 
   private:
     std::vector<Beam> m_beams;

@@ -21,7 +21,7 @@ Beam::Beam(const Beam& other)
 {
 }
 
-auto Beam::operator=(Beam&& other) -> Beam&
+Beam& Beam::operator=(Beam&& other)
 {
     m_origin    = std::move(other.m_origin);
     m_direction = std::move(other.m_direction);
@@ -29,7 +29,7 @@ auto Beam::operator=(Beam&& other) -> Beam&
     return *this;
 }
 
-auto Beam::operator=(const Beam& other) -> Beam&
+Beam& Beam::operator=(const Beam& other)
 {
     m_origin    = other.m_origin;
     m_direction = other.m_direction;

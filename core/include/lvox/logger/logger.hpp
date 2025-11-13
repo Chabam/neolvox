@@ -24,7 +24,7 @@ struct Logger
     Logger(const std::string& category, std::ostream& ostream = std::cout);
 
     template <typename... Args>
-    auto log(Level level, std::string_view text, const Args&... args) -> void
+    void log(Level level, std::string_view text, const Args&... args)
     {
         if (g_lowest_enabled_level > level)
         {
@@ -48,38 +48,38 @@ struct Logger
     }
 
     template <typename... Args>
-    auto verbose(std::string_view text, const Args... args) -> void
+    void verbose(std::string_view text, const Args... args)
     {
         return log(Level::Verbose, text, args...);
     }
 
     template <typename... Args>
-    auto debug(std::string_view text, const Args... args) -> void
+    void debug(std::string_view text, const Args... args)
     {
         return log(Level::Debug, text, args...);
     }
 
     template <typename... Args>
-    auto info(std::string_view text, const Args... args) -> void
+    void info(std::string_view text, const Args... args)
     {
         return log(Level::Info, text, args...);
     }
 
     template <typename... Args>
-    auto warn(std::string_view text, const Args... args) -> void
+    void warn(std::string_view text, const Args... args)
     {
         return log(Level::Warn, text, args...);
     }
 
     template <typename... Args>
-    auto error(std::string_view text, const Args... args) -> void
+    void error(std::string_view text, const Args... args)
     {
         return log(Level::Error, text, args...);
     }
 
-    auto add_subcategory(const std::string& category) -> void { m_category += "|" + category; }
+    void add_subcategory(const std::string& category) { m_category += "|" + category; }
 
-    static auto set_global_level(Level level) -> void;
+    static void set_global_level(Level level);
 
   private:
     static const char* level_to_text(Level level);

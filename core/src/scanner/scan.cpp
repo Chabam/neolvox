@@ -7,12 +7,12 @@
 namespace lvox
 {
 
-auto Scan::ComputeBeamOrigin::operator()(const Point& scan_origin) -> Point
+Point Scan::ComputeBeamOrigin::operator()(const Point& scan_origin)
 {
     return scan_origin;
 }
 
-auto Scan::ComputeBeamOrigin::operator()(const std::shared_ptr<Trajectory>& trajectory) -> Point
+Point Scan::ComputeBeamOrigin::operator()(const std::shared_ptr<Trajectory>& trajectory)
 {
     const auto point = trajectory->interpolate_point_from_gps_time(gps_time);
 

@@ -21,10 +21,10 @@ class ComputePAD
 {
   public:
     ComputePAD(COOGrid& grid);
-    auto operator()(algorithms::pad_estimators::BeerLambert) -> void;
-    auto operator()(algorithms::pad_estimators::ContactFrequency) -> void;
-    auto operator()(algorithms::pad_estimators::UnequalPathLengthBeerLambert) -> void;
-    auto operator()(algorithms::pad_estimators::BiasCorrectedMaximumLikelyhoodEstimator) -> void;
+    void operator()(algorithms::pad_estimators::BeerLambert);
+    void operator()(algorithms::pad_estimators::ContactFrequency);
+    void operator()(algorithms::pad_estimators::UnequalPathLengthBeerLambert);
+    void operator()(algorithms::pad_estimators::BiasCorrectedMaximumLikelyhoodEstimator);
 
   private:
     COOGrid& m_grid;

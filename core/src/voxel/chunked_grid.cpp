@@ -53,7 +53,7 @@ ChunkedGrid::VoxelChunk::VoxelChunk(bool compute_variance)
 {
 }
 
-auto ChunkedGrid::get_or_create_chunk(size_t chunk_idx) -> chunk_ptr
+ChunkedGrid::chunk_ptr ChunkedGrid::get_or_create_chunk(size_t chunk_idx)
 {
     auto& chunk_ref      = m_chunks[chunk_idx];
     auto  existing_chunk = chunk_ref.load(std::memory_order_acquire);
@@ -71,7 +71,7 @@ auto ChunkedGrid::get_or_create_chunk(size_t chunk_idx) -> chunk_ptr
     return existing_chunk;
 }
 
-auto ChunkedGrid::index3d_to_chunk_idx(const Index3D& voxel_idx) const -> size_t
+size_t ChunkedGrid::index3d_to_chunk_idx(const Index3D& voxel_idx) const
 {
     const auto& [x, y, z] = voxel_idx;
 
@@ -82,7 +82,7 @@ auto ChunkedGrid::index3d_to_chunk_idx(const Index3D& voxel_idx) const -> size_t
     return chunk_x_idx + chunk_y_idx * m_chunks_x + chunk_z_idx * m_chunks_x * m_chunks_y;
 }
 
-auto ChunkedGrid::VoxelChunk::index3d_to_flat_idx(const Index3D& voxel_idx) -> size_t
+size_t ChunkedGrid::VoxelChunk::index3d_to_flat_idx(const Index3D& voxel_idx)
 {
     const auto& [x, y, z] = voxel_idx;
 
@@ -93,7 +93,7 @@ auto ChunkedGrid::VoxelChunk::index3d_to_flat_idx(const Index3D& voxel_idx) -> s
     return local_x_idx + local_y_idx * s_edge_size + local_z_idx * s_edge_size * s_edge_size;
 }
 
-auto ChunkedGrid::register_hit(const Index3D& idx) -> void
+void ChunkedGrid::register_hit(const Index3D& idx)
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx);
@@ -103,7 +103,7 @@ auto ChunkedGrid::register_hit(const Index3D& idx) -> void
     chunk->m_hits[voxel_idx_in_chunk] += 1;
 }
 
-auto ChunkedGrid::add_length_and_count(const Index3D& idx, double length, bool is_hit) -> void
+void ChunkedGrid::add_length_and_count(const Index3D& idx, double length, bool is_hit)
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx);
@@ -118,8 +118,7 @@ auto ChunkedGrid::add_length_and_count(const Index3D& idx, double length, bool i
     chunk->m_counts[voxel_idx_in_chunk] += 1;
 }
 
-auto ChunkedGrid::add_length_count_and_variance(const Index3D& idx, double length, bool is_hit)
-    -> void
+void ChunkedGrid::add_length_count_and_variance(const Index3D& idx, double length, bool is_hit)
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx);
