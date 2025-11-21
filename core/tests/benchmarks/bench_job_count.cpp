@@ -1,19 +1,19 @@
 #include <benchmark/benchmark.h>
 #include <memory>
-#include <thread>
 #include <utils/utils.hpp>
 
 #include <pdal/Dimension.hpp>
 #include <pdal/PointView.hpp>
 #include <pdal/util/Bounds.hpp>
 
-#include <lvox/algorithms/algorithms.hpp>
+#include <lvox/algorithms/compute_options.hpp>
+#include <lvox/algorithms/compute_pad.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
+#include <lvox/logger/logger.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/types.hpp>
+#include <lvox/voxel/coo_grid.hpp>
 #include <lvox/voxel/grid.hpp>
-
-#include "lvox/logger/logger.hpp"
 
 static void bm_job_count(benchmark::State& state, bool is_sparse)
 {

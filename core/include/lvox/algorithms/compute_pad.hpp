@@ -1,10 +1,13 @@
 #ifndef LVOX_COMPUTE_PAD_HPP
 #define LVOX_COMPUTE_PAD_HPP
 
+#include <vector>
+
 namespace lvox
 {
 
 class COOGrid;
+struct Scan;
 
 namespace algorithms
 {
@@ -17,10 +20,12 @@ struct UnequalPathLengthBeerLambert;
 struct BiasCorrectedMaximumLikelyhoodEstimator;
 } // namespace pad_estimators
 
-class ComputePAD
+struct ComputeOptions;
+
+class PADEstimation
 {
   public:
-    ComputePAD(COOGrid& grid);
+    PADEstimation(COOGrid& grid);
     void operator()(algorithms::pad_estimators::BeerLambert);
     void operator()(algorithms::pad_estimators::ContactFrequency);
     void operator()(algorithms::pad_estimators::UnequalPathLengthBeerLambert);
@@ -29,6 +34,18 @@ class ComputePAD
   private:
     COOGrid& m_grid;
 };
+
+//  Wrapper for the whole PAD computation. Does the following:
+//
+// - Compute the scene bounds
+// - Creates a compute data struct
+// - For each scans
+//   - Compute the rays length and count in each voxels (with `compute_rays_count_and_length`)
+//   - Compute with the beams from a virtual scanner if requested
+//   - Compute the PAD values for each voxels using the values from the computed grids
+// - Averages the PAD values from every scans
+[[nodiscard]]
+COOGrid compute_pad(const std::vector<Scan>& scans, const ComputeOptions& options);
 
 } // namespace algorithms
 

@@ -7,13 +7,14 @@
 #include <pdal/PointView.hpp>
 #include <pdal/util/Bounds.hpp>
 
-#include <lvox/algorithms/algorithms.hpp>
+#include <lvox/algorithms/compute_options.hpp>
+#include <lvox/algorithms/compute_pad.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
+#include <lvox/logger/logger.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/types.hpp>
+#include <lvox/voxel/coo_grid.hpp>
 #include <lvox/voxel/grid.hpp>
-
-#include "lvox/logger/logger.hpp"
 
 static void bm_point_cloud_size(benchmark::State& state, bool is_sparse)
 {

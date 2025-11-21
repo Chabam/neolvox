@@ -1,6 +1,5 @@
 #include <H5Cpp.h>
 #include <algorithm>
-#include <execution>
 #include <filesystem>
 #include <format>
 #include <functional>
@@ -11,7 +10,6 @@
 #include <mutex>
 #include <sstream>
 #include <stdexcept>
-#include <exception>
 
 #include <pdal/Dimension.hpp>
 #include <pdal/Options.hpp>
@@ -23,7 +21,8 @@
 #include <pdal/io/BufferReader.hpp>
 #include <pdal/io/LasReader.hpp>
 
-#include <lvox/algorithms/algorithms.hpp>
+#include <lvox/algorithms/compute_pad.hpp>
+#include <lvox/algorithms/compute_options.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/logger/logger.hpp>
 #include <lvox/scanner/scan.hpp>

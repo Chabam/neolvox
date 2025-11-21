@@ -1,33 +1,25 @@
-#include <iterator>
-#include <limits>
-#include <memory>
-#include <numbers>
 #include <thread>
-#include <variant>
 
-#include <lvox/algorithms/algorithms.hpp>
-#include <lvox/algorithms/compute_pad.hpp>
-#include <lvox/algorithms/grid_traversal.hpp>
+#include <lvox/algorithms/compute_options.hpp>
+#include <lvox/algorithms/explore_grid.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
-#include <lvox/scanner/beam.hpp>
+#include <lvox/algorithms/trace_beam.hpp>
 #include <lvox/scanner/scan.hpp>
-#include <lvox/voxel/coo_grid.hpp>
-#include <lvox/voxel/grid.hpp>
 
 namespace lvox::algorithms
 {
 
+namespace pe = lvox::algorithms::pad_estimators;
+
 template <bool limit_ray_length, bool compute_hits, typename PadEstimator>
-void compute_rays_count_and_length_impl(
-    Grid& grid, const Scan& scan, const ComputeOptions& options, Logger logger
-)
+void explore_grid_impl(Grid& grid, const Scan& scan, const ComputeOptions& options, Logger logger)
 {
     auto grid_traversal = std::visit(
         [](const auto& grid) {
             if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
-                return GridTraversalExactDistance{grid.bounded_grid()};
+                return TraceBeamExactDistance{grid.bounded_grid()};
             else
-                return GridTraversalVoxelRounding{grid.bounded_grid()};
+                return TraceBeamVoxelRounding{grid.bounded_grid()};
         },
         grid
     );
@@ -160,90 +152,31 @@ void compute_rays_count_and_length_impl(
         start_it = next_end + 1;
     }
 }
-
-void compute_rays_count_and_length(Grid& grid, const Scan& scan, const ComputeOptions& options)
-{
-    constexpr bool limit_ray_length = true;
-    constexpr bool compute_hits     = true;
-    Logger         logger{"Compute Rays count and length"};
-    std::visit(
-        [&](auto&& chosen_estimator) {
-            using T = std::decay_t<decltype(chosen_estimator)>;
-            compute_rays_count_and_length_impl<limit_ray_length, compute_hits, T>(
-                grid, scan, options, logger
-            );
-        },
-        options.m_pad_estimator
-    );
-}
-
-void compute_theoriticals(Grid& grid, const Scan& scan, const ComputeOptions& options)
+void explore_grid_theoriticals(Grid& grid, const Scan& scan, const ComputeOptions& options)
 {
     constexpr bool limit_ray_length = false;
     constexpr bool compute_hits     = false;
-    Logger         logger{"Compute theoriticals"};
+    Logger         logger{"Explore grid theoriticals"};
     std::visit(
         [&](auto&& chosen_estimator) {
             using T = std::decay_t<decltype(chosen_estimator)>;
-            compute_rays_count_and_length_impl<limit_ray_length, compute_hits, T>(
-                grid, scan, options, logger
-            );
+            explore_grid_impl<limit_ray_length, compute_hits, T>(grid, scan, options, logger);
         },
         options.m_pad_estimator
     );
 }
 
-lvox::Bounds compute_scene_bounds(const std::vector<lvox::Scan>& scans)
+void explore_grid(Grid& grid, const Scan& scan, const ComputeOptions& options)
 {
-    Bounds total_bounds;
-
-    for (const auto& scan : scans)
-        total_bounds.grow(scan.m_bounds);
-
-    return total_bounds;
+    constexpr bool limit_ray_length = true;
+    constexpr bool compute_hits     = true;
+    Logger         logger{"Explore grid"};
+    std::visit(
+        [&](auto&& chosen_estimator) {
+            using T = std::decay_t<decltype(chosen_estimator)>;
+            explore_grid_impl<limit_ray_length, compute_hits, T>(grid, scan, options, logger);
+        },
+        options.m_pad_estimator
+    );
 }
-
-COOGrid compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options)
-{
-    Logger logger{"LVOX"};
-    logger.info("Scan count {}", scans.size());
-
-    const bool uses_variance =
-        std::holds_alternative<pe::UnequalPathLengthBeerLambert>(options.m_pad_estimator);
-
-    Grid grid = std::invoke([&]() -> Grid {
-        if (options.m_use_sparse_grid)
-            return ChunkedGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
-        else
-            return DenseGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
-    });
-
-    auto                     scan_num = 1;
-    std::unique_ptr<COOGrid> result;
-    for (const auto& scan : scans)
-    {
-        if (options.m_compute_theoriticals && scan.m_blank_shots)
-        {
-            logger.info("Compute theoriticals {}/{}", scan_num, scans.size());
-            compute_theoriticals(grid, scan, options);
-        }
-
-        logger.info("Compute ray counts and length {}/{}", scan_num, scans.size());
-        compute_rays_count_and_length(grid, scan, options);
-
-        result = std::visit(
-            [](const auto& grid) -> std::unique_ptr<COOGrid> {
-                return std::make_unique<COOGrid>(grid);
-            },
-            grid
-        );
-
-        logger.info("Estimating PAD {}/{}", scan_num, scans.size());
-        std::visit(ComputePAD{*result}, options.m_pad_estimator);
-        ++scan_num;
-    }
-
-    return *result;
-}
-
 } // namespace lvox::algorithms

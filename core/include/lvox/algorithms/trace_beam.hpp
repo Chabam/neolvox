@@ -1,5 +1,5 @@
-#ifndef LVOX_GRID_TRAVERSAL_HPP
-#define LVOX_GRID_TRAVERSAL_HPP
+#ifndef LVOX_TRACE_BEAM_HPP
+#define LVOX_TRACE_BEAM_HPP
 
 #include <format>
 #include <limits>
@@ -9,13 +9,10 @@
 #include <lvox/scanner/beam.hpp>
 #include <lvox/voxel/grid.hpp>
 
-namespace lvox
+namespace lvox::algorithms
 {
 
-namespace algorithms
-{
-
-constexpr auto g_grid_traversal_info = R"(
+constexpr auto g_trace_beam_info = R"(
 Beam
     beam_origin    ({}, {}, {})
     direction ({}, {}, {})
@@ -30,9 +27,10 @@ struct VoxelHitInfo
 };
 
 template <bool exact_distance>
-struct GridTraversal
+struct TraceBeam
 {
-    GridTraversal(const BoundedGrid& grid) : m_grid{grid} {};
+    TraceBeam(const BoundedGrid& grid)
+        : m_grid{grid} {};
 
     template <typename HitCallback>
     void operator()(
@@ -42,7 +40,7 @@ struct GridTraversal
     )
     {
 
-        Logger logger{"Grid traversal"};
+        Logger logger{"Trace beam"};
 
         using GridIndex      = Eigen::Vector<unsigned int, 3>;
         using Step           = Eigen::Vector<signed char, 3>;
@@ -130,7 +128,7 @@ struct GridTraversal
                              inv_dir.array();
 
         logger.verbose(
-            g_grid_traversal_info,
+            g_trace_beam_info,
             beam_origin.x(),
             beam_origin.y(),
             beam_origin.z(),
@@ -214,11 +212,9 @@ struct GridTraversal
     const BoundedGrid& m_grid;
 };
 
-using GridTraversalVoxelRounding = GridTraversal<false>;
-using GridTraversalExactDistance = GridTraversal<true>;
+using TraceBeamVoxelRounding = TraceBeam<false>;
+using TraceBeamExactDistance = TraceBeam<true>;
 
-} // namespace algorithms
+} // namespace lvox::algorithms
 
-} // namespace lvox
-
-#endif // LVOX_GRID_TRAVERSAL_HPP
+#endif // LVOX_TRACE_BEAM_HPP

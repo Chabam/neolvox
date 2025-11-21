@@ -1,24 +1,31 @@
 #include <algorithm>
 #include <execution>
-#include <format>
 
+#include <lvox/algorithms/compute_options.hpp>
 #include <lvox/algorithms/compute_pad.hpp>
+#include <lvox/algorithms/compute_scene_bounds.hpp>
+#include <lvox/algorithms/explore_grid.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/logger/logger.hpp>
+#include <lvox/scanner/scan.hpp>
 #include <lvox/voxel/coo_grid.hpp>
+#include <lvox/voxel/grid.hpp>
 
 namespace lvox::algorithms
 {
 
-ComputePAD::ComputePAD(COOGrid& grid)
+PADEstimation::PADEstimation(COOGrid& grid)
     : m_grid{grid}
 {
 }
 
-void ComputePAD::operator()(algorithms::pe::BeerLambert)
+void PADEstimation::operator()(algorithms::pe::BeerLambert)
 {
     std::for_each(
-        std::execution::par, m_grid.begin(), m_grid.end(), [this](COOGrid::VoxelData voxel_view) -> void {
+        std::execution::par,
+        m_grid.begin(),
+        m_grid.end(),
+        [this](COOGrid::VoxelData voxel_view) -> void {
             const auto G = [](double val) -> double {
                 return 0.5 * val;
             };
@@ -34,10 +41,13 @@ void ComputePAD::operator()(algorithms::pe::BeerLambert)
     );
 }
 
-void ComputePAD::operator()(algorithms::pe::ContactFrequency)
+void PADEstimation::operator()(algorithms::pe::ContactFrequency)
 {
     std::for_each(
-        std::execution::par, m_grid.begin(), m_grid.end(), [this](COOGrid::VoxelData voxel_view) -> void {
+        std::execution::par,
+        m_grid.begin(),
+        m_grid.end(),
+        [this](COOGrid::VoxelData voxel_view) -> void {
             const auto G = [](double val) -> double {
                 return 0.5 * val;
             };
@@ -52,7 +62,7 @@ void ComputePAD::operator()(algorithms::pe::ContactFrequency)
     );
 }
 
-void ComputePAD::operator()(algorithms::pe::UnequalPathLengthBeerLambert)
+void PADEstimation::operator()(algorithms::pe::UnequalPathLengthBeerLambert)
 {
     std::for_each(
         std::execution::par,
@@ -116,7 +126,7 @@ void ComputePAD::operator()(algorithms::pe::UnequalPathLengthBeerLambert)
     );
 }
 
-void ComputePAD::operator()(algorithms::pe::BiasCorrectedMaximumLikelyhoodEstimator)
+void PADEstimation::operator()(algorithms::pe::BiasCorrectedMaximumLikelyhoodEstimator)
 {
     std::for_each(
         std::execution::par,
@@ -137,5 +147,48 @@ void ComputePAD::operator()(algorithms::pe::BiasCorrectedMaximumLikelyhoodEstima
             *voxel_view.pad = res;
         }
     );
+}
+
+COOGrid compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options)
+{
+    Logger logger{"LVOX"};
+    logger.info("Scan count {}", scans.size());
+
+    const bool uses_variance =
+        std::holds_alternative<pe::UnequalPathLengthBeerLambert>(options.m_pad_estimator);
+
+    Grid grid = std::invoke([&]() -> Grid {
+        if (options.m_use_sparse_grid)
+            return ChunkedGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
+        else
+            return DenseGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
+    });
+
+    auto                     scan_num = 1;
+    std::unique_ptr<COOGrid> result;
+    for (const auto& scan : scans)
+    {
+        if (options.m_compute_theoriticals && scan.m_blank_shots)
+        {
+            logger.info("Compute theoriticals {}/{}", scan_num, scans.size());
+            explore_grid_theoriticals(grid, scan, options);
+        }
+
+        logger.info("Compute ray counts and length {}/{}", scan_num, scans.size());
+        explore_grid(grid, scan, options);
+
+        result = std::visit(
+            [](const auto& grid) -> std::unique_ptr<COOGrid> {
+                return std::make_unique<COOGrid>(grid);
+            },
+            grid
+        );
+
+        logger.info("Estimating PAD {}/{}", scan_num, scans.size());
+        std::visit(PADEstimation{*result}, options.m_pad_estimator);
+        ++scan_num;
+    }
+
+    return *result;
 }
 } // namespace lvox::algorithms
