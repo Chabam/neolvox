@@ -15,6 +15,7 @@ create_profile <- function(file) {
   df <- data.frame(x = x, y = y, z = z, pad = pad)
 
   df$pad[is.nan(df$pad)] <- 0
+  df$pad[is.infinite(df$pad)] <- 0
 
   profile <- sapply(seq(0, dims[3] - 1), function(z)
     mean((df$pad[df$z == z]))
