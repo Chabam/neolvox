@@ -34,49 +34,53 @@
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
 Options:
-   ARGS               EXPECTED VALUES     DESCRIPTION
-   -t, --trajectory   filename            Path to a trajectory file, required for
-                                          computing an MLS scan. [none by default]
+   ARGS                   EXPECTED VALUES     DESCRIPTION
+   -t, --trajectory       filename            Path to a trajectory file, required for
+                                              computing an MLS scan. [none by default]
 
-   -o, --scan-origin  x y z               Coordinates for the scan position when
-                                          computing a TLS scan. [defaults to (0,0,0)]
+   -o, --scan-origin      x y z               Coordinates for the scan position when
+                                              computing a TLS scan. [defaults to (0,0,0)]
 
-   -v, --voxel-size   decimal             Size in meters of each voxel elements
-                                          of the grid. [defaults to 0.5]
+   -v, --voxel-size       decimal             Size in meters of each voxel elements
+                                              of the grid. [defaults to 0.5]
 
-   -g, --grid         filename            Outputs the grid of PAD voxel values to a
-                                          hdf5 file. [defaults to out.h5]
+   -g, --grid             filename            Outputs the grid of PAD voxel values to a
+                                              hdf5 file. [defaults to out.h5]
 
-   -b, --blanks       none                Whether or not to use points classified with
-                                          flag 0 as reference for "blank shots". These
-                                          can used alongside virtual scene to measure
-                                          the impact of rays that didn't touch anything
-                                          on PAD estimations. [disabled by defaults]
+   -b, --blanks           none                Whether or not to use points classified with
+                                              flag 0 as reference for "blank shots". These
+                                              can used alongside virtual scene to measure
+                                              the impact of rays that didn't touch anything
+                                              on PAD estimations. [disabled by defaults]
 
-   -j, --jobs         number              A number of parallel jobs to use.
-                                          [defaults to the amount of core]
+   -j, --jobs             number              A number of parallel jobs to use.
+                                              [defaults to the amount of core]
 
-   -m, --method       BL, CF, ULPBL,      The PAD estimator to use. Here's the
-                      BCMLE               description of each values:
-                                            - BL: Beer-Lambert [default]
-                                            - CF: Contact Frequency
-                                            - UPLBL: Unequal Path Length
-                                              Beer Lambert
-                                            - BCMLE: Bias Corrected Maximum
-                                              Likelyhood Estimator
+   -m, --method           BL, CF, ULPBL,      The PAD estimator to use. Here's the
+                          BCMLE               description of each values:
+                                                - BL: Beer-Lambert [default]
+                                                - CF: Contact Frequency
+                                                - UPLBL: Unequal Path Length
+                                                  Beer Lambert
+                                                - BCMLE: Bias Corrected Maximum
+                                                  Likelyhood Estimator
 
-   -a, --all          none                Whether or not to include all the information
-                                          from the grid (ray counts, lengths, etc.) in the
-                                          exported file. [disabled by default]
+   -a, --all              none                Whether or not to include all the information
+                                              from the grid (ray counts, lengths, etc.) in the
+                                              exported file. [disabled by default]
 
-   -s, --sparse       none                Whether or not to use sparse grids for computation.
-                                          They are slower, but will require less memory.
-                                          [disabled by default]
+   -s, --sparse           none                Whether or not to use sparse grids for computation.
+                                              They are slower, but will require less memory.
+                                              [disabled by default]
 
-   -l, --log-level    debug, info,        Max log level to display [defaults to info]
-                      warning, error
+   -r, --required-hits    number              The number of return required for PAD computation, if
+                                              the return amount in the voxel is lower than this number
+                                              it will be excluded from the estimation [5 by default]
 
-   -h, --help                             Prints this message
+   -l, --log-level        debug, info,        Max log level to display [defaults to info]
+                          warning, error
+
+   -h, --help                                 Prints this message
     )";
 
 namespace lvox_pe = lvox::algorithms::pad_estimators;
@@ -94,6 +98,7 @@ std::optional<fs::path>    g_traj_file            = {};
 fs::path                   g_grid_file            = "out.h5";
 bool                       g_include_all_info     = false;
 bool                       g_use_sparse_grids     = false;
+unsigned int               g_required_hits        = 5;
 fs::path                   g_file;
 
 struct PointCloudWithTheoriticalShots
@@ -537,14 +542,16 @@ int main(int argc, char* argv[])
         {
             g_use_sparse_grids = true;
         }
+        else if (*arg_it == "-r" || *arg_it == "--required-hits")
+        {
+            g_required_hits = std::stoi(*++arg_it);
+        }
         else if (*arg_it == "-l" || *arg_it == "--log-level")
         {
             std::string log_level_str = *++arg_it;
-            std::ranges::transform(
-                log_level_str, log_level_str.begin(), [](const unsigned char c) {
-                    return std::toupper(c);
-                }
-            );
+            std::ranges::transform(log_level_str, log_level_str.begin(), [](const unsigned char c) {
+                return std::toupper(c);
+            });
 
             if (log_level_str == "DEBUG")
             {
@@ -592,7 +599,8 @@ int main(int argc, char* argv[])
         .m_job_limit            = g_job_count,
         .m_pad_estimator        = g_pad_estimator,
         .m_compute_theoriticals = g_compute_theoriticals,
-        .m_use_sparse_grid      = g_use_sparse_grids
+        .m_use_sparse_grid      = g_use_sparse_grids,
+        .m_required_hits        = g_required_hits
     };
     lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
     export_to_h5(std::move(result), "lvox", g_grid_file, g_include_all_info);

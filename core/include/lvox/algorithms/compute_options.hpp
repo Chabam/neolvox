@@ -13,6 +13,7 @@ struct ComputeOptions
     pad_estimators::PADEstimator m_pad_estimator;
     bool                         m_compute_theoriticals;
     bool                         m_use_sparse_grid;
+    unsigned int                 m_required_hits;
 };
 
 } // namespace lvox::algorithms

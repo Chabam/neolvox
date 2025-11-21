@@ -25,7 +25,7 @@ struct ComputeOptions;
 class PADEstimation
 {
   public:
-    PADEstimation(COOGrid& grid);
+    PADEstimation(COOGrid& grid, unsigned int required_hits);
     void operator()(algorithms::pad_estimators::BeerLambert);
     void operator()(algorithms::pad_estimators::ContactFrequency);
     void operator()(algorithms::pad_estimators::UnequalPathLengthBeerLambert);
@@ -33,6 +33,7 @@ class PADEstimation
 
   private:
     COOGrid& m_grid;
+    unsigned int m_required_hits;
 };
 
 //  Wrapper for the whole PAD computation. Does the following:
@@ -46,6 +47,8 @@ class PADEstimation
 // - Averages the PAD values from every scans
 [[nodiscard]]
 COOGrid compute_pad(const std::vector<Scan>& scans, const ComputeOptions& options);
+
+void compute_pad(COOGrid& grid, const ComputeOptions& options);
 
 } // namespace algorithms
 
