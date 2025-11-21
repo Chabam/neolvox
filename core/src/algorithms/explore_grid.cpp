@@ -1,3 +1,5 @@
+#include <atomic>
+#include <sstream>
 #include <thread>
 
 #include <lvox/algorithms/compute_options.hpp>
@@ -24,7 +26,9 @@ void explore_grid_impl(Grid& grid, const Scan& scan, const ComputeOptions& optio
         grid
     );
 
-    const auto points_to_process = std::ranges::distance(*scan.m_points);
+    const auto          points_to_process = std::ranges::distance(*scan.m_points);
+    std::atomic<size_t> processed_points  = 0;
+    unsigned int        last_progress     = 0;
 
     struct PointRange
     {
@@ -134,9 +138,8 @@ void explore_grid_impl(Grid& grid, const Scan& scan, const ComputeOptions& optio
                 },
                 max_distance
             );
+            processed_points.fetch_add(1, std::memory_order_relaxed);
         }
-
-        logger.debug("thread finished");
     };
 
     const size_t point_count = scan.m_points->size();
@@ -151,6 +154,39 @@ void explore_grid_impl(Grid& grid, const Scan& scan, const ComputeOptions& optio
 
         start_it = next_end + 1;
     }
+
+    unsigned int loaded_processed_points;
+    do
+    {
+        loaded_processed_points = processed_points.load(std::memory_order_relaxed);
+        const unsigned int current_progress =
+            std::ceil((static_cast<float>(loaded_processed_points) / points_to_process) * 100.f);
+        if (last_progress <= current_progress)
+        {
+            last_progress                          = current_progress;
+            constexpr auto     progress_size       = 25;
+            const unsigned int compressed_progress = (current_progress / 100.f) * progress_size;
+            std::ostringstream oss;
+            for (unsigned int i = 0; i < progress_size + 2; ++i)
+            {
+                oss << '\b';
+            }
+            oss << "[";
+            for (unsigned int i = 0; i < compressed_progress; ++i)
+            {
+                oss << "=";
+            }
+            for (unsigned int i = 0; i < (progress_size - compressed_progress); ++i)
+            {
+                oss << " ";
+            }
+            oss << "]";
+
+            std::cout << oss.str();
+            std::cout.flush();
+        }
+    } while (last_progress < 100);
+    std::cout << std::endl;
 }
 void explore_grid_theoriticals(Grid& grid, const Scan& scan, const ComputeOptions& options)
 {

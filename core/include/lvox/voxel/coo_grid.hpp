@@ -21,12 +21,6 @@ class COOGrid
     COOGrid(const ChunkedGrid& grid);
     COOGrid(const DenseGrid& grid);
 
-    void export_to_h5(
-        const std::string&           dataset_name,
-        const std::filesystem::path& filename,
-        bool                         include_all_data = false
-    );
-
     struct VoxelData
     {
         std::vector<unsigned int>::iterator x;
@@ -213,18 +207,16 @@ class COOGrid
 
     size_t size() const { return m_size; }
 
-    // These are returned by values to do move operations, hopefully
-    // the compiler applies RVO
-    std::vector<unsigned int> xs() const { return m_xs; }
-    std::vector<unsigned int> ys() const { return m_ys; }
-    std::vector<unsigned int> zs() const { return m_zs; }
-    std::vector<unsigned int> counts() const { return m_counts; }
-    std::vector<unsigned int> hits() const { return m_hits; }
-    std::vector<double> pads() const { return m_pads; }
-    std::vector<double> lengths() const { return m_lengths; }
-    std::vector<double> hits_lengths() const { return m_hits_lengths; }
-    std::vector<double> lengths_variance() const { return m_lengths_variance; }
-    lvox::BoundedGrid bounds() const { return m_bounded_grid; }
+    const std::vector<unsigned int>& xs() const { return m_xs; }
+    const std::vector<unsigned int>& ys() const { return m_ys; }
+    const std::vector<unsigned int>& zs() const { return m_zs; }
+    const std::vector<unsigned int>& counts() const { return m_counts; }
+    const std::vector<unsigned int>& hits() const { return m_hits; }
+    const std::vector<double>& pads() const { return m_pads; }
+    const std::vector<double>& lengths() const { return m_lengths; }
+    const std::vector<double>& hits_lengths() const { return m_hits_lengths; }
+    const std::vector<double>& lengths_variance() const { return m_lengths_variance; }
+    const lvox::BoundedGrid& bounds() const { return m_bounded_grid; }
 
   private:
     bool                      m_uses_variance;

@@ -160,8 +160,7 @@ COOGrid compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& 
             return DenseGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
     });
 
-    auto                     scan_num = 1;
-    std::unique_ptr<COOGrid> result;
+    auto scan_num = 1;
     for (const auto& scan : scans)
     {
         if (options.m_compute_theoriticals && scan.m_blank_shots)
@@ -172,19 +171,19 @@ COOGrid compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& 
 
         logger.info("Compute ray counts and length {}/{}", scan_num, scans.size());
         explore_grid(grid, scan, options);
-
-        result = std::visit(
-            [](const auto& grid) -> std::unique_ptr<COOGrid> {
-                return std::make_unique<COOGrid>(grid);
-            },
-            grid
-        );
-
-        logger.info("Estimating PAD {}/{}", scan_num, scans.size());
-        compute_pad(*result, options);
         ++scan_num;
     }
 
-    return *result;
+    COOGrid result = std::visit(
+        [](const auto& grid) -> COOGrid {
+            return COOGrid{grid};
+        },
+        grid
+    );
+
+    logger.info("Estimating PAD", scan_num, scans.size());
+    compute_pad(result, options);
+
+    return result;
 }
 } // namespace lvox::algorithms
