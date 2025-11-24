@@ -1,6 +1,8 @@
 #include <Rcpp.h>
 #include <lvox/types.hpp>
-#include <lvox/algorithms/algorithms.hpp>
+#include <lvox/algorithms/compute_options.hpp>
+#include <lvox/algorithms/compute_pad.hpp>
+#include <lvox/voxel/coo_grid.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/scanner/trajectory.hpp>
 #include <lvox/voxel/bounds.hpp>
