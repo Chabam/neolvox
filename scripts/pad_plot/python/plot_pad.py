@@ -21,7 +21,7 @@ def main():
     voxel_size = group.attrs["Voxel size"]
 
     dset_m = sparse.COO((group["pad"], (group["x"], group["y"], group["z"])), shape=dims).todense()
-    dset_m = numpy.nan_to_num(dset_m)
+    dset_m = numpy.nan_to_num(dset_m, nan = 0, posinf = 0, neginf = 0)
 
     profile = numpy.average(dset_m, axis=(0, 1))
     figure, axis = plt.subplots()

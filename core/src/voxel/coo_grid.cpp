@@ -197,7 +197,7 @@ COOGrid::COOGrid(const DenseGrid& grid)
 
     {
         std::ranges::copy(
-            index_with_data | std::views::transform([&grid](const size_t& index) -> unsigned int {
+            index_with_data | std::views::transform([&grid](const size_t& index) -> double {
                 return grid.m_lengths[index];
             }),
             m_lengths.begin()
@@ -207,7 +207,7 @@ COOGrid::COOGrid(const DenseGrid& grid)
     if (m_uses_variance)
     {
         std::ranges::copy(
-            index_with_data | std::views::transform([&grid](const size_t& index) -> unsigned int {
+            index_with_data | std::views::transform([&grid](const size_t& index) -> double {
                 auto aggregate = grid.m_lengths_variance[index].load(std::memory_order_relaxed);
                 if (aggregate->m_count < 2)
                 {
