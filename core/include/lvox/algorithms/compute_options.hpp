@@ -14,6 +14,7 @@ struct ComputeOptions
     bool                         m_compute_theoriticals;
     bool                         m_use_sparse_grid;
     unsigned int                 m_required_hits;
+    std::ostream&                m_log_stream;
 };
 
 } // namespace lvox::algorithms

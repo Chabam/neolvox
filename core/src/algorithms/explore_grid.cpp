@@ -1,5 +1,3 @@
-#include <atomic>
-#include <sstream>
 #include <thread>
 #include <numbers>
 
@@ -8,6 +6,7 @@
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/algorithms/trace_beam.hpp>
 #include <lvox/scanner/scan.hpp>
+#include <lvox/logger/progress.hpp>
 
 namespace lvox::algorithms
 {
@@ -27,9 +26,8 @@ void explore_grid_impl(Grid& grid, const Scan& scan, const ComputeOptions& optio
         grid
     );
 
-    const auto          points_to_process = std::ranges::distance(*scan.m_points);
-    std::atomic<size_t> processed_points  = 0;
-    unsigned int        last_progress     = 0;
+    const auto points_to_process = std::ranges::distance(*scan.m_points);
+    Progress   progress{static_cast<size_t>(points_to_process), options.m_log_stream};
 
     struct PointRange
     {
@@ -42,7 +40,7 @@ void explore_grid_impl(Grid& grid, const Scan& scan, const ComputeOptions& optio
         const_iterator end() const { return m_end; }
     };
 
-    const auto ray_trace = [&](const PointRange& points) -> void {
+    const auto ray_trace = [&](const PointRange& points, bool& finished) -> void {
         for (const auto& timed_point : points)
         {
             const double gps_time = timed_point.m_gps_time;
@@ -139,61 +137,39 @@ void explore_grid_impl(Grid& grid, const Scan& scan, const ComputeOptions& optio
                 },
                 max_distance
             );
-            processed_points.fetch_add(1, std::memory_order_relaxed);
+            progress.increase_progression_by(1);
         }
+        finished = true;
     };
 
     const size_t point_count = scan.m_points->size();
     const size_t points_per_tasks =
         std::ceil(static_cast<float>(point_count) / options.m_job_limit);
     std::vector<std::jthread> threads;
-    auto                      start_it = scan.m_points->begin();
+    std::unique_ptr<bool[]>         thread_finished = std::make_unique<bool[]>(options.m_job_limit);
+    auto start_it = scan.m_points->begin();
     for (auto i = 0; i < point_count; i += (points_per_tasks + 1))
     {
         auto next_end = start_it + std::min(points_per_tasks, point_count - i);
-        threads.emplace_back(ray_trace, PointRange{start_it, next_end});
+        thread_finished[i] = false;
+        threads.emplace_back(ray_trace, PointRange{start_it, next_end}, std::ref(thread_finished[i]));
 
         start_it = next_end + 1;
     }
 
-    unsigned int loaded_processed_points;
-    do
+    while (!progress.completed())
     {
-        loaded_processed_points = processed_points.load(std::memory_order_relaxed);
-        const unsigned int current_progress =
-            std::ceil((static_cast<float>(loaded_processed_points) / points_to_process) * 100.f);
-        if (last_progress <= current_progress)
-        {
-            last_progress                          = current_progress;
-            constexpr auto     progress_size       = 25;
-            const unsigned int compressed_progress = (current_progress / 100.f) * progress_size;
-            std::ostringstream oss;
-            for (unsigned int i = 0; i < progress_size + 2; ++i)
-            {
-                oss << '\b';
-            }
-            oss << "[";
-            for (unsigned int i = 0; i < compressed_progress; ++i)
-            {
-                oss << "=";
-            }
-            for (unsigned int i = 0; i < (progress_size - compressed_progress); ++i)
-            {
-                oss << " ";
-            }
-            oss << "]";
+        if (std::all_of(thread_finished.get(), thread_finished.get() + (options.m_job_limit - 1), std::identity{}))
+            progress.stop();
 
-            std::cout << oss.str();
-            std::cout.flush();
-        }
-    } while (last_progress < 100);
-    std::cout << std::endl;
+        progress.print();
+    }
 }
 void explore_grid_theoriticals(Grid& grid, const Scan& scan, const ComputeOptions& options)
 {
     constexpr bool limit_ray_length = false;
     constexpr bool compute_hits     = false;
-    Logger         logger{"Explore grid theoriticals"};
+    Logger         logger{"Explore grid theoriticals", options.m_log_stream};
     std::visit(
         [&](auto&& chosen_estimator) {
             using T = std::decay_t<decltype(chosen_estimator)>;
@@ -207,7 +183,7 @@ void explore_grid(Grid& grid, const Scan& scan, const ComputeOptions& options)
 {
     constexpr bool limit_ray_length = true;
     constexpr bool compute_hits     = true;
-    Logger         logger{"Explore grid"};
+    Logger         logger{"Explore grid", options.m_log_stream};
     std::visit(
         [&](auto&& chosen_estimator) {
             using T = std::decay_t<decltype(chosen_estimator)>;

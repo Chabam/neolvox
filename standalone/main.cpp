@@ -30,6 +30,7 @@
 #include <lvox/scanner/trajectory.hpp>
 #include <lvox/types.hpp>
 #include <lvox/voxel/coo_grid.hpp>
+#include "lvox/logger/progress.hpp"
 
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
@@ -147,6 +148,8 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
     pdal::Stage* file_reader = stage_factory->createStage(driver);
 
     file_reader->setOptions(options);
+    auto quick_info = file_reader->preview();
+    lvox::Progress progress{quick_info.m_pointCount};
 
     {
         std::lock_guard<std::mutex> lock{g_print_guard};
@@ -158,7 +161,7 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
 
     const bool                 calculate_bounds = bounds.has_value();
     pdal::StreamCallbackFilter sc;
-    sc.setCallback([calculate_bounds, &bounds, &out](const auto& pt) mutable -> bool {
+    sc.setCallback([calculate_bounds, &bounds, &out, &progress](const auto& pt) mutable -> bool {
         const double x    = pt.template getFieldAs<double>(dim::X);
         const double y    = pt.template getFieldAs<double>(dim::Y);
         const double z    = pt.template getFieldAs<double>(dim::Z);
@@ -185,6 +188,7 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
             }
         }
 
+        progress.increase_progression_by(1);
         return true;
     });
 
@@ -193,7 +197,13 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
         sc.setInput(*file_reader);
         sc.prepare(pts_table);
 
+        std::jthread watch_progress{[&progress]() {
+            while (!progress.completed())
+                progress.print();
+        }};
+
         sc.execute(pts_table);
+        progress.completed();
     }
     catch (pdal::pdal_error e)
     {
@@ -600,7 +610,8 @@ int main(int argc, char* argv[])
         .m_pad_estimator        = g_pad_estimator,
         .m_compute_theoriticals = g_compute_theoriticals,
         .m_use_sparse_grid      = g_use_sparse_grids,
-        .m_required_hits        = g_required_hits
+        .m_required_hits        = g_required_hits,
+        .m_log_stream           = std::cout
     };
     lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
     export_to_h5(std::move(result), "lvox", g_grid_file, g_include_all_info);

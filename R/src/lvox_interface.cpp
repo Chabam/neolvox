@@ -81,7 +81,8 @@ Rcpp::List do_lvox_computation(
         .m_job_limit            = threadCount,
         .m_pad_estimator        = get_estimator_from_string(padEstimator),
         .m_compute_theoriticals = false, // TODO: support theoriticals
-        .m_use_sparse_grid      = useSparseGrid
+        .m_use_sparse_grid      = useSparseGrid,
+        .m_log_stream           = Rcpp::Rcout
     };
 
     lvox::COOGrid   grid = lvox::algorithms::compute_pad(scans, compute_options);

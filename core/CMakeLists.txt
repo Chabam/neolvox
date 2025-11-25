@@ -9,6 +9,7 @@ target_sources(lvox_core
   src/algorithms/explore_grid.cpp
   src/algorithms/compute_scene_bounds.cpp
   src/logger/logger.cpp
+  src/logger/progress.cpp
   src/scanner/beam.cpp
   src/voxel/bounded_grid.cpp
   src/voxel/bounds.cpp
