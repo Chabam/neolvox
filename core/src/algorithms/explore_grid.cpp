@@ -148,11 +148,12 @@ void explore_grid_impl(Grid& grid, const Scan& scan, const ComputeOptions& optio
     std::vector<std::jthread> threads;
     std::unique_ptr<bool[]>         thread_finished = std::make_unique<bool[]>(options.m_job_limit);
     auto start_it = scan.m_points->begin();
+    auto current_thread = 0;
     for (auto i = 0; i < point_count; i += (points_per_tasks + 1))
     {
         auto next_end = start_it + std::min(points_per_tasks, point_count - i);
-        thread_finished[i] = false;
-        threads.emplace_back(ray_trace, PointRange{start_it, next_end}, std::ref(thread_finished[i]));
+        thread_finished[current_thread++] = false;
+        threads.emplace_back(ray_trace, PointRange{start_it, next_end}, std::ref(thread_finished[current_thread]));
 
         start_it = next_end + 1;
     }
