@@ -322,19 +322,22 @@ void export_to_h5(
     lvox::Logger     logger{"Grid HDF5 export"};
     H5::H5File file;
     if (std::filesystem::exists(filename))
+    {
+        logger.warn("Removing existing h5 file: {}", filename.string());
         std::filesystem::remove(filename);
+    }
 
-    file = H5::H5File{filename.string(), H5F_ACC_TRUNC};
-    std::vector<unsigned int> xs = std::move(grid.xs());
-    std::vector<unsigned int> ys = std::move(grid.ys());
-    std::vector<unsigned int> zs = std::move(grid.zs());
-    std::vector<unsigned int> counts = std::move(grid.counts());
-    std::vector<unsigned int> hits = std::move(grid.hits());
-    std::vector<double>       pads = std::move(grid.pads());
-    std::vector<double>       lengths = std::move(grid.lengths());
-    std::vector<double>       hits_lengths = std::move(grid.hits_lengths());
-    std::vector<double>       lengths_variance = std::move(grid.lengths_variance());
-    lvox::BoundedGrid         bounded_grid     = std::move(grid.bounds());
+    file                                       = H5::H5File{filename.string(), H5F_ACC_TRUNC};
+    std::vector<unsigned int> xs               = grid.xs();
+    std::vector<unsigned int> ys               = grid.ys();
+    std::vector<unsigned int> zs               = grid.zs();
+    std::vector<unsigned int> counts           = grid.counts();
+    std::vector<unsigned int> hits             = grid.hits();
+    std::vector<double>       pads             = grid.pads();
+    std::vector<double>       lengths          = grid.lengths();
+    std::vector<double>       hits_lengths     = grid.hits_lengths();
+    std::vector<double>       lengths_variance = grid.lengths_variance();
+    lvox::BoundedGrid         bounded_grid     = grid.bounds();
 
     const hsize_t voxels_with_data = std::ranges::distance(pads);
 

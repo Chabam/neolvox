@@ -1,3 +1,4 @@
+#include <future>
 #include <thread>
 #include <numbers>
 
@@ -40,7 +41,7 @@ void explore_grid_impl(Grid& grid, const Scan& scan, const ComputeOptions& optio
         const_iterator end() const { return m_end; }
     };
 
-    const auto ray_trace = [&](const PointRange& points, bool& finished) -> void {
+    const auto ray_trace = [&](const PointRange& points) -> void {
         for (const auto& timed_point : points)
         {
             const double gps_time = timed_point.m_gps_time;
@@ -139,31 +140,33 @@ void explore_grid_impl(Grid& grid, const Scan& scan, const ComputeOptions& optio
             );
             progress.increase_progression_by(1);
         }
-        finished = true;
     };
 
     const size_t point_count = scan.m_points->size();
-    const size_t points_per_tasks =
-        std::ceil(static_cast<float>(point_count) / options.m_job_limit);
-    std::vector<std::jthread> threads;
-    std::unique_ptr<bool[]>         thread_finished = std::make_unique<bool[]>(options.m_job_limit);
+    const size_t points_per_tasks = point_count / options.m_job_limit;
+    std::vector<std::future<void>> threads;
     auto start_it = scan.m_points->begin();
     auto current_thread = 0;
-    for (auto i = 0; i < point_count; i += (points_per_tasks + 1))
+    for (auto i = 0; i < point_count; i += points_per_tasks, ++current_thread)
     {
         auto next_end = start_it + std::min(points_per_tasks, point_count - i);
-        thread_finished[current_thread++] = false;
-        threads.emplace_back(ray_trace, PointRange{start_it, next_end}, std::ref(thread_finished[current_thread]));
-
-        start_it = next_end + 1;
+        threads.push_back(std::async(std::launch::async, ray_trace, PointRange{start_it, next_end}));
+        start_it = next_end;
     }
 
     while (!progress.completed())
     {
-        if (std::all_of(thread_finished.get(), thread_finished.get() + (options.m_job_limit - 1), std::identity{}))
+        if (std::all_of(
+                threads.begin(),
+                threads.end(),
+                [](const std::future<void>& thread) {
+                    return thread.wait_for(std::chrono::seconds{0}) == std::future_status::ready;
+                }
+            ))
             progress.stop();
 
         progress.print();
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 void explore_grid_theoriticals(Grid& grid, const Scan& scan, const ComputeOptions& options)
