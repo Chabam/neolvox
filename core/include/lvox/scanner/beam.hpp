@@ -6,24 +6,49 @@
 namespace lvox
 {
 
+template <Point PointT>
 class Beam
 {
   public:
-    Beam() = default;
-    Beam(const Point& origin, const Vector& direction);
+    Beam(const PointT& origin, const Vector& direction)
+        : m_origin{origin}
+        , m_direction{direction.normalized()}
+    {
+    }
 
-    ~Beam() = default;
+    Beam(Beam&& other)
+        : m_origin{std::move(other.m_origin)}
+        , m_direction{std::move(other.m_direction)}
+    {
+    }
 
-    Beam(Beam&&);
-    Beam(const Beam&);
-    Beam& operator=(Beam&&);
-    Beam& operator=(const Beam&);
+    Beam(const Beam& other)
+        : m_origin{other.m_origin}
+        , m_direction{other.m_direction}
+    {
+    }
 
-    Point origin() const { return m_origin; };
-    Point direction() const { return m_direction; };
+    Beam& operator=(Beam&& other)
+    {
+        m_origin    = std::move(other.m_origin);
+        m_direction = std::move(other.m_direction);
+
+        return *this;
+    }
+
+    Beam& operator=(const Beam& other)
+    {
+        m_origin    = other.m_origin;
+        m_direction = other.m_direction;
+
+        return *this;
+    }
+
+    PointT origin() const { return m_origin; };
+    PointT direction() const { return m_direction; };
 
   private:
-    Point  m_origin;
+    PointT m_origin;
     Vector m_direction;
 };
 

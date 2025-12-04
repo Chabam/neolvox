@@ -3,24 +3,20 @@
 
 #include <vector>
 
+#include <lvox/algorithms/compute_options.hpp>
+#include <lvox/algorithms/compute_scene_bounds.hpp>
+#include <lvox/algorithms/explore_grid.hpp>
+#include <lvox/logger/logger.hpp>
+#include <lvox/scanner/scan.hpp>
+#include <lvox/types.hpp>
+#include <lvox/voxel/coo_grid.hpp>
+#include <lvox/voxel/grid.hpp>
+
 namespace lvox
 {
 
-class COOGrid;
-struct Scan;
-
 namespace algorithms
 {
-
-namespace pad_estimators
-{
-struct BeerLambert;
-struct ContactFrequency;
-struct UnequalPathLengthBeerLambert;
-struct BiasCorrectedMaximumLikelyhoodEstimator;
-} // namespace pad_estimators
-
-struct ComputeOptions;
 
 class PADEstimation
 {
@@ -32,9 +28,11 @@ class PADEstimation
     void operator()(algorithms::pad_estimators::BiasCorrectedMaximumLikelyhoodEstimator);
 
   private:
-    COOGrid& m_grid;
+    COOGrid&     m_grid;
     unsigned int m_required_hits;
 };
+
+void compute_pad(COOGrid& grid, const ComputeOptions& options);
 
 //  Wrapper for the whole PAD computation. Does the following:
 //
@@ -45,10 +43,53 @@ class PADEstimation
 //   - Compute with the beams from a virtual scanner if requested
 //   - Compute the PAD values for each voxels using the values from the computed grids
 // - Averages the PAD values from every scans
+template <Point PointT, TimedPoint TimedPointT, PointCloud<TimedPointT> PointCloudT>
 [[nodiscard]]
-COOGrid compute_pad(const std::vector<Scan>& scans, const ComputeOptions& options);
+COOGrid compute_pad(
+    const std::vector<Scan<PointT, TimedPointT, PointCloudT>>& scans, const ComputeOptions& options
+)
+{
+    namespace pe = lvox::algorithms::pad_estimators;
 
-void compute_pad(COOGrid& grid, const ComputeOptions& options);
+    Logger logger{"LVOX"};
+    logger.info("Scan count {}", scans.size());
+
+    const bool uses_variance =
+        std::holds_alternative<pe::UnequalPathLengthBeerLambert>(options.m_pad_estimator);
+
+    Grid grid = std::invoke([&]() -> Grid {
+        if (options.m_use_sparse_grid)
+            return ChunkedGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
+        else
+            return DenseGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
+    });
+
+    auto scan_num = 1;
+    for (const auto& scan : scans)
+    {
+        if (options.m_compute_theoriticals && scan.m_blank_shots)
+        {
+            logger.info("Compute theoriticals {}/{}", scan_num, scans.size());
+            explore_grid_theoriticals(grid, scan, options);
+        }
+
+        logger.info("Compute ray counts and length {}/{}", scan_num, scans.size());
+        explore_grid(grid, scan, options);
+        ++scan_num;
+    }
+
+    COOGrid result = std::visit(
+        [](const auto& grid) -> COOGrid {
+            return COOGrid{grid};
+        },
+        grid
+    );
+
+    logger.info("Estimating PAD", scan_num, scans.size());
+    compute_pad(result, options);
+
+    return result;
+}
 
 } // namespace algorithms
 

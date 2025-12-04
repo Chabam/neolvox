@@ -145,45 +145,4 @@ void compute_pad(COOGrid& grid, const ComputeOptions& options)
     std::visit(PADEstimation{grid, options.m_required_hits}, options.m_pad_estimator);
 }
 
-COOGrid compute_pad(const std::vector<lvox::Scan>& scans, const ComputeOptions& options)
-{
-    Logger logger{"LVOX"};
-    logger.info("Scan count {}", scans.size());
-
-    const bool uses_variance =
-        std::holds_alternative<pe::UnequalPathLengthBeerLambert>(options.m_pad_estimator);
-
-    Grid grid = std::invoke([&]() -> Grid {
-        if (options.m_use_sparse_grid)
-            return ChunkedGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
-        else
-            return DenseGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
-    });
-
-    auto scan_num = 1;
-    for (const auto& scan : scans)
-    {
-        if (options.m_compute_theoriticals && scan.m_blank_shots)
-        {
-            logger.info("Compute theoriticals {}/{}", scan_num, scans.size());
-            explore_grid_theoriticals(grid, scan, options);
-        }
-
-        logger.info("Compute ray counts and length {}/{}", scan_num, scans.size());
-        explore_grid(grid, scan, options);
-        ++scan_num;
-    }
-
-    COOGrid result = std::visit(
-        [](const auto& grid) -> COOGrid {
-            return COOGrid{grid};
-        },
-        grid
-    );
-
-    logger.info("Estimating PAD", scan_num, scans.size());
-    compute_pad(result, options);
-
-    return result;
-}
 } // namespace lvox::algorithms

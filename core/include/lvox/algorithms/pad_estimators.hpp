@@ -44,8 +44,6 @@ using PADEstimator = std::variant<
 
 } // namespace pad_estimators
 
-namespace pe = pad_estimators;
-
 } // namespace lvox::algorithms
 
 #endif // LVOX_PAD_ESTIMATORS_HPP

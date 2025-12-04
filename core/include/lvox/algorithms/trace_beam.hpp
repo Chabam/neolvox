@@ -26,7 +26,7 @@ struct VoxelHitInfo
     double  m_distance_in_voxel;
 };
 
-template <bool exact_distance>
+template <Point PointT, bool exact_distance>
 struct TraceBeam
 {
     TraceBeam(const BoundedGrid& grid)
@@ -34,9 +34,9 @@ struct TraceBeam
 
     template <typename HitCallback>
     void operator()(
-        const Beam&   beam,
-        HitCallback&& callback,
-        const double  max_distance = std::numeric_limits<double>::infinity()
+        const Beam<PointT>& beam,
+        HitCallback&&       callback,
+        const double        max_distance = std::numeric_limits<double>::infinity()
     )
     {
 
@@ -52,7 +52,7 @@ struct TraceBeam
         const size_t dim_z     = m_grid.dim_z();
         const double cell_size = m_grid.cell_size();
 
-        const Point  beam_origin    = beam.origin();
+        const PointT beam_origin    = beam.origin();
         const Vector beam_direction = beam.direction();
 
         if (!bounds.contains(beam_origin.x(), beam_origin.y(), beam_origin.z()))
@@ -212,8 +212,11 @@ struct TraceBeam
     const BoundedGrid& m_grid;
 };
 
-using TraceBeamVoxelRounding = TraceBeam<false>;
-using TraceBeamExactDistance = TraceBeam<true>;
+template <Point PointT>
+using TraceBeamVoxelRounding = TraceBeam<PointT, false>;
+
+template <Point PointT>
+using TraceBeamExactDistance = TraceBeam<PointT, true>;
 
 } // namespace lvox::algorithms
 

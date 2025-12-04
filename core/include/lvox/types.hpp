@@ -2,23 +2,30 @@
 #define LVOX_TYPES_HPP
 
 #include <Eigen/Eigen>
-#include <memory>
-#include <vector>
+#include <concepts>
 
 namespace lvox
 {
-using Vector = Eigen::Vector3d;
-using Point  = Eigen::Vector3d;
 
-struct TimedPoint
-{
-    double m_gps_time;
-    Point  m_point;
+template <typename T>
+concept Point = requires(const T& pts) {
+    { pts.x() } -> std::convertible_to<double>;
+    { pts.y() } -> std::convertible_to<double>;
+    { pts.z() } -> std::convertible_to<double>;
 };
 
-using PointCloud     = std::vector<TimedPoint>;
-using PointCloudView = std::unique_ptr<PointCloud>;
-using Index3D        = std::array<unsigned int, 3>;
+using Vector = Eigen::Vector3d;
+
+template <typename T>
+concept TimedPoint = Point<T> && requires(const T& pts) {
+    { pts.gps_time() } -> std::convertible_to<double>;
+};
+
+template <typename T, typename V>
+concept PointCloud =
+    std::ranges::range<T> && TimedPoint<V> && std::same_as<std::ranges::range_value_t<T>, V>;
+
+using Index3D = std::array<unsigned int, 3>;
 } // namespace lvox
 
 #endif // LVOX_TYPES_HPP

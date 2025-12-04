@@ -21,8 +21,8 @@
 #include <pdal/io/BufferReader.hpp>
 #include <pdal/io/LasReader.hpp>
 
-#include <lvox/algorithms/compute_pad.hpp>
 #include <lvox/algorithms/compute_options.hpp>
+#include <lvox/algorithms/compute_pad.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/logger/logger.hpp>
 #include <lvox/scanner/scan.hpp>
@@ -30,6 +30,7 @@
 #include <lvox/scanner/trajectory.hpp>
 #include <lvox/types.hpp>
 #include <lvox/voxel/coo_grid.hpp>
+
 #include "lvox/logger/progress.hpp"
 
 constexpr auto g_usage_info =
@@ -87,25 +88,44 @@ Options:
 namespace lvox_pe = lvox::algorithms::pad_estimators;
 namespace fs      = std::filesystem;
 
-bool                       g_is_mls               = false;
-bool                       g_outputs_profile      = false;
-double                     g_voxel_size           = 0.5;
-unsigned int               g_job_count            = std::thread::hardware_concurrency();
-lvox_pe::PADEstimator      g_pad_estimator        = lvox_pe::BeerLambert{};
-bool                       g_compute_theoriticals = false;
-std::optional<lvox::Point> g_scan_origin          = {};
-std::mutex                 g_print_guard          = {};
-std::optional<fs::path>    g_traj_file            = {};
-fs::path                   g_grid_file            = "out.h5";
-bool                       g_include_all_info     = false;
-bool                       g_use_sparse_grids     = false;
-unsigned int               g_required_hits        = 5;
-fs::path                   g_file;
+// Type definitions
+using Point = Eigen::Vector3d;
+
+struct TimedPoint
+{
+    double x() const { return m_point.x(); }
+    double y() const { return m_point.y(); }
+    double z() const { return m_point.z(); }
+    double gps_time() const { return m_gps_time; }
+
+    Point  m_point;
+    double m_gps_time;
+};
+
+using PointCloud = std::vector<TimedPoint>;
+using Scan = lvox::Scan<Point, TimedPoint, PointCloud>;
+using ScannerOrigin = lvox::ScannerOrigin<Point, TimedPoint, PointCloud>;
+using Trajectory = lvox::Trajectory<Point, TimedPoint, PointCloud>;
+
+bool                    g_is_mls               = false;
+bool                    g_outputs_profile      = false;
+double                  g_voxel_size           = 0.5;
+unsigned int            g_job_count            = std::thread::hardware_concurrency();
+lvox_pe::PADEstimator   g_pad_estimator        = lvox_pe::BeerLambert{};
+bool                    g_compute_theoriticals = false;
+std::optional<Point>    g_scan_origin          = {};
+std::mutex              g_print_guard          = {};
+std::optional<fs::path> g_traj_file            = {};
+fs::path                g_grid_file            = "out.h5";
+bool                    g_include_all_info     = false;
+bool                    g_use_sparse_grids     = false;
+unsigned int            g_required_hits        = 5;
+fs::path                g_file;
 
 struct PointCloudWithTheoriticalShots
 {
-    lvox::PointCloudView                m_point_cloud;
-    std::optional<lvox::PointCloudView> m_blank_shots;
+    PointCloud                m_point_cloud;
+    std::optional<PointCloud> m_blank_shots;
 };
 
 PointCloudWithTheoriticalShots load_point_cloud_from_file(
@@ -148,7 +168,7 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
     pdal::Stage* file_reader = stage_factory->createStage(driver);
 
     file_reader->setOptions(options);
-    auto quick_info = file_reader->preview();
+    auto           quick_info = file_reader->preview();
     lvox::Progress progress{quick_info.m_pointCount};
 
     {
@@ -157,7 +177,7 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
     }
 
     PointCloudWithTheoriticalShots out;
-    out.m_point_cloud = std::make_unique<lvox::PointCloud>();
+    out.m_point_cloud = PointCloud{};
 
     const bool                 calculate_bounds = bounds.has_value();
     pdal::StreamCallbackFilter sc;
@@ -171,15 +191,15 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
         {
             if (!out.m_blank_shots)
             {
-                out.m_blank_shots = std::make_unique<lvox::PointCloud>();
+                out.m_blank_shots = PointCloud{};
             }
             (*out.m_blank_shots)
-                ->emplace_back(pt.template getFieldAs<double>(dim::GpsTime), lvox::Point{x, y, z});
+                .emplace_back(Point{x, y, z}, pt.template getFieldAs<double>(dim::GpsTime));
         }
         else
         {
-            out.m_point_cloud->emplace_back(
-                pt.template getFieldAs<double>(dim::GpsTime), lvox::Point{x, y, z}
+            out.m_point_cloud.emplace_back(
+                Point{x, y, z}, pt.template getFieldAs<double>(dim::GpsTime)
             );
 
             if (calculate_bounds)
@@ -214,13 +234,15 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
     return out;
 }
 
-std::vector<lvox::Scan> read_dot_in_file(const std::filesystem::path& in_file)
+std::vector<Scan> read_dot_in_file(
+    const std::filesystem::path& in_file, std::vector<PointCloudWithTheoriticalShots>& point_clouds
+)
 {
     namespace fs = std::filesystem;
     std::ifstream  fstream{in_file};
     const fs::path parent_path = in_file.parent_path();
 
-    std::vector<std::future<lvox::Scan>> scans;
+    std::vector<std::future<Scan>> scans;
     while (!fstream.eof())
     {
         std::ostringstream point_cloud_file_name;
@@ -240,45 +262,51 @@ std::vector<lvox::Scan> read_dot_in_file(const std::filesystem::path& in_file)
 
         scans.emplace_back(
             std::async(
-                [parent_path, point_cloud_file_name = point_cloud_file_name.str(), x, y, z]()
-                    -> lvox::Scan {
+                [parent_path, point_cloud_file_name = point_cloud_file_name.str(), x, y, z, &point_clouds]()
+                    -> Scan {
                     lvox::Bounds bounds;
 
-                    auto point_cloud_from_file = load_point_cloud_from_file(
+                    auto point_cloud_from_file = point_clouds.emplace_back(load_point_cloud_from_file(
                         fs::path{parent_path / point_cloud_file_name}, {bounds}
-                    );
-                    return lvox::Scan{
-                        .m_points = std::move(point_cloud_from_file.m_point_cloud),
-                        .m_scanner_origin{lvox::Point{x, y, z}},
-                        .m_bounds{bounds},
-                        .m_blank_shots{std::move(point_cloud_from_file.m_blank_shots)}
+                    ));
+
+                    Scan scan{
+                        .m_points = point_cloud_from_file.m_point_cloud,
+                        .m_scanner_origin{Point{x, y, z}},
+                        .m_bounds{bounds}
                     };
+
+                    if (point_cloud_from_file.m_blank_shots)
+                        scan.m_blank_shots = *point_cloud_from_file.m_blank_shots;
+
+                    return scan;
                 }
             )
         );
     }
 
-    std::vector<lvox::Scan> out_scans;
+    std::vector<Scan> out_scans;
     std::ranges::transform(
-        scans, std::back_inserter(out_scans), [](std::future<lvox::Scan>& future) -> lvox::Scan {
+        scans, std::back_inserter(out_scans), [](std::future<Scan>& future) -> Scan {
             return future.get();
         }
     );
     return out_scans;
 }
 
-std::vector<lvox::Scan> create_scan_using_pdal(
+Scan create_scan_using_pdal(
     const std::filesystem::path&         file,
+    PointCloudWithTheoriticalShots&      point_cloud,
     std::optional<std::filesystem::path> traj_file   = {},
-    std::optional<lvox::Point>           scan_origin = {}
+    std::optional<Point>                 scan_origin = {}
 )
 {
-    lvox::Logger            logger{"Point cloud loader"};
-    lvox::Bounds            scan_bounds;
-    auto                    scan_point_cloud = load_point_cloud_from_file(file, {scan_bounds});
-    std::vector<lvox::Scan> scans;
+    lvox::Logger      logger{"Point cloud loader"};
+    lvox::Bounds      scan_bounds;
+    point_cloud = load_point_cloud_from_file(file, {scan_bounds});
+    std::vector<Scan> scans;
 
-    lvox::ScannerOrigin scanner_origin;
+    lvox::ScannerOrigin<Point, TimedPoint, PointCloud> scanner_origin;
 
     if (traj_file)
     {
@@ -289,7 +317,7 @@ std::vector<lvox::Scan> create_scan_using_pdal(
 
         logger.info("Loading trajectory file {}", traj_file->string());
 
-        scanner_origin = std::make_shared<lvox::Trajectory>(
+        scanner_origin = std::make_shared<Trajectory>(
             load_point_cloud_from_file(*traj_file, {}).m_point_cloud
         );
     }
@@ -302,14 +330,16 @@ std::vector<lvox::Scan> create_scan_using_pdal(
         scanner_origin = lvox::Vector::Constant(0.);
     }
 
-    scans.emplace_back(
-        std::move(scan_point_cloud.m_point_cloud),
+    Scan scan{
+        point_cloud.m_point_cloud,
         scanner_origin,
-        scan_bounds,
-        std::move(scan_point_cloud.m_blank_shots)
-    );
+        scan_bounds
+    };
 
-    return scans;
+    if (point_cloud.m_blank_shots)
+        scan.m_blank_shots = *point_cloud.m_blank_shots;
+
+    return scan;
 }
 
 void export_to_h5(
@@ -319,8 +349,8 @@ void export_to_h5(
     bool                         include_all_data = false
 )
 {
-    lvox::Logger     logger{"Grid HDF5 export"};
-    H5::H5File file;
+    lvox::Logger logger{"Grid HDF5 export"};
+    H5::H5File   file;
     if (std::filesystem::exists(filename))
     {
         logger.warn("Removing existing h5 file: {}", filename.string());
@@ -450,9 +480,7 @@ void export_to_h5(
     );
 
     const std::array<double, 3> min_coords = {
-        bounded_grid.bounds().m_min_x,
-        bounded_grid.bounds().m_min_y,
-        bounded_grid.bounds().m_min_z
+        bounded_grid.bounds().m_min_x, bounded_grid.bounds().m_min_y, bounded_grid.bounds().m_min_z
     };
     min_coord_attr.write(h5_voxel_size_t, min_coords.data());
 
@@ -596,15 +624,17 @@ int main(int argc, char* argv[])
         ++arg_it;
     }
 
-    std::vector<lvox::Scan> scans;
+    std::vector<Scan> scans;
+    std::vector<PointCloudWithTheoriticalShots> point_clouds;
 
     if (g_file.extension() == ".in")
     {
-        scans = read_dot_in_file(g_file);
+        scans = read_dot_in_file(g_file, point_clouds);
     }
     else
     {
-        scans = create_scan_using_pdal(g_file, g_traj_file, g_scan_origin);
+        point_clouds.resize(1);
+        scans.emplace_back(create_scan_using_pdal(g_file, point_clouds[0], g_traj_file, g_scan_origin));
     }
 
     const lvox::algorithms::ComputeOptions compute_options{

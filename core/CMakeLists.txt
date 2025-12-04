@@ -7,18 +7,13 @@ target_sources(lvox_core
   PUBLIC
   src/algorithms/compute_pad.cpp
   src/algorithms/explore_grid.cpp
-  src/algorithms/compute_scene_bounds.cpp
   src/logger/logger.cpp
   src/logger/progress.cpp
-  src/scanner/beam.cpp
   src/voxel/bounded_grid.cpp
   src/voxel/bounds.cpp
   src/voxel/chunked_grid.cpp
   src/voxel/coo_grid.cpp
   src/voxel/dense_grid.cpp
-  src/scanner/scan.cpp
-  src/scanner/spherical_scanner.cpp
-  src/scanner/trajectory.cpp
 )
 
 find_package(Eigen3 REQUIRED CONFIG)
