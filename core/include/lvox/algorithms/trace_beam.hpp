@@ -12,14 +12,6 @@
 namespace lvox::algorithms
 {
 
-constexpr auto g_trace_beam_info = R"(
-Beam
-    beam_origin    ({}, {}, {})
-    direction ({}, {}, {})
-t_max ({}, {}, {})
-Delta ({}, {}, {})
-)";
-
 struct VoxelHitInfo
 {
     Index3D m_index;
@@ -39,8 +31,6 @@ struct TraceBeam
         const double        max_distance = std::numeric_limits<double>::infinity()
     )
     {
-
-        Logger logger{"Trace beam"};
 
         using GridIndex      = Eigen::Vector<unsigned int, 3>;
         using Step           = Eigen::Vector<signed char, 3>;
@@ -126,22 +116,6 @@ struct TraceBeam
                                  return val == 0. ? inf : val;
                              })).array() *
                              inv_dir.array();
-
-        logger.verbose(
-            g_trace_beam_info,
-            beam_origin.x(),
-            beam_origin.y(),
-            beam_origin.z(),
-            beam_direction.x(),
-            beam_direction.y(),
-            beam_direction.z(),
-            t_max.x(),
-            t_max.y(),
-            t_max.z(),
-            delta.x(),
-            delta.y(),
-            delta.z()
-        );
 
         double       total_traveled_distance = 0.;
         VoxelHitInfo current_hit{

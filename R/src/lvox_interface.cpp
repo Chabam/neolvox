@@ -194,10 +194,10 @@ struct PointCloud
     size_t size() const { return m_count; }
 
     size_t                     m_count;
-    const Rcpp::NumericVector& m_xs;
-    const Rcpp::NumericVector& m_ys;
-    const Rcpp::NumericVector& m_zs;
-    const Rcpp::NumericVector& m_gps_times;
+    Rcpp::NumericVector m_xs;
+    Rcpp::NumericVector m_ys;
+    Rcpp::NumericVector m_zs;
+    Rcpp::NumericVector m_gps_times;
 };
 
 using Scan = lvox::Scan<Point, TimedPoint, PointCloud>;
@@ -247,12 +247,12 @@ lvox_pe::PADEstimator get_estimator_from_string(std::string pe)
 
 Rcpp::List do_lvox_computation(
     const std::vector<Scan>& scans,
-    std::string                    padEstimator,
-    double                         voxelSize,
-    bool                           useSparseGrid,
-    unsigned int                   requiredHits,
-    unsigned int                   threadCount,
-    bool                           exportAllGridMetadata
+    std::string              padEstimator,
+    double                   voxelSize,
+    bool                     useSparseGrid,
+    unsigned int             requiredHits,
+    unsigned int             threadCount,
+    bool                     exportAllGridMetadata
 )
 {
     const lvox::algorithms::ComputeOptions compute_options{
@@ -329,13 +329,8 @@ Rcpp::List lvoxComputeMLS(
     }
 
     std::vector<Scan> scans;
-    scans.push_back(
-        Scan{
-            std::move(points),
-            std::make_shared<Trajectory>(read_point_cloud_from_raw_data(trajectory)),
-            bounds,
-            {}
-        }
+    scans.emplace_back(
+        points, std::make_shared<Trajectory>(read_point_cloud_from_raw_data(trajectory)), bounds
     );
 
     return do_lvox_computation(
@@ -380,24 +375,21 @@ Rcpp::List lvoxComputeTLS(
 
     lvox::Bounds            bounds;
     std::vector<Scan> scans;
+    std::vector<PointCloud> point_clouds;
     for (size_t i = 0; i < pointClouds.size(); ++i)
     {
-        PointCloud points = try_read_point_cloud_as_las(pointClouds[i]);
+        point_clouds.emplace_back(try_read_point_cloud_as_las(pointClouds[i]));
 
-        for (const auto& pt : points)
+        for (const auto& pt : point_clouds[i])
         {
             bounds.grow(pt.x(), pt.y(), pt.z());
         }
 
         const Rcpp::DoubleVector& scanners_origin = scannersOrigin[i];
+        const Point pt{scanners_origin[0], scanners_origin[1], scanners_origin[2]};
 
-        scans.push_back(
-            Scan{
-                std::move(points),
-                Point{scanners_origin[0], scanners_origin[1], scanners_origin[2]},
-                bounds,
-                {}
-            }
+        scans.emplace_back(
+            point_clouds[i], pt, bounds
         );
     }
 
