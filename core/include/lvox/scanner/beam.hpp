@@ -45,7 +45,7 @@ class Beam
     }
 
     PointT origin() const { return m_origin; };
-    PointT direction() const { return m_direction; };
+    Vector direction() const { return m_direction; };
 
   private:
     PointT m_origin;

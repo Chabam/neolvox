@@ -53,26 +53,28 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
     const auto ray_trace = [&](const PointRange& points) -> void {
         for (const auto& timed_point : points)
         {
-            const double  gps_time = timed_point.m_gps_time;
-            const PointT& pt       = timed_point.m_point;
+            const double  gps_time = timed_point.gps_time();
+            const PointT pt{timed_point.x(), timed_point.y(), timed_point.z()};
+            const Eigen::Vector3d pt_vec{timed_point.x(), timed_point.y(), timed_point.z()};
             using ComputeBeamOrigin = ScanT::ComputeBeamOrigin;
             const PointT  scan_origin =
                 std::visit(ComputeBeamOrigin{timed_point.m_gps_time}, scan.m_scanner_origin);
+            const Eigen::Vector3d scan_origin_vec{scan_origin.x(), scan_origin.y(), scan_origin.z()};
 
             // If we compute the hits, we start at the point in the
             // point cloud towards the scanner. This is done to avoid
             // recomputing the index of the point since it is provided
             // by the grid traversal.
-            const Vector beam_dir = std::invoke([&scan_origin, &pt]() -> Vector {
+            const Vector beam_dir = std::invoke([&scan_origin_vec, &pt_vec]() -> Vector {
                 if constexpr (compute_hits)
-                    return Vector{scan_origin - pt};
+                    return Vector{scan_origin_vec - pt_vec};
                 else
-                    return Vector{pt - scan_origin};
+                    return Vector{pt_vec - scan_origin_vec};
             });
 
             // Invertly, if we do not compute the hits, we start at
             // the scanner towards the point.
-            const PointT point_origin = std::invoke([&scan_origin, &pt]() -> Vector {
+            const PointT point_origin = std::invoke([&scan_origin, &pt]() -> PointT {
                 if constexpr (compute_hits)
                     return pt;
                 else

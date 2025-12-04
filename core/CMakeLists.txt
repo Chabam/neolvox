@@ -6,7 +6,6 @@ add_library(lvox_core)
 target_sources(lvox_core
   PUBLIC
   src/algorithms/compute_pad.cpp
-  src/algorithms/explore_grid.cpp
   src/logger/logger.cpp
   src/logger/progress.cpp
   src/voxel/bounded_grid.cpp

@@ -22,8 +22,10 @@ concept TimedPoint = Point<T> && requires(const T& pts) {
 };
 
 template <typename T, typename V>
-concept PointCloud =
-    std::ranges::range<T> && TimedPoint<V> && std::same_as<std::ranges::range_value_t<T>, V>;
+concept PointCloud = std::ranges::range<T> && TimedPoint<V> &&
+                     std::same_as<std::ranges::range_value_t<T>, V> && requires(const T& r) {
+                         { r.size() } -> std::convertible_to<size_t>;
+                     };
 
 using Index3D = std::array<unsigned int, 3>;
 } // namespace lvox

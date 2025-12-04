@@ -14,23 +14,202 @@ using namespace Rcpp;
 
 namespace lvox_pe = lvox::algorithms::pad_estimators;
 
-lvox::PointCloudView read_point_cloud_from_raw_data(const Rcpp::List& raw_data)
+struct Point
 {
-    const Rcpp::NumericVector& xs       = raw_data["X"];
-    const Rcpp::NumericVector& ys       = raw_data["Y"];
-    const Rcpp::NumericVector& zs       = raw_data["Z"];
-    const Rcpp::NumericVector& gpstimes = raw_data["gpstime"];
+    double x() const { return m_x; }
+    double y() const { return m_y; }
+    double z() const { return m_z; }
 
-    lvox::PointCloudView points = std::make_unique<lvox::PointCloud>(xs.size());
-    for (size_t i = 0; i < points->size(); ++i)
+    double m_x;
+    double m_y;
+    double m_z;
+};
+
+struct TimedPoint
+{
+    double x() const { return m_x; }
+    double y() const { return m_y; }
+    double z() const { return m_z; }
+    double gps_time() const { return m_gps_time; }
+
+    double m_x;
+    double m_y;
+    double m_z;
+    double m_gps_time;
+};
+
+struct PointCloud
+{
+    PointCloud(
+        const Rcpp::NumericVector& xs,
+        const Rcpp::NumericVector& ys,
+        const Rcpp::NumericVector& zs,
+        const Rcpp::NumericVector& gps_times
+    )
+        : m_count{static_cast<size_t>(xs.size())}
+        , m_xs{xs}
+        , m_ys{ys}
+        , m_zs{zs}
+        , m_gps_times{gps_times}
     {
-        (*points)[i] = lvox::TimedPoint{gpstimes[i], lvox::Point{xs[i], ys[i], zs[i]}};
     }
 
-    return points;
+    class PointIterator
+    {
+        friend class PointCloud;
+
+      public:
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type        = TimedPoint;
+        using difference_type   = std::ptrdiff_t;
+        using pointer           = value_type*;
+        using reference         = value_type&;
+        using const_reference   = const value_type&;
+
+        PointIterator()                     = default;
+        PointIterator(const PointIterator&) = default;
+
+        PointIterator& operator=(const PointIterator&) = default;
+
+        PointIterator& operator++()
+        {
+            *this += 1;
+            return *this;
+        }
+
+        PointIterator operator++(int)
+        {
+            auto tmp = *this;
+            ++*this;
+            return tmp;
+        }
+
+        PointIterator& operator--()
+        {
+            *this -= 1;
+            return *this;
+        }
+
+        PointIterator operator--(int)
+        {
+            auto tmp = *this;
+            --*this;
+            return tmp;
+        }
+
+        PointIterator operator+(difference_type diff) const
+        {
+            auto tmp = *this;
+            tmp.m_index += diff;
+            tmp.update_value();
+            return tmp;
+        }
+
+        friend PointIterator operator+(difference_type other, const PointIterator& diff)
+        {
+            return other + diff;
+        }
+
+        PointIterator operator-(difference_type diff) const
+        {
+            auto tmp = *this - diff;
+            tmp.m_index -= diff;
+            tmp.update_value();
+            return tmp;
+        }
+
+        difference_type operator-(const PointIterator& other) const
+        {
+            return m_index - other.m_index;
+        }
+
+        PointIterator& operator+=(difference_type diff)
+        {
+            m_index += diff;
+            update_value();
+            return *this;
+        }
+
+        PointIterator& operator-=(difference_type diff)
+        {
+            m_index -= diff;
+            update_value();
+            return *this;
+        }
+
+        value_type operator*() const { return *m_value; }
+        pointer    operator->() { return &(*m_value); }
+
+        bool operator==(const PointIterator& other) const
+        {
+            return m_point_cloud == other.m_point_cloud && m_index == other.m_index;
+        }
+
+        bool operator!=(const PointIterator& other) const { return !(*this == other); }
+
+        bool operator<(const PointIterator& other) const { return m_index < other.m_index; }
+        bool operator>(const PointIterator& other) const { return m_index > other.m_index; }
+
+        bool operator<=(const PointIterator& other) const { return !(*this > other); }
+        bool operator>=(const PointIterator& other) const { return !(*this < other); }
+
+        value_type operator[](difference_type diff) const { return *(*this + diff); }
+
+      private:
+        size_t                    m_index;
+        const PointCloud*         m_point_cloud;
+        std::optional<value_type> m_value;
+
+        PointIterator(const PointCloud* point_cloud, size_t idx)
+            : m_index{idx}
+            , m_point_cloud{point_cloud}
+            , m_value{}
+        {
+            update_value();
+        }
+
+        void update_value()
+        {
+            if (m_index >= m_point_cloud->m_count || m_index < 0)
+            {
+                m_value.reset();
+                return;
+            }
+
+            m_value = value_type{
+                m_point_cloud->m_xs[m_index],
+                m_point_cloud->m_ys[m_index],
+                m_point_cloud->m_zs[m_index],
+                m_point_cloud->m_gps_times[m_index],
+            };
+        }
+    };
+
+    using const_iterator = PointIterator;
+
+    static_assert(std::random_access_iterator<const_iterator>);
+
+    const_iterator begin() const { return const_iterator{this, 0}; }
+    const_iterator end() const { return const_iterator{this, m_count}; }
+    size_t size() const { return m_count; }
+
+    size_t                     m_count;
+    const Rcpp::NumericVector& m_xs;
+    const Rcpp::NumericVector& m_ys;
+    const Rcpp::NumericVector& m_zs;
+    const Rcpp::NumericVector& m_gps_times;
+};
+
+using Scan = lvox::Scan<Point, TimedPoint, PointCloud>;
+using ScannerOrigin = lvox::ScannerOrigin<Point, TimedPoint, PointCloud>;
+using Trajectory = lvox::Trajectory<Point, TimedPoint, PointCloud>;
+
+PointCloud read_point_cloud_from_raw_data(const Rcpp::List& raw_data)
+{
+    return PointCloud{raw_data["X"], raw_data["Y"], raw_data["Z"], raw_data["gpstime"]};
 }
 
-lvox::PointCloudView try_read_point_cloud_as_las(const SEXP& expr)
+PointCloud try_read_point_cloud_as_las(const SEXP& expr)
 {
     try
     {
@@ -67,7 +246,7 @@ lvox_pe::PADEstimator get_estimator_from_string(std::string pe)
 }
 
 Rcpp::List do_lvox_computation(
-    const std::vector<lvox::Scan>& scans,
+    const std::vector<Scan>& scans,
     std::string                    padEstimator,
     double                         voxelSize,
     bool                           useSparseGrid,
@@ -141,19 +320,19 @@ Rcpp::List lvoxComputeMLS(
     unsigned int      threadCount           = 8
 )
 {
-    lvox::Bounds         bounds;
-    lvox::PointCloudView points = try_read_point_cloud_as_las(pointCloud);
+    lvox::Bounds bounds;
+    PointCloud   points = try_read_point_cloud_as_las(pointCloud);
 
-    for (auto& pt : *points)
+    for (const auto& pt : points)
     {
-        bounds.grow(pt.m_point.x(), pt.m_point.y(), pt.m_point.z());
+        bounds.grow(pt.x(), pt.y(), pt.z());
     }
 
-    std::vector<lvox::Scan> scans;
+    std::vector<Scan> scans;
     scans.push_back(
-        lvox::Scan{
+        Scan{
             std::move(points),
-            std::make_shared<lvox::Trajectory>(read_point_cloud_from_raw_data(trajectory)),
+            std::make_shared<Trajectory>(read_point_cloud_from_raw_data(trajectory)),
             bounds,
             {}
         }
@@ -200,22 +379,22 @@ Rcpp::List lvoxComputeTLS(
         );
 
     lvox::Bounds            bounds;
-    std::vector<lvox::Scan> scans;
+    std::vector<Scan> scans;
     for (size_t i = 0; i < pointClouds.size(); ++i)
     {
-        lvox::PointCloudView points = try_read_point_cloud_as_las(pointClouds[i]);
+        PointCloud points = try_read_point_cloud_as_las(pointClouds[i]);
 
-        for (auto& pt : *points)
+        for (const auto& pt : points)
         {
-            bounds.grow(pt.m_point.x(), pt.m_point.y(), pt.m_point.z());
+            bounds.grow(pt.x(), pt.y(), pt.z());
         }
 
         const Rcpp::DoubleVector& scanners_origin = scannersOrigin[i];
 
         scans.push_back(
-            lvox::Scan{
+            Scan{
                 std::move(points),
-                lvox::Point{scanners_origin[0], scanners_origin[1], scanners_origin[2]},
+                Point{scanners_origin[0], scanners_origin[1], scanners_origin[2]},
                 bounds,
                 {}
             }

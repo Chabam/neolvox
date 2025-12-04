@@ -2,6 +2,7 @@
 #define LVOX_VOXEL_CHUNKED_GRID_HPP
 
 #include <atomic>
+#include <memory>
 #include <mutex>
 
 #include <lvox/types.hpp>

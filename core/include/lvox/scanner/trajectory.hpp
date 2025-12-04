@@ -12,7 +12,7 @@ class Trajectory
 {
   public:
     Trajectory(const PointCloudT& trajectory_points)
-        : m_traj_points{trajectory_points}
+        : m_traj_points{trajectory_points.begin(), trajectory_points.end()}
     {
         std::ranges::sort(
             m_traj_points, [](const TimedPointT& lhs, const TimedPointT& rhs) -> bool {
@@ -28,7 +28,7 @@ class Trajectory
             m_traj_points.end(),
             gps_time,
             [](const TimedPointT pt, double time) {
-                return pt.m_gps_time < time;
+                return pt.gps_time() < time;
             }
         );
 
@@ -42,20 +42,20 @@ class Trajectory
         // requested gps time by linear interpolation.
         const auto   p1   = *(upper - 1);
         const auto   p2   = *upper;
-        const double t1   = p1.m_gps_time;
-        const double t2   = p2.m_gps_time;
+        const double t1   = p1.gps_time();
+        const double t2   = p2.gps_time();
         const double frac = (gps_time - t1) / (t2 - t1);
 
         return PointT{
-            std::lerp(p1.m_point.x(), p2.m_point.x(), frac),
-            std::lerp(p1.m_point.y(), p2.m_point.y(), frac),
-            std::lerp(p1.m_point.z(), p2.m_point.z(), frac)
+            std::lerp(p1.x(), p2.x(), frac),
+            std::lerp(p1.y(), p2.y(), frac),
+            std::lerp(p1.z(), p2.z(), frac)
         };
     }
     const PointCloudT& get_points() const { return m_traj_points; }
 
   private:
-    PointCloudT m_traj_points;
+    std::vector<TimedPointT> m_traj_points;
 };
 } // namespace lvox
 
