@@ -12,15 +12,14 @@
 namespace lvox
 {
 
-template <Point PointT, TimedPoint TimedPointT, PointCloud<TimedPointT> PointCloudT>
-using ScannerOrigin =
-    std::variant<PointT, std::shared_ptr<Trajectory<PointT, TimedPointT, PointCloudT>>>;
+template <Point PointT, PointCloud<PointT> PointCloudT>
+using ScannerOrigin = std::variant<PointT, Trajectory<PointT, PointCloudT>>;
 
-template <Point PointT, TimedPoint TimedPointT, PointCloud<TimedPointT> PointCloudT>
+template <Point PointT, PointCloud<PointT> PointCloudT>
 struct Scan
 {
     const PointCloudT&                                 m_points;
-    ScannerOrigin<PointT, TimedPointT, PointCloudT>    m_scanner_origin;
+    ScannerOrigin<PointT, PointCloudT>                 m_scanner_origin;
     Bounds                                             m_bounds;
     std::optional<std::reference_wrapper<PointCloudT>> m_blank_shots;
 
@@ -28,11 +27,9 @@ struct Scan
     {
         const double gps_time;
         PointT       operator()(const PointT& scan_origin) { return scan_origin; }
-        PointT       operator()(
-            const std::shared_ptr<Trajectory<PointT, TimedPointT, PointCloudT>>& trajectory
-        )
+        PointT       operator()(const Trajectory<PointT, PointCloudT>& trajectory)
         {
-            const auto point = trajectory->interpolate_point_from_gps_time(gps_time);
+            const auto point = trajectory.interpolate_point_from_gps_time(gps_time);
 
             if (!point)
             {

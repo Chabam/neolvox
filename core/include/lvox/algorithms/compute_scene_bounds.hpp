@@ -10,8 +10,8 @@ namespace lvox
 namespace algorithms
 {
 
-template <Point PointT, TimedPoint TimedPointT, PointCloud<TimedPointT> PointCloudT>
-lvox::Bounds compute_scene_bounds(const std::vector<Scan<PointT, TimedPointT, PointCloudT>>& scans)
+template <Point PointT, PointCloud<PointT> PointCloudT>
+lvox::Bounds compute_scene_bounds(const std::vector<Scan<PointT, PointCloudT>>& scans)
 {
     Bounds total_bounds;
 

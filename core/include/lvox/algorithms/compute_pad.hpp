@@ -43,10 +43,10 @@ void compute_pad(COOGrid& grid, const ComputeOptions& options);
 //   - Compute with the beams from a virtual scanner if requested
 //   - Compute the PAD values for each voxels using the values from the computed grids
 // - Averages the PAD values from every scans
-template <Point PointT, TimedPoint TimedPointT, PointCloud<TimedPointT> PointCloudT>
+template <Point PointT, PointCloud<PointT> PointCloudT>
 [[nodiscard]]
 COOGrid compute_pad(
-    const std::vector<Scan<PointT, TimedPointT, PointCloudT>>& scans, const ComputeOptions& options
+    const std::vector<Scan<PointT, PointCloudT>>& scans, const ComputeOptions& options
 )
 {
     namespace pe = lvox::algorithms::pad_estimators;

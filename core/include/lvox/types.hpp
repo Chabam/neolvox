@@ -12,17 +12,13 @@ concept Point = requires(const T& pts) {
     { pts.x() } -> std::convertible_to<double>;
     { pts.y() } -> std::convertible_to<double>;
     { pts.z() } -> std::convertible_to<double>;
+    { pts.gps_time() } -> std::convertible_to<double>;
 };
 
 using Vector = Eigen::Vector3d;
 
-template <typename T>
-concept TimedPoint = Point<T> && requires(const T& pts) {
-    { pts.gps_time() } -> std::convertible_to<double>;
-};
-
 template <typename T, typename V>
-concept PointCloud = std::ranges::range<T> && TimedPoint<V> &&
+concept PointCloud = std::ranges::range<T> && Point<V> &&
                      std::same_as<std::ranges::range_value_t<T>, V> && requires(const T& r) {
                          { r.size() } -> std::convertible_to<size_t>;
                      };

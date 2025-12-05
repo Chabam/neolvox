@@ -7,7 +7,7 @@
 namespace lvox
 {
 
-template <Point PointT, TimedPoint TimedPointT, PointCloud<TimedPointT> PointCloudT>
+template <Point PointT, PointCloud<PointT> PointCloudT>
 class Trajectory
 {
   public:
@@ -15,7 +15,7 @@ class Trajectory
         : m_traj_points{trajectory_points.begin(), trajectory_points.end()}
     {
         std::ranges::sort(
-            m_traj_points, [](const TimedPointT& lhs, const TimedPointT& rhs) -> bool {
+            m_traj_points, [](const PointT& lhs, const PointT& rhs) -> bool {
                 return lhs.gps_time() < rhs.gps_time();
             }
         );
@@ -27,7 +27,7 @@ class Trajectory
             m_traj_points.begin(),
             m_traj_points.end(),
             gps_time,
-            [](const TimedPointT pt, double time) {
+            [](const PointT pt, double time) {
                 return pt.gps_time() < time;
             }
         );
@@ -55,7 +55,7 @@ class Trajectory
     const PointCloudT& get_points() const { return m_traj_points; }
 
   private:
-    std::vector<TimedPointT> m_traj_points;
+    std::vector<PointT> m_traj_points;
 };
 } // namespace lvox
 

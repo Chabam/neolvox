@@ -2,11 +2,12 @@
 #define LVOX_EXPLORE_GRID_HPP
 
 #include <future>
+
 #include <lvox/algorithms/compute_options.hpp>
-#include <lvox/scanner/scan.hpp>
-#include <lvox/voxel/grid.hpp>
 #include <lvox/algorithms/trace_beam.hpp>
 #include <lvox/logger/progress.hpp>
+#include <lvox/scanner/scan.hpp>
+#include <lvox/voxel/grid.hpp>
 
 namespace lvox
 {
@@ -18,11 +19,10 @@ namespace pe = lvox::algorithms::pad_estimators;
 
 template <
     typename ScanT,
-    Point                   PointT,
-    TimedPoint              TimedPointT,
-    PointCloud<TimedPointT> PointCloudT,
-    bool                    limit_ray_length,
-    bool                    compute_hits,
+    Point              PointT,
+    PointCloud<PointT> PointCloudT,
+    bool               limit_ray_length,
+    bool               compute_hits,
     typename PadEstimator>
 void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& options, Logger logger)
 {
@@ -53,13 +53,14 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
     const auto ray_trace = [&](const PointRange& points) -> void {
         for (const auto& timed_point : points)
         {
-            const double  gps_time = timed_point.gps_time();
-            const PointT pt{timed_point.x(), timed_point.y(), timed_point.z()};
+            const double          gps_time = timed_point.gps_time();
             const Eigen::Vector3d pt_vec{timed_point.x(), timed_point.y(), timed_point.z()};
             using ComputeBeamOrigin = ScanT::ComputeBeamOrigin;
-            const PointT  scan_origin =
-                std::visit(ComputeBeamOrigin{timed_point.m_gps_time}, scan.m_scanner_origin);
-            const Eigen::Vector3d scan_origin_vec{scan_origin.x(), scan_origin.y(), scan_origin.z()};
+            const PointT scan_origin =
+                std::visit(ComputeBeamOrigin{gps_time}, scan.m_scanner_origin);
+            const Eigen::Vector3d scan_origin_vec{
+                scan_origin.x(), scan_origin.y(), scan_origin.z()
+            };
 
             // If we compute the hits, we start at the point in the
             // point cloud towards the scanner. This is done to avoid
@@ -74,9 +75,9 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
 
             // Invertly, if we do not compute the hits, we start at
             // the scanner towards the point.
-            const PointT point_origin = std::invoke([&scan_origin, &pt]() -> PointT {
+            const PointT point_origin = std::invoke([&scan_origin, &timed_point]() -> PointT {
                 if constexpr (compute_hits)
-                    return pt;
+                    return timed_point;
                 else
                     return scan_origin;
             });
@@ -180,51 +181,39 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
     }
 }
 
-template <Point PointT, TimedPoint TimedPointT, PointCloud<TimedPointT> PointCloudT>
-void explore_grid(
-    Grid& grid, const Scan<PointT, TimedPointT, PointCloudT>& scan, const ComputeOptions& options
-)
+template <Point PointT, PointCloud<PointT> PointCloudT>
+void explore_grid(Grid& grid, const Scan<PointT, PointCloudT>& scan, const ComputeOptions& options)
 {
-    using ScanT                     = Scan<PointT, TimedPointT, PointCloudT>;
+    using ScanT                     = Scan<PointT, PointCloudT>;
     constexpr bool limit_ray_length = true;
     constexpr bool compute_hits     = true;
     Logger         logger{"Explore grid", options.m_log_stream};
     std::visit(
         [&](auto&& chosen_estimator) {
             using T = std::decay_t<decltype(chosen_estimator)>;
-            explore_grid_impl<
-                ScanT,
-                PointT,
-                TimedPointT,
-                PointCloudT,
-                limit_ray_length,
-                compute_hits,
-                T>(grid, scan, options, logger);
+            explore_grid_impl<ScanT, PointT, PointCloudT, limit_ray_length, compute_hits, T>(
+                grid, scan, options, logger
+            );
         },
         options.m_pad_estimator
     );
 }
 
-template <Point PointT, TimedPoint TimedPointT, PointCloud<TimedPointT> PointCloudT>
+template <Point PointT, PointCloud<PointT> PointCloudT>
 void explore_grid_theoriticals(
-    Grid& grid, const Scan<PointT, TimedPointT, PointCloudT>& scan, const ComputeOptions& options
+    Grid& grid, const Scan<PointT, PointCloudT>& scan, const ComputeOptions& options
 )
 {
-    using ScanT = Scan<PointT, TimedPointT, PointCloudT>;
+    using ScanT                     = Scan<PointT, PointCloudT>;
     constexpr bool limit_ray_length = false;
     constexpr bool compute_hits     = false;
     Logger         logger{"Explore grid theoriticals", options.m_log_stream};
     std::visit(
         [&](auto&& chosen_estimator) {
             using T = std::decay_t<decltype(chosen_estimator)>;
-            explore_grid_impl<
-                ScanT,
-                PointT,
-                TimedPointT,
-                PointCloudT,
-                limit_ray_length,
-                compute_hits,
-                T>(grid, scan, options, logger);
+            explore_grid_impl<ScanT, PointT, PointCloudT, limit_ray_length, compute_hits, T>(
+                grid, scan, options, logger
+            );
         },
         options.m_pad_estimator
     );

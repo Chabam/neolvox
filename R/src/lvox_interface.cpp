@@ -1,31 +1,21 @@
 #include <Rcpp.h>
-#include <lvox/types.hpp>
-#include <lvox/algorithms/compute_options.hpp>
-#include <lvox/algorithms/compute_pad.hpp>
-#include <lvox/voxel/coo_grid.hpp>
-#include <lvox/scanner/scan.hpp>
-#include <lvox/scanner/trajectory.hpp>
-#include <lvox/voxel/bounds.hpp>
 #include <Rcpp/DataFrame.h>
 #include <Rcpp/macros/module.h>
 #include <Rcpp/vector/instantiation.h>
+
+#include <lvox/algorithms/compute_options.hpp>
+#include <lvox/algorithms/compute_pad.hpp>
+#include <lvox/scanner/scan.hpp>
+#include <lvox/scanner/trajectory.hpp>
+#include <lvox/types.hpp>
+#include <lvox/voxel/bounds.hpp>
+#include <lvox/voxel/coo_grid.hpp>
 
 using namespace Rcpp;
 
 namespace lvox_pe = lvox::algorithms::pad_estimators;
 
 struct Point
-{
-    double x() const { return m_x; }
-    double y() const { return m_y; }
-    double z() const { return m_z; }
-
-    double m_x;
-    double m_y;
-    double m_z;
-};
-
-struct TimedPoint
 {
     double x() const { return m_x; }
     double y() const { return m_y; }
@@ -60,7 +50,7 @@ struct PointCloud
 
       public:
         using iterator_category = std::random_access_iterator_tag;
-        using value_type        = TimedPoint;
+        using value_type        = Point;
         using difference_type   = std::ptrdiff_t;
         using pointer           = value_type*;
         using reference         = value_type&;
@@ -101,7 +91,7 @@ struct PointCloud
         {
             auto tmp = *this;
             tmp.m_index += diff;
-            tmp.update_value();
+            tmp.change_index();
             return tmp;
         }
 
@@ -114,7 +104,7 @@ struct PointCloud
         {
             auto tmp = *this - diff;
             tmp.m_index -= diff;
-            tmp.update_value();
+            tmp.change_index();
             return tmp;
         }
 
@@ -126,14 +116,14 @@ struct PointCloud
         PointIterator& operator+=(difference_type diff)
         {
             m_index += diff;
-            update_value();
+            change_index();
             return *this;
         }
 
         PointIterator& operator-=(difference_type diff)
         {
             m_index -= diff;
-            update_value();
+            change_index();
             return *this;
         }
 
@@ -163,25 +153,34 @@ struct PointCloud
         PointIterator(const PointCloud* point_cloud, size_t idx)
             : m_index{idx}
             , m_point_cloud{point_cloud}
-            , m_value{}
+            , m_value{std::invoke([this]() -> std::optional<value_type> {
+                if (m_index < m_point_cloud->m_count)
+                    return value_type{
+                        m_point_cloud->m_xs[m_index],
+                        m_point_cloud->m_ys[m_index],
+                        m_point_cloud->m_zs[m_index],
+                        m_point_cloud->m_gps_times[m_index]
+                    };
+                else
+                    return {};
+            })}
         {
-            update_value();
         }
 
-        void update_value()
+        void change_index()
         {
-            if (m_index >= m_point_cloud->m_count || m_index < 0)
+            if (m_index >= m_point_cloud->m_count)
             {
                 m_value.reset();
                 return;
             }
 
-            m_value = value_type{
+            m_value.emplace(
                 m_point_cloud->m_xs[m_index],
                 m_point_cloud->m_ys[m_index],
                 m_point_cloud->m_zs[m_index],
-                m_point_cloud->m_gps_times[m_index],
-            };
+                m_point_cloud->m_gps_times[m_index]
+            );
         }
     };
 
@@ -191,18 +190,18 @@ struct PointCloud
 
     const_iterator begin() const { return const_iterator{this, 0}; }
     const_iterator end() const { return const_iterator{this, m_count}; }
-    size_t size() const { return m_count; }
+    size_t         size() const { return m_count; }
 
-    size_t                     m_count;
-    Rcpp::NumericVector m_xs;
-    Rcpp::NumericVector m_ys;
-    Rcpp::NumericVector m_zs;
-    Rcpp::NumericVector m_gps_times;
+    size_t             m_count;
+    Rcpp::DoubleVector m_xs;
+    Rcpp::DoubleVector m_ys;
+    Rcpp::DoubleVector m_zs;
+    Rcpp::DoubleVector m_gps_times;
 };
 
-using Scan = lvox::Scan<Point, TimedPoint, PointCloud>;
-using ScannerOrigin = lvox::ScannerOrigin<Point, TimedPoint, PointCloud>;
-using Trajectory = lvox::Trajectory<Point, TimedPoint, PointCloud>;
+using Scan          = lvox::Scan<Point, PointCloud>;
+using ScannerOrigin = lvox::ScannerOrigin<Point, PointCloud>;
+using Trajectory    = lvox::Trajectory<Point, PointCloud>;
 
 PointCloud read_point_cloud_from_raw_data(const Rcpp::List& raw_data)
 {
@@ -299,15 +298,18 @@ Rcpp::List do_lvox_computation(
 
 //' Perform the PAD estimation for a MLS scan
 //'
-//' @param pointCloud A point cloud acquired from a mobile lidar, this can be LAS object or a list containing X, Y, Z and gpstime.
-//' @param trajectory A trajectory point cloud acquired from a mobile lidar, this can be LAS object or a list containing X, Y, Z and gpstime.
-//' @param padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE)
-//' @param voxelSize The size of the voxels in the grid in meters
-//' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory
-//' @param requiredHits The number of return required for PAD computation, if the return amount in the voxel is lower than this number it will be excluded from the estimation
-//' @param threadCount The amount of parallel processing thread to use. Set this to your core count for best performance.
-//' @param exportAllGridMetadata Whether or not to export all intermediate data from the Lvox computation
-//' @return A list containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
+//' @param pointCloud A point cloud acquired from a mobile lidar, this can be LAS object or a list
+// containing X, Y, Z and gpstime. ' @param trajectory A trajectory point cloud acquired from a
+// mobile lidar, this can be LAS object or a list containing X, Y, Z and gpstime. ' @param
+// padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE) ' @param voxelSize
+// The size of the voxels in the grid in meters ' @param useSparseGrid Whether or not to use sparse
+// grid for computation, it should take less memory ' @param requiredHits The number of return
+// required for PAD computation, if the return amount in the voxel is lower than this number it will
+// be excluded from the estimation ' @param threadCount The amount of parallel processing thread to
+// use. Set this to your core count for best performance. ' @param exportAllGridMetadata Whether or
+// not to export all intermediate data from the Lvox computation ' @return A list containing the 3d
+// grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid
+// dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeMLS(
     const SEXP&       pointCloud,
@@ -329,9 +331,7 @@ Rcpp::List lvoxComputeMLS(
     }
 
     std::vector<Scan> scans;
-    scans.emplace_back(
-        points, std::make_shared<Trajectory>(read_point_cloud_from_raw_data(trajectory)), bounds
-    );
+    scans.emplace_back(points, read_point_cloud_from_raw_data(trajectory), bounds);
 
     return do_lvox_computation(
         scans,
@@ -346,15 +346,17 @@ Rcpp::List lvoxComputeMLS(
 
 //' Perform the PAD estimation for TLS multi-scans
 //'
-//' @param pointClouds A list of point clouds acquired from a mobile lidar, this can be  LAS object or a list containing X, Y, Z and gpstime.
-//' @param scannersOrigin A list of corresponding scanner's origins coordinates.
-//' @param padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE)
-//' @param voxelSize The size of the voxels in the grid in meters
-//' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory
-//' @param requiredHits The number of return required for PAD computation, if the return amount in the voxel is lower than this number it will be excluded from the estimation
-//' @param threadCount The amount of parallel processing thread to use. Set this to your core count for best performance.
-//' @param exportAllGridMetadata Whether or not to export all intermediate data from the Lvox computation
-//' @return A list containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
+//' @param pointClouds A list of point clouds acquired from a mobile lidar, this can be  LAS object
+// or a list containing X, Y, Z and gpstime. ' @param scannersOrigin A list of corresponding
+// scanner's origins coordinates. ' @param padEstimator Accronym for the PAD estimator to use (BL,
+// CF, UPLBL and BCMLE) ' @param voxelSize The size of the voxels in the grid in meters ' @param
+// useSparseGrid Whether or not to use sparse grid for computation, it should take less memory '
+//@param requiredHits The number of return required for PAD computation, if the return amount in the
+// voxel is lower than this number it will be excluded from the estimation ' @param threadCount The
+// amount of parallel processing thread to use. Set this to your core count for best performance. '
+//@param exportAllGridMetadata Whether or not to export all intermediate data from the Lvox
+// computation ' @return A list containing the 3d grid in a coordinate list (COO) form. It also
+// contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeTLS(
     const Rcpp::List& pointClouds,
@@ -374,7 +376,7 @@ Rcpp::List lvoxComputeTLS(
         );
 
     lvox::Bounds            bounds;
-    std::vector<Scan> scans;
+    std::vector<Scan>       scans;
     std::vector<PointCloud> point_clouds;
     for (size_t i = 0; i < pointClouds.size(); ++i)
     {
@@ -385,11 +387,12 @@ Rcpp::List lvoxComputeTLS(
             bounds.grow(pt.x(), pt.y(), pt.z());
         }
 
-        const Rcpp::DoubleVector& scanners_origin = scannersOrigin[i];
-        const Point pt{scanners_origin[0], scanners_origin[1], scanners_origin[2]};
+        Rcpp::DoubleVector current_origin = scannersOrigin[i];
 
         scans.emplace_back(
-            point_clouds[i], pt, bounds
+            point_clouds[i],
+            Point{current_origin[0], current_origin[1], current_origin[2], 0},
+            bounds
         );
     }
 
