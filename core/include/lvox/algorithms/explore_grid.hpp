@@ -2,6 +2,7 @@
 #define LVOX_EXPLORE_GRID_HPP
 
 #include <future>
+#include <numbers>
 
 #include <lvox/algorithms/compute_options.hpp>
 #include <lvox/algorithms/trace_beam.hpp>
