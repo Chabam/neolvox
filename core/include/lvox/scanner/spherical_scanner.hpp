@@ -79,7 +79,7 @@ class SphericalScanner
                 const double sinTheta = std::sin(theta);
 
                 // The direction is calculated using spherical coordinates
-                Eigen::Vector3d direction;
+                Vector direction;
                 direction.x() = sinTheta * cosPhi;
                 direction.y() = sinTheta * sinPhi;
                 direction.z() = cosTheta;

@@ -8,6 +8,7 @@ target_sources(lvox_core
   src/algorithms/compute_pad.cpp
   src/logger/logger.cpp
   src/logger/progress.cpp
+  src/scanner/beam.cpp
   src/voxel/bounded_grid.cpp
   src/voxel/bounds.cpp
   src/voxel/chunked_grid.cpp

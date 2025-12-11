@@ -26,8 +26,11 @@ struct Scan
     struct ComputeBeamOrigin
     {
         const double gps_time;
-        PointT       operator()(const PointT& scan_origin) { return scan_origin; }
-        PointT       operator()(const Trajectory<PointT, PointCloudT>& trajectory)
+        Vector operator()(const PointT& scan_origin) {
+            return Vector{scan_origin.x(), scan_origin.y(), scan_origin.z()};
+        }
+
+        Vector operator()(const Trajectory<PointT, PointCloudT>& trajectory)
         {
             const auto point = trajectory.interpolate_point_from_gps_time(gps_time);
 

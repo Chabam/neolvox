@@ -20,42 +20,10 @@ class BoundedGrid
     Bounds voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const;
 
     // Return an index tuple of this layout (x, y, z)
-    template <Point PointT>
-    Index3D index3d_of_point(const PointT& point) const
-    {
-        const double x = point.x();
-        const double y = point.y();
-        const double z = point.z();
-
-        if (!m_bounds.contains(x, y, z))
-        {
-            throw std::runtime_error{
-                std::format("Provided coords are not in the grid: ({}, {}, {})", x, y, z)
-            };
-        }
-
-        const auto coords_to_index =
-            [cell_size = m_cell_size](double min, double max, double coord) -> unsigned int {
-            const double result = std::floor((coord - min) / cell_size);
-            if (coord == max)
-                return result - 1;
-            return result;
-        };
-
-        return {
-            coords_to_index(m_bounds.m_min_x, m_bounds.m_max_x, x),
-            coords_to_index(m_bounds.m_min_y, m_bounds.m_max_y, y),
-            coords_to_index(m_bounds.m_min_z, m_bounds.m_max_z, z)
-        };
-    }
+    Index3D index3d_of_point(const Vector& point) const;
 
     // Return an index tuple of this layout (x, y, z)
-    template <Point PointT>
-    Bounds voxel_bounds_from_point(const PointT& point)
-    {
-        const auto [idx_x, idx_y, idx_z] = index3d_of_point(point);
-        return voxel_bounds(idx_x, idx_y, idx_z);
-    }
+    Bounds voxel_bounds_from_point(const Vector& point);
 
     double cell_size() const { return m_cell_size; }
     size_t cell_count() const { return m_cell_count; }

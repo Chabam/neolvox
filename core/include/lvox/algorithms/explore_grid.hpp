@@ -30,9 +30,9 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
     auto grid_traversal = std::visit(
         [](const auto& grid) {
             if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
-                return TraceBeamExactDistance<PointT>{grid.bounded_grid()};
+                return TraceBeamExactDistance{grid.bounded_grid()};
             else
-                return TraceBeamVoxelRounding<PointT>{grid.bounded_grid()};
+                return TraceBeamVoxelRounding{grid.bounded_grid()};
         },
         grid
     );
@@ -54,31 +54,28 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
     const auto ray_trace = [&](const PointRange& points) -> void {
         for (const auto& timed_point : points)
         {
-            const double          gps_time = timed_point.gps_time();
-            const Eigen::Vector3d pt_vec{timed_point.x(), timed_point.y(), timed_point.z()};
+            const double gps_time = timed_point.gps_time();
+            const Vector pt{timed_point.x(), timed_point.y(), timed_point.z()};
             using ComputeBeamOrigin = ScanT::ComputeBeamOrigin;
-            const PointT scan_origin =
+            const Vector scan_origin =
                 std::visit(ComputeBeamOrigin{gps_time}, scan.m_scanner_origin);
-            const Eigen::Vector3d scan_origin_vec{
-                scan_origin.x(), scan_origin.y(), scan_origin.z()
-            };
 
             // If we compute the hits, we start at the point in the
             // point cloud towards the scanner. This is done to avoid
             // recomputing the index of the point since it is provided
             // by the grid traversal.
-            const Vector beam_dir = std::invoke([&scan_origin_vec, &pt_vec]() -> Vector {
+            const Vector beam_dir = std::invoke([&scan_origin, &pt]() {
                 if constexpr (compute_hits)
-                    return Vector{scan_origin_vec - pt_vec};
+                    return Vector{scan_origin - pt};
                 else
-                    return Vector{pt_vec - scan_origin_vec};
+                    return Vector{pt - scan_origin};
             });
 
             // Invertly, if we do not compute the hits, we start at
             // the scanner towards the point.
-            const PointT point_origin = std::invoke([&scan_origin, &timed_point]() -> PointT {
+            const Vector point_origin = std::invoke([&scan_origin, &pt]() {
                 if constexpr (compute_hits)
-                    return timed_point;
+                    return pt;
                 else
                     return scan_origin;
             });
