@@ -244,7 +244,7 @@ lvox_pe::PADEstimator get_estimator_from_string(std::string pe)
         stop("Unkown PAD estimator ");
 }
 
-Rcpp::List do_lvox_computation(
+Rcpp::S4 do_lvox_computation(
     const std::vector<Scan>& scans,
     std::string              padEstimator,
     double                   voxelSize,
@@ -280,19 +280,24 @@ Rcpp::List do_lvox_computation(
             df.push_back(grid.lengths_variance(), "Lengths variance");
     }
 
-    return Rcpp::List::create(
-        Rcpp::Named("data")       = df,
-        Rcpp::Named("Voxel Size") = voxelSize,
-        Rcpp::Named("Dimensions") = Rcpp::DoubleVector::create(
-            grid.bounds().dim_x(), grid.bounds().dim_y(), grid.bounds().dim_z()
-        ),
-        Rcpp::Named("Minimal Coordinates") = Rcpp::DoubleVector::create(
-            grid.bounds().bounds().m_min_x,
-            grid.bounds().bounds().m_min_y,
-            grid.bounds().bounds().m_min_z
-        )
+    Rcpp::S4 grid_object{"LvoxGrid"};
+    grid_object.slot("data") = df;
+
+    grid_object.slot("data")       = df;
+    grid_object.slot("VoxelSize") = voxelSize;
+    grid_object.slot("Dimensions") = Rcpp::DoubleVector::create(
+        grid.bounds().dim_x(), grid.bounds().dim_y(), grid.bounds().dim_z()
+    ),
+    grid_object.slot("MinimalCoords") = Rcpp::DoubleVector::create(
+        grid.bounds().bounds().m_min_x,
+        grid.bounds().bounds().m_min_y,
+        grid.bounds().bounds().m_min_z
     );
+
+    return grid_object;
 }
+
+// clang-format off
 
 // [[Rcpp::depends(RcppParallel)]]
 
@@ -306,9 +311,9 @@ Rcpp::List do_lvox_computation(
 //' @param requiredHits The number of return required for PAD computation, if the return amount in the voxel is lower than this number it will be excluded from the estimation
 //' @param threadCount The amount of parallel processing thread to use. Set this to your core count for best performance.
 //' @param exportAllGridMetadata Whether or not to export all intermediate data from the Lvox computation.
-//' @return A list containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
+//' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
-Rcpp::List lvoxComputeMLS(
+Rcpp::S4 lvoxComputeMLS(
     const SEXP&       pointCloud,
     const Rcpp::List& trajectory,
     std::string       padEstimator          = "BCMLE",
@@ -351,9 +356,9 @@ Rcpp::List lvoxComputeMLS(
 //' @param requiredHits The number of return required for PAD computation, if the return amount in the voxel is lower than this number it will be excluded from the estimation
 //' @param threadCount The amount of parallel processing thread to use. Set this to your core count for best performance.
 //' @param exportAllGridMetadata Whether or not to export all intermediate data from the Lvox computation.
-//' @return A list containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
+//' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
-Rcpp::List lvoxComputeTLS(
+Rcpp::S4 lvoxComputeTLS(
     const Rcpp::List& pointClouds,
     const Rcpp::List& scannersOrigin,
     std::string       padEstimator          = "BCMLE",
@@ -401,3 +406,4 @@ Rcpp::List lvoxComputeTLS(
         exportAllGridMetadata
     );
 }
+// clang-format on
