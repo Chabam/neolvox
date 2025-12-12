@@ -33,14 +33,15 @@
 
   - X: a vector of double values representing the X coordinates for each
   points in the point cloud
+
   - Y: a vector of double values representing the Y coordinates for each
   points in the point cloud
+
   - Z: a vector of double values representing the Z coordinates for each
   points in the point cloud
+
   - gpstime: a vector of double values representing the gps time for each
   points in the point cloud
-
-
 
 }
 \author{
@@ -76,7 +77,7 @@ traj <- read.csv("/path/to/a/traj_file.txt", skip = 1, sep = " ")
 names(traj) <- c("gpstime", "X", "Y", "Z")
 
 # See the documentation for the available computation options
-pad <- lvoxComputeMLS(mls, traj, voxelSize = 0.4)
+grid <- lvoxComputeMLS(mls, traj, voxelSize = 0.4)
 
 # TLS processing (with multi-scans) ============================
 readASCIIPointCloud <- function(filename)
@@ -110,6 +111,15 @@ scanner_origins <- list(
   c(-11.340925, 2.670768, 94.75565)
 )
 
-pad <- lvoxComputeTLS(scans, scanner_origins)
+grid <- lvoxComputeTLS(scans, scanner_origins)
+
+# To then use the grid to compute a height profile
+height_profile <- computeHeightProfile(grid)
+
+# Print it to the console
+height_profile
+
+# Or plot it
+plot(height_profile)
   }
 }
