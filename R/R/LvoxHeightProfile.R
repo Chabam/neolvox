@@ -1,24 +1,16 @@
-setClass(
-  "LvoxHeightProfile",
-  slots = list(
-    Heights = "numeric",
-    PAD = "numeric"
-  )
-)
+print.LVoxHeightProfile <- function(x, ...) {
+  print(cbind(paste0(rev(x$Heights), "m"), rev(x$PAD)))
+}
 
-setMethod("show", "LvoxHeightProfile", function(object) {
-  cbind(paste0(rev(object@Heights), "m"), rev(object@PAD))
-})
-
-setMethod("plot", "LvoxHeightProfile", function(x, y = NULL, ..., main = NULL) {
-  plot(x@PAD, x@Heights,
+plot.LVoxHeightProfile <- function(x, y = NULL, ..., main = NULL) {
+  plot(x$PAD, x$Heights,
        type = "l",
-       xlab = "PAD (m³ . m²)",
+       xlab = "PAD (m^3 . m^2)",
        ylab = "Height",
        main = "PAD for a given plot",
        axes = FALSE)
 
-  axis(2, at = x@Heights, labels = paste0(x@Heights, "m"))
+  axis(2, at = x$Heights, labels = paste0(x$Heights, "m"))
   axis(1)
   box()
-})
+}

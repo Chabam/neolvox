@@ -43,8 +43,6 @@
   - gpstime: a vector of double values representing the gps time for each
   points in the point cloud
 
-
-
 }
 \author{
   Maintainer: Félix Chabot <fchabot1337@gmail.com>
@@ -119,7 +117,7 @@ grid <- lvoxComputeTLS(scans, scanner_origins)
 height_profile <- computeHeightProfile(grid)
 
 # Print it to the console
-show(height_profile)
+height_profile
 
 # Or plot it
 plot(height_profile)

@@ -1,37 +1,31 @@
-setClass(
-  "LvoxGrid",
-  slots = list(
-    data = "data.frame",
-    VoxelSize = "numeric",
-    Dimensions = "numeric",
-    MinimalCoords = "numeric"
-  )
-)
+print.LVoxGrid <- function(x, ...) {
+  cat("LVoxGrid\n")
+  cat("Dimensions (x, y, z): ", paste(x$Dimensions, collapse = "x"), "\n")
+  cat("Total voxels: ", prod(x$Dimensions), "\n")
+  cat("Voxel size: ", prod(x$VoxelSize), "\n")
+}
 
-setMethod("show", "LvoxGrid", function(object) {
-  cat("LvoxGrid object\n")
-  cat("Dimensions (x, y, z): ", paste(object@Dimensions, collapse = "x"), "\n")
-  cat("Total voxels: ", prod(object@Dimensions), "\n")
-  cat("Voxel size: ", prod(object@VoxelSize), "\n")
-})
+computeHeightProfile <- function(x) UseMethod("computeHeightProfile", x)
 
-setGeneric("computeHeightProfile", function(object) {
-  standardGeneric("computeHeightProfile")
-})
+computeHeightProfile.default <- function(x) {
+  warning("Must be used with an LVoxGrid x")
+  x
+}
 
-setMethod("computeHeightProfile", "LvoxGrid", function(object) {
-  pad <- object@data$PAD
+#' @description Computes the mean PAD value for each vertical layer of the grid
+#' @param x A LVoxGrid object
+#' @return A LvoxHeightProfile object
+computeHeightProfile.LVoxGrid <- function(grid) {
+  pad <- grid$data$PAD
   pad[is.nan(pad)] <- 0
   pad[is.infinite(pad)] <- 0
 
-  z_count <- object@Dimensions[3] - 1
+  z_count <- grid$Dimensions[3] - 1
 
   profile <- sapply(seq(0, z_count), function(z) {
-    mean(object@data$PAD[object@data$Z == z])
+    mean(grid$data$PAD[grid$data$Z == z])
   })
-  profile_real_height <- sapply(seq(0, z_count), function(h) {
-    h * object@VoxelSize
-  })
+  profile_real_height <- seq(0, z_count) * grid$VoxelSize + grid$MinimalCoords[3]
 
-  new("LvoxHeightProfile", Heights = profile_real_height, PAD = profile)
-})
+  structure(list(Heights = profile_real_height, PAD = profile), class = "LVoxHeightProfile")
+}
