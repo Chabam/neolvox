@@ -1,26 +1,21 @@
 #include <gtest/gtest.h>
 #include <utils/utils.hpp>
 #include <lvox/voxel/grid.hpp>
-#include "lvox/types.hpp"
-#include <pdal/PointView.hpp>
+#include <lvox/types.hpp>
 
 TEST(grid, index_of_point)
 {
-    pdal::PointTable table;
     const double     dim_x = 4;
     const double     dim_y = 4;
     const double     dim_z = 4;
 
-    const auto view = generate_cubic_point_cloud(table);
+    const auto pc = generate_cubic_point_cloud();
 
     lvox::Bounds point_cloud_bounds;
     const double cell_size = .5;
-    for (const auto pt : *view)
+    for (const auto pt : pc)
     {
-        const double x = pt.getFieldAs<double>(pdal::Dimension::Id::X);
-        const double y = pt.getFieldAs<double>(pdal::Dimension::Id::Y);
-        const double z = pt.getFieldAs<double>(pdal::Dimension::Id::Z);
-        point_cloud_bounds.grow(x, y, z);
+        point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
     }
 
     lvox::BoundedGrid grid{point_cloud_bounds, cell_size};

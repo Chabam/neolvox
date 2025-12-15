@@ -5,16 +5,17 @@
 #include <ranges>
 
 #include <lvox/scanner/spherical_scanner.hpp>
+#include "lvox/types.hpp"
 
 TEST(SphericalScannerTests, creation_all_6_axis)
 {
 
     // Perfect sphere with a ray going at every 90 degrees, so
     // all axis directions (positive and negative) should be seen.
-    const lvox::Point origin{0., 0., 0.};
-    const double      h_fov = 360.;
-    const double      v_fov = 360.;
-    const double      res   = 90.;
+    const lvox::Vector origin{0., 0., 0.};
+    const double       h_fov = 360.;
+    const double       v_fov = 360.;
+    const double       res   = 90.;
 
     const lvox::SphericalScanner scanner{origin, h_fov, v_fov, res};
     EXPECT_EQ(16, scanner.get_beams().size());
@@ -49,15 +50,15 @@ TEST(SphericalScannerTests, creation_all_6_axis)
 TEST(SphericalScannerTests, verify_angle_resolution)
 {
 
-    const lvox::Point origin{0., 1., 0.};
-    const double      h_fov        = 360.;
-    const double      v_fov        = 300.;
-    const double      res          = 1.;
-    const size_t      nb_vert_rays = std::ceil(v_fov / res);
-    const size_t      nb_hor_rays  = std::ceil(h_fov / res);
-    const double      angle_vert   = v_fov / nb_vert_rays;
-    const double      angle_hor    = h_fov / nb_hor_rays;
-    const double      epsilon      = 0.000001;
+    const lvox::Vector origin{0., 1., 0.};
+    const double       h_fov        = 360.;
+    const double       v_fov        = 300.;
+    const double       res          = 1.;
+    const size_t       nb_vert_rays = std::ceil(v_fov / res);
+    const size_t       nb_hor_rays  = std::ceil(h_fov / res);
+    const double       angle_vert   = v_fov / nb_vert_rays;
+    const double       angle_hor    = h_fov / nb_hor_rays;
+    const double       epsilon      = 0.000001;
 
     const lvox::SphericalScanner scanner{origin, h_fov, v_fov, res};
     // Less or equal beacause of rounding

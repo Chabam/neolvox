@@ -1,11 +1,10 @@
 #include <gtest/gtest.h>
 #include <utils/utils.hpp>
 
-#include <pdal/PointView.hpp>
-
 #include <lvox/algorithms/trace_beam.hpp>
 #include <lvox/scanner/beam.hpp>
 #include <lvox/voxel/grid.hpp>
+#include <lvox/types.hpp>
 
 TEST(grid, grid_traversal_x_axis)
 {
@@ -14,23 +13,19 @@ TEST(grid, grid_traversal_x_axis)
     const double dim_y = 24;
     const double dim_z = 32;
 
-    pdal::PointTable table;
-    auto             view = generate_cubic_point_cloud(table, dim_x, dim_y, dim_z);
+    auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
-    for (const auto pt : *view)
+    for (const auto pt : pc)
     {
-        const double x = pt.getFieldAs<double>(pdal::Dimension::Id::X);
-        const double y = pt.getFieldAs<double>(pdal::Dimension::Id::Y);
-        const double z = pt.getFieldAs<double>(pdal::Dimension::Id::Z);
-        point_cloud_bounds.grow(x, y, z);
+        point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
     }
 
     lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{1., 0., 0.};
@@ -52,7 +47,7 @@ TEST(grid, grid_traversal_x_axis)
         }
     }
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_max_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{-1., 0., 0.};
@@ -82,23 +77,19 @@ TEST(grid, grid_traversal_y_axis)
     const double dim_y = 24;
     const double dim_z = 32;
 
-    pdal::PointTable table;
-    auto             view = generate_cubic_point_cloud(table, dim_x, dim_y, dim_z);
+    auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
-    for (const auto pt : *view)
+    for (const auto pt : pc)
     {
-        const double x = pt.getFieldAs<double>(pdal::Dimension::Id::X);
-        const double y = pt.getFieldAs<double>(pdal::Dimension::Id::Y);
-        const double z = pt.getFieldAs<double>(pdal::Dimension::Id::Z);
-        point_cloud_bounds.grow(x, y, z);
+        point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
     }
 
     lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{0., 1., 0.};
@@ -120,7 +111,7 @@ TEST(grid, grid_traversal_y_axis)
         }
     }
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_max_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{0., -1., 0.};
@@ -150,22 +141,18 @@ TEST(grid, grid_traversal_z_axis)
     const double dim_y = 24;
     const double dim_z = 32;
 
-    pdal::PointTable table;
-    auto             view = generate_cubic_point_cloud(table, dim_x, dim_y, dim_z);
+    auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
-    for (const auto pt : *view)
+    for (const auto pt : pc)
     {
-        const double x = pt.getFieldAs<double>(pdal::Dimension::Id::X);
-        const double y = pt.getFieldAs<double>(pdal::Dimension::Id::Y);
-        const double z = pt.getFieldAs<double>(pdal::Dimension::Id::Z);
-        point_cloud_bounds.grow(x, y, z);
+        point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
     }
 
     lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{0., 0., 1.};
@@ -187,7 +174,7 @@ TEST(grid, grid_traversal_z_axis)
         }
     }
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_max_z
         };
         lvox::Vector dir{0., 0., -1.};
@@ -217,17 +204,13 @@ TEST(grid, grid_traversal_diagonals)
     const double dim_y = 20;
     const double dim_z = 30;
 
-    pdal::PointTable table;
-    auto             view = generate_cubic_point_cloud(table, dim_x, dim_y, dim_z);
+    auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
-    for (const auto pt : *view)
+    for (const auto pt : pc)
     {
-        const double x = pt.getFieldAs<double>(pdal::Dimension::Id::X);
-        const double y = pt.getFieldAs<double>(pdal::Dimension::Id::Y);
-        const double z = pt.getFieldAs<double>(pdal::Dimension::Id::Z);
-        point_cloud_bounds.grow(x, y, z);
+        point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
     }
 
     lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
@@ -235,10 +218,10 @@ TEST(grid, grid_traversal_diagonals)
     // Since the line goes from the highest point to the lowest in diagonal, the ray should hit
     // every x, y, z levels.
     {
-        lvox::Point min{
+        lvox::Vector min{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
-        lvox::Point max{
+        lvox::Vector max{
             point_cloud_bounds.m_max_x, point_cloud_bounds.m_max_y, point_cloud_bounds.m_max_z
         };
         lvox::Vector dir{max - min};
@@ -324,23 +307,19 @@ TEST(grid, grid_traversal_max_distance)
     const double dim_y = 24;
     const double dim_z = 32;
 
-    pdal::PointTable table;
-    auto             view = generate_cubic_point_cloud(table, dim_x, dim_y, dim_z);
+    auto             pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
-    for (const auto pt : *view)
+    for (const auto pt : pc)
     {
-        const double x = pt.getFieldAs<double>(pdal::Dimension::Id::X);
-        const double y = pt.getFieldAs<double>(pdal::Dimension::Id::Y);
-        const double z = pt.getFieldAs<double>(pdal::Dimension::Id::Z);
-        point_cloud_bounds.grow(x, y, z);
+        point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
     }
 
     lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{1., 0., 0.};
@@ -371,23 +350,19 @@ TEST(grid, grid_traversal_exact_distance_in_voxel)
     const double dim_y = 20;
     const double dim_z = 30;
 
-    pdal::PointTable table;
-    auto             view = generate_cubic_point_cloud(table, dim_x, dim_y, dim_z);
+    auto             pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
-    for (const auto pt : *view)
+    for (const auto pt : pc)
     {
-        const double x = pt.getFieldAs<double>(pdal::Dimension::Id::X);
-        const double y = pt.getFieldAs<double>(pdal::Dimension::Id::Y);
-        const double z = pt.getFieldAs<double>(pdal::Dimension::Id::Z);
-        point_cloud_bounds.grow(x, y, z);
+        point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
     }
 
     lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{1., 0., 0.};
@@ -407,7 +382,7 @@ TEST(grid, grid_traversal_exact_distance_in_voxel)
     }
 
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{1., 0., 0.};
@@ -426,7 +401,7 @@ TEST(grid, grid_traversal_exact_distance_in_voxel)
     }
 
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{1., 0., 0.};
@@ -451,23 +426,19 @@ TEST(grid, grid_traversal_rounding_distance_in_voxel)
     const double dim_y = 20;
     const double dim_z = 30;
 
-    pdal::PointTable table;
-    auto             view = generate_cubic_point_cloud(table, dim_x, dim_y, dim_z);
+    auto             pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
     lvox::Bounds point_cloud_bounds;
-    for (const auto pt : *view)
+    for (const auto pt : pc)
     {
-        const double x = pt.getFieldAs<double>(pdal::Dimension::Id::X);
-        const double y = pt.getFieldAs<double>(pdal::Dimension::Id::Y);
-        const double z = pt.getFieldAs<double>(pdal::Dimension::Id::Z);
-        point_cloud_bounds.grow(x, y, z);
+        point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
     }
 
     lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
 
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{1., 0., 0.};
@@ -487,7 +458,7 @@ TEST(grid, grid_traversal_rounding_distance_in_voxel)
     }
 
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{1., 0., 0.};
@@ -507,7 +478,7 @@ TEST(grid, grid_traversal_rounding_distance_in_voxel)
     }
 
     {
-        lvox::Point pos{
+        lvox::Vector pos{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector dir{1., 0., 0.};
