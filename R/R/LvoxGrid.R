@@ -4,18 +4,12 @@ print.LVoxGrid <- function(x, ...) {
   cat("Total voxels: ", prod(x$Dimensions), "\n")
   cat("Voxel size: ", prod(x$VoxelSize), "\n")
 }
-
-computeHeightProfile <- function(x) UseMethod("computeHeightProfile", x)
-
-computeHeightProfile.default <- function(x) {
-  warning("Must be used with an LVoxGrid x")
-  x
-}
-
 #' @description Computes the mean PAD value for each vertical layer of the grid
 #' @param x A LVoxGrid object
 #' @return A LvoxHeightProfile object
-computeHeightProfile.LVoxGrid <- function(grid) {
+computeHeightProfile <- function(grid) {
+  if (class(grid) != "LVoxGrid")
+    error("Input must be an LVoxGrid object")
   pad <- grid$data$PAD
   pad[is.nan(pad)] <- 0
   pad[is.infinite(pad)] <- 0
