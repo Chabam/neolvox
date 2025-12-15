@@ -1,3 +1,5 @@
+#include <numbers>
+
 #include <lvox/logger/logger.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
 
