@@ -377,6 +377,8 @@ Rcpp::List lvoxComputeTLS(
     lvox::Bounds            bounds;
     std::vector<Scan>       scans;
     std::vector<PointCloud> point_clouds;
+    scans.reserve(pointClouds.size());
+    point_clouds.reserve(pointClouds.size());
     for (size_t i = 0; i < pointClouds.size(); ++i)
     {
         point_clouds.emplace_back(try_read_point_cloud_as_las(pointClouds[i]));
