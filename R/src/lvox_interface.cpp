@@ -251,7 +251,7 @@ Rcpp::List do_lvox_computation(
     bool                     useSparseGrid,
     unsigned int             requiredHits,
     unsigned int             threadCount,
-    bool                     exportAllGridMetadata
+    bool                     exportIntermediateData
 )
 {
     const lvox::algorithms::ComputeOptions compute_options{
@@ -271,7 +271,7 @@ Rcpp::List do_lvox_computation(
         Rcpp::Named("PAD") = grid.pads()
     );
 
-    if (exportAllGridMetadata)
+    if (exportIntermediateData)
     {
         df.push_back(grid.hits(), "Hits");
         df.push_back(grid.lengths(), "Lengths");
@@ -309,7 +309,7 @@ Rcpp::List do_lvox_computation(
 //' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory.
 //' @param requiredHits The number of return required for PAD computation, if the return amount in the voxel is lower than this number it will be excluded from the estimation
 //' @param threadCount The amount of parallel processing thread to use. Set this to your core count for best performance.
-//' @param exportAllGridMetadata Whether or not to export all intermediate data from the Lvox computation.
+//' @param exportIntermediateData Whether or not to export all intermediate data from the Lvox computation.
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeMLS(
@@ -319,7 +319,7 @@ Rcpp::List lvoxComputeMLS(
     double            voxelSize             = 0.5,
     bool              useSparseGrid         = false,
     unsigned int      requiredHits          = 5,
-    bool              exportAllGridMetadata = false,
+    bool              exportIntermediateData = false,
     unsigned int      threadCount           = 8
 )
 {
@@ -341,7 +341,7 @@ Rcpp::List lvoxComputeMLS(
         requiredHits,
         useSparseGrid,
         threadCount,
-        exportAllGridMetadata
+        exportIntermediateData
     );
 }
 
@@ -354,7 +354,7 @@ Rcpp::List lvoxComputeMLS(
 //' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory.
 //' @param requiredHits The number of return required for PAD computation, if the return amount in the voxel is lower than this number it will be excluded from the estimation
 //' @param threadCount The amount of parallel processing thread to use. Set this to your core count for best performance.
-//' @param exportAllGridMetadata Whether or not to export all intermediate data from the Lvox computation.
+//' @param exportIntermediateData Whether or not to export all intermediate data from the Lvox computation.
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeTLS(
@@ -364,7 +364,7 @@ Rcpp::List lvoxComputeTLS(
     double            voxelSize             = 0.5,
     unsigned int      requiredHits          = 5,
     bool              useSparseGrid         = false,
-    bool              exportAllGridMetadata = false,
+    bool              exportIntermediateData = false,
     unsigned int      threadCount           = 8
 )
 {
@@ -404,7 +404,7 @@ Rcpp::List lvoxComputeTLS(
         requiredHits,
         useSparseGrid,
         threadCount,
-        exportAllGridMetadata
+        exportIntermediateData
     );
 }
 // clang-format on
