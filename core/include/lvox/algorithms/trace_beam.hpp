@@ -47,7 +47,7 @@ struct TraceBeam
 
         if (!bounds.contains(beam_origin.x(), beam_origin.y(), beam_origin.z()))
         {
-            constexpr auto err_msg = "Beam of beam_origin ({},{},{}) is outside the grid";
+            constexpr auto err_msg = "Beam of origin ({},{},{}) is outside the grid";
             Logger{"Grid Traversal"}.error(
                 err_msg, beam_origin.x(), beam_origin.y(), beam_origin.z()
             );

@@ -8,6 +8,7 @@
 #include <iterator>
 #include <memory>
 #include <mutex>
+#include <fstream>
 #include <sstream>
 #include <stdexcept>
 
@@ -31,7 +32,8 @@
 #include <lvox/types.hpp>
 #include <lvox/voxel/coo_grid.hpp>
 
-#include "lvox/logger/progress.hpp"
+#include <lvox/logger/progress.hpp>
+#include <lvox/voxel/bounds.hpp>
 
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
@@ -102,10 +104,7 @@ struct Point
                m_gps_time == other.m_gps_time;
     }
 
-    bool operator!=(const Point& other) const
-    {
-        return !(other == *this);
-    }
+    bool operator!=(const Point& other) const { return !(other == *this); }
 
     double m_x;
     double m_y;
@@ -246,67 +245,64 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
 }
 
 std::vector<Scan> read_dot_in_file(
-    const std::filesystem::path& in_file, std::vector<PointCloudWithTheoriticalShots>& point_clouds
+    const std::filesystem::path& in_file, std::vector<PointCloudWithTheoriticalShots>& out_point_clouds
 )
 {
     namespace fs = std::filesystem;
     std::ifstream  fstream{in_file};
     const fs::path parent_path = in_file.parent_path();
 
-    std::vector<std::future<Scan>> scans;
-    while (!fstream.eof())
+    std::vector<std::future<std::pair<PointCloudWithTheoriticalShots, lvox::Bounds>>> future_point_clouds;
+    std::string line;
+    std::vector<Point> scanner_origins;
+    while (std::getline(fstream, line))
     {
+        std::istringstream iss{line};
         std::ostringstream point_cloud_file_name;
-        fstream.get(*point_cloud_file_name.rdbuf(), ' ');
+        iss.get(*point_cloud_file_name.rdbuf(), ' ');
 
-        fstream.seekg(std::string{" Z+F "}.size(), std::ios_base::cur);
+        iss.seekg(std::string{" Z+F "}.size(), std::ios_base::cur);
 
         double x;
         double y;
         double z;
 
-        fstream >> x;
-        fstream >> y;
-        fstream >> z;
+        iss >> x;
+        iss >> y;
+        iss >> z;
 
-        fstream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        scanner_origins.emplace_back(x, y, z);
 
-        scans.emplace_back(
+        future_point_clouds.emplace_back(
             std::async(
-                [parent_path,
-                 point_cloud_file_name = point_cloud_file_name.str(),
-                 x,
-                 y,
-                 z,
-                 &point_clouds]() -> Scan {
+                [parent_path](
+                    const std::string           point_cloud_file_name
+                ) -> std::pair<PointCloudWithTheoriticalShots, lvox::Bounds> {
                     lvox::Bounds bounds;
 
-                    auto point_cloud_from_file =
-                        point_clouds.emplace_back(load_point_cloud_from_file(
-                            fs::path{parent_path / point_cloud_file_name}, {bounds}
-                        ));
-
-                    Scan scan{
-                        .m_points = point_cloud_from_file.m_point_cloud,
-                        .m_scanner_origin{Point{x, y, z}},
-                        .m_bounds{bounds}
-                    };
-
-                    if (point_cloud_from_file.m_blank_shots)
-                        scan.m_blank_shots = *point_cloud_from_file.m_blank_shots;
-
-                    return scan;
-                }
+                    return {load_point_cloud_from_file(
+                        fs::path{parent_path / point_cloud_file_name}, {bounds}
+                    ), bounds};
+                },
+                point_cloud_file_name.str()
             )
         );
     }
 
     std::vector<Scan> out_scans;
-    std::ranges::transform(
-        scans, std::back_inserter(out_scans), [](std::future<Scan>& future) -> Scan {
-            return future.get();
-        }
-    );
+    const auto scan_count = future_point_clouds.size();
+    out_scans.reserve(scan_count);
+    out_point_clouds.reserve(scan_count);
+    for (size_t i = 0; i < scan_count; ++i)
+    {
+        auto&& [point_cloud, bounds] = future_point_clouds[i].get();
+        auto pc = out_point_clouds.emplace_back(std::move(point_cloud));
+        auto scan = out_scans.emplace_back(out_point_clouds[i].m_point_cloud, scanner_origins[i], std::move(bounds));
+
+        if (pc.m_blank_shots)
+            scan.m_blank_shots = *pc.m_blank_shots;
+    }
+
     return out_scans;
 }
 
@@ -658,6 +654,7 @@ int main(int argc, char* argv[])
         .m_required_hits        = g_required_hits,
         .m_log_stream           = std::cout
     };
+
     lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
     export_to_h5(std::move(result), "lvox", g_grid_file, g_include_all_info);
 }
