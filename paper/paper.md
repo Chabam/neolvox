@@ -1,41 +1,33 @@
 ---
-title: 'Gala: A Python package for galactic dynamics'
+title: 'Neolvox: a portable high performance library for estimating vegetation 3D distribution from point clouds'
 tags:
+  - C++
+  - R
+  - Forestry
+  - Lidar
   - Python
-  - astronomy
-  - dynamics
-  - galactic dynamics
-  - milky way
 authors:
-  - name: Adrian M. Price-Whelan
-    orcid: 0000-0000-0000-0000
+  - name: Félix Chabot
     equal-contrib: true
-    affiliation: "1, 2" # (Multiple affiliations must be quoted)
-  - name: Author Without ORCID
-    equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 1
+  - name: Richard A. Fournier
     affiliation: 2
-  - name: Author with no affiliation
-    corresponding: true # (This is how to denote the corresponding author)
-    affiliation: 3
-  - given-names: Ludwig
-    dropping-particle: van
-    surname: Beethoven
-    affiliation: 3
+  - name: Toby Dylan Hocking
+    affiliation: 1
+  - name: Johannie Lemelin
+    affiliation: 2
+  - name: Camille Rouet
+    affiliation: 2
+  - name: Amélie Juckler
+    affiliation: 2
 affiliations:
- - name: Lyman Spitzer, Jr. Fellow, Princeton University, United States
+ - name: Université de Sherbrooke, Département d'informatique, Sherbrooke, Québec, Canada
    index: 1
-   ror: 00hx57361
- - name: Institution Name, Country
+ - name: Université de Sherbrooke, Département de géomatique appliquée, Sherbrooke, Québec, Canada
    index: 2
- - name: Independent Researcher, Country
-   index: 3
-date: 13 August 2017
-bibliography: paper.bib
 
-# Optional fields if submitting to a AAS journal too, see this blog post:
-# https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
-aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
-aas-journal: Astrophysical Journal <- The name of the AAS journal.
+date: TBD
+bibliography: paper.bib
 ---
 
 # Summary
