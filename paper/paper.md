@@ -31,14 +31,36 @@ bibliography: paper.bib
 ---
 
 # Summary
-A description of the high-level functionality and purpose of the
-software for a diverse, non-specialist audience.
+Neolvox is the evolution of an existing software called
+LVox[CITE]. Its goal is to provide an accurate estimation of the 3D
+distribution of vegetation elements from lidar data. This data is
+obtained from terrestrial or mobile lidar in a forest plot. It uses a
+mathematical framework[CITE] based on the inversion of Beer-Lambert's
+law and the contact frequency. This approach is empirical, the points
+in the point clouds are viewed as statistical events in a discrete
+volume. The input of Neolvox are point clouds and its output is a 3D
+voxel grid of a metric called plant area density (PAD), the amount of
+vegetation surface area inside a volume. This metric can then be used
+to better understand the spatial distribution of the forest.
 
 # Statement of need
-A section that clearly illustrates the research purpose of the
-software and places it in the context of related work. This should
-clearly state what problems the software is designed to solve, who the
-target audience is, and its relation to other work.
+The original version of LVox was developed in C++ as a plugin inside
+the Computree[CITE] platform. While this platform is great for
+research, it is not really suited for operational use. Computree uses
+a graphical user interface, this makes it difficult to process large
+amount of forest plots. Users have to do a lot of manual operation to
+select the point cloud files and select the proper parameters. This
+why the forestry field leans more towards the use of programming
+language libraries to define pipelines for handling large
+datasets. The main one being lidR[CITE], a R package offering various
+algorithms for processing point clouds. Although, unlike Neolvox, its
+main area of focus is airborne lidar data. The goal of Neolvox is to
+provide the same capabilities of LVox, but as an easy to use library
+that can be called from a programming language. Neolvox is very
+portable, it can trivially be ported to other languages that offers
+C++ bindings. Additionally, the library uses parallel processing to
+greatly reduce computing times when compared to LVox, which is a big
+benefit when processing point clouds in great quantities.
 
 # State of the field
 A description of how this software compares to other commonly-used
