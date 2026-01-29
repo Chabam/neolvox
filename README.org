@@ -183,3 +183,10 @@ $ cmake --build build/
   - [ ] Assess all options
   - [ ] Test their impact
   - [ ] Remove the unnecessary ones
+- [ ] Bounding box as input
+- [-] Handling mores classes
+  - [ ] Disabling ground for hits
+  - [ ] Trunk
+  - [ ] Leaves
+  - [ ] Stem
+  - [X] Blank shots
