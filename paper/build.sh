@@ -5,5 +5,5 @@ podman run --privileged \
        --volume $PWD:/data \
        --env JOURNAL=joss \
        docker.io/openjournals/inara \
-       -o pdf,crossref \
+       -o pdf \
        ./paper.md
