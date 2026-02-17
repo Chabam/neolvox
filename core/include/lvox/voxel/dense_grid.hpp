@@ -14,7 +14,7 @@ class DenseGrid
     friend class COOGrid;
 
   public:
-    DenseGrid(const Bounds& bounds, double cell_size, bool compute_variance);
+    DenseGrid(const Bounds<double>& bounds, double cell_size, bool compute_variance);
     DenseGrid(DenseGrid&& other);
 
     void register_hit(const Index3D& voxel_idx);

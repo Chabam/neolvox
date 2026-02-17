@@ -14,8 +14,9 @@ namespace lvox
 class ChunkedGrid
 {
     friend class COOGrid;
+
   public:
-    ChunkedGrid(const Bounds& bounds, double cell_size, bool compute_variance);
+    ChunkedGrid(const Bounds<double>& bounds, double cell_size, bool compute_variance);
     ChunkedGrid(ChunkedGrid&& other);
 
     void register_hit(const Index3D& idx);
@@ -57,7 +58,7 @@ class ChunkedGrid
 
     chunk_ptr get_or_create_chunk(size_t chunk_idx);
     // Returns a pair of the chunk index in the index of the voxel in the chunk
-    size_t index3d_to_chunk_idx(const Index3D& voxel_idx) const;
+    size_t    index3d_to_chunk_idx(const Index3D& voxel_idx) const;
 };
 
 } // namespace lvox

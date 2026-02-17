@@ -20,7 +20,7 @@ struct Scan
 {
     const PointCloudT&                                 m_points;
     ScannerOrigin<PointT, PointCloudT>                 m_scanner_origin;
-    Bounds                                             m_bounds;
+    Bounds<double>                                     m_bounds;
     std::optional<std::reference_wrapper<PointCloudT>> m_blank_shots;
 
     struct ComputeBeamOrigin

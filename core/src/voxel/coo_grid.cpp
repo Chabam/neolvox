@@ -59,9 +59,9 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
             [chunk_x, chunk_y, chunk_z](size_t idx) -> Index3D {
                 constexpr auto chunk_dim = ChunkedGrid::VoxelChunk::s_edge_size;
                 return {
-                    chunk_x * chunk_dim + static_cast<unsigned int>(idx % chunk_dim),
-                    chunk_y * chunk_dim + static_cast<unsigned int>((idx / chunk_dim) % chunk_dim),
-                    chunk_z * chunk_dim + static_cast<unsigned int>(idx / (chunk_dim * chunk_dim))
+                    static_cast<int>(chunk_x * chunk_dim + (idx % chunk_dim)),
+                    static_cast<int>(chunk_y * chunk_dim + ((idx / chunk_dim) % chunk_dim)),
+                    static_cast<int>(chunk_z * chunk_dim + (idx / (chunk_dim * chunk_dim)))
                 };
             }
         );
@@ -159,9 +159,9 @@ COOGrid::COOGrid(const DenseGrid& grid)
             const auto dim_z = grid.m_bounded_grid.m_dim_z;
 
             return {
-                static_cast<unsigned int>(idx % dim_x),
-                static_cast<unsigned int>((idx / dim_x) % dim_y),
-                static_cast<unsigned int>(idx / (dim_x * dim_y))
+                static_cast<int>(idx % dim_x),
+                static_cast<int>((idx / dim_x) % dim_y),
+                static_cast<int>(idx / (dim_x * dim_y))
             };
         }
     );

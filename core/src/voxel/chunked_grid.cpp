@@ -12,7 +12,7 @@
 namespace lvox
 {
 
-ChunkedGrid::ChunkedGrid(const Bounds& bounds, double cell_size, bool compute_variance)
+ChunkedGrid::ChunkedGrid(const Bounds<double>& bounds, double cell_size, bool compute_variance)
     : m_bounded_grid{bounds, cell_size, VoxelChunk::s_edge_size}
     , m_compute_variance{compute_variance}
     , m_chunks_x{static_cast<unsigned int>(

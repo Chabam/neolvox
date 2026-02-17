@@ -9,7 +9,7 @@
 namespace lvox
 {
 
-DenseGrid::DenseGrid(const Bounds& bounds, double cell_size, bool compute_variance)
+DenseGrid::DenseGrid(const Bounds<double>& bounds, double cell_size, bool compute_variance)
     : m_bounded_grid{bounds, cell_size}
     , m_hits{m_bounded_grid.m_cell_count, std::allocator<std::atomic_uint>{}}
     , m_counts{m_bounded_grid.m_cell_count, std::allocator<std::atomic_uint>{}}
