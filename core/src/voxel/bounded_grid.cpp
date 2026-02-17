@@ -9,11 +9,11 @@ BoundedGrid::BoundedGrid(
 )
     : m_cell_size{cell_size}
     , m_index_bounds{
-        static_cast<int>(bounds.m_min_x / m_cell_size),
+        static_cast<int>(std::floor(bounds.m_min_x / m_cell_size)),
         static_cast<int>(std::ceil(bounds.m_max_x / m_cell_size)),
-        static_cast<int>(bounds.m_min_y / m_cell_size),
+        static_cast<int>(std::floor(bounds.m_min_y / m_cell_size)),
         static_cast<int>(std::ceil(bounds.m_max_y / m_cell_size)),
-        static_cast<int>(bounds.m_min_z / m_cell_size),
+        static_cast<int>(std::floor(bounds.m_min_z / m_cell_size)),
         static_cast<int>(std::ceil(bounds.m_max_z / m_cell_size)),
     }
     , m_dim_x{BoundedGrid::adjust_dim_to_grid(m_index_bounds.m_max_x - m_index_bounds.m_min_x, voxel_alignment)}
