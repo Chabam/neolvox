@@ -16,9 +16,9 @@ BoundedGrid::BoundedGrid(
         BoundedGrid::adjust_dim_to_grid(std::floor(bounds.m_min_z / m_cell_size), voxel_alignment),
         BoundedGrid::adjust_dim_to_grid(std::ceil(bounds.m_max_z / m_cell_size), voxel_alignment),
     }
-    , m_dim_x{static_cast<unsigned int>(m_index_bounds.m_max_x - m_index_bounds.m_min_x)}
-    , m_dim_y{static_cast<unsigned int>(m_index_bounds.m_max_y - m_index_bounds.m_min_y)}
-    , m_dim_z{static_cast<unsigned int>(m_index_bounds.m_max_z - m_index_bounds.m_min_z)}
+    , m_dim_x{static_cast<unsigned int>(std::abs(m_index_bounds.m_max_x - m_index_bounds.m_min_x))}
+    , m_dim_y{static_cast<unsigned int>(std::abs(m_index_bounds.m_max_y - m_index_bounds.m_min_y))}
+    , m_dim_z{static_cast<unsigned int>(std::abs(m_index_bounds.m_max_z - m_index_bounds.m_min_z))}
     , m_cell_count{m_dim_x * m_dim_y * m_dim_z}
     , m_bounds{
           bounds.m_min_x * m_cell_size,
@@ -50,6 +50,7 @@ BoundedGrid::BoundedGrid(
 
 BoundedGrid::BoundedGrid(const BoundedGrid& other)
     : m_cell_size{other.m_cell_size}
+    , m_index_bounds{other.m_index_bounds}
     , m_dim_x{other.m_dim_x}
     , m_dim_y{other.m_dim_y}
     , m_dim_z{other.m_dim_z}
@@ -60,6 +61,7 @@ BoundedGrid::BoundedGrid(const BoundedGrid& other)
 
 BoundedGrid::BoundedGrid(BoundedGrid&& other)
     : m_cell_size{std::move(other.m_cell_size)}
+    , m_index_bounds{std::move(other.m_index_bounds)}
     , m_dim_x{std::move(other.m_dim_x)}
     , m_dim_y{std::move(other.m_dim_y)}
     , m_dim_z{std::move(other.m_dim_z)}
@@ -81,18 +83,10 @@ Index3D BoundedGrid::index3d_of_point(const Vector& point) const
         };
     }
 
-    const auto coords_to_index =
-        [cell_size = m_cell_size](double min, double max, double coord) -> int {
-        const double result = std::floor((coord - min) / cell_size);
-        if (coord == max)
-            return result - 1;
-        return result;
-    };
-
     return {
-        coords_to_index(m_bounds.m_min_x, m_bounds.m_max_x, x),
-        coords_to_index(m_bounds.m_min_y, m_bounds.m_max_y, y),
-        coords_to_index(m_bounds.m_min_z, m_bounds.m_max_z, z)
+        static_cast<int>(std::floor(x / m_cell_size)),
+        static_cast<int>(std::floor(y / m_cell_size)),
+        static_cast<int>(std::floor(z / m_cell_size))
     };
 }
 
@@ -102,11 +96,11 @@ Bounds<double> BoundedGrid::voxel_bounds_from_point(const Vector& point)
     return voxel_bounds(idx_x, idx_y, idx_z);
 }
 
-Bounds<double> BoundedGrid::voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const
+Bounds<double> BoundedGrid::voxel_bounds(int idx_x, int idx_y, int idx_z) const
 {
-    const double min_x = m_bounds.m_min_x + idx_x * m_cell_size;
-    const double min_y = m_bounds.m_min_y + idx_y * m_cell_size;
-    const double min_z = m_bounds.m_min_z + idx_z * m_cell_size;
+    const double min_x = idx_x * m_cell_size;
+    const double min_y = idx_y * m_cell_size;
+    const double min_z = idx_z * m_cell_size;
     return Bounds<double>{
         //
         min_x,

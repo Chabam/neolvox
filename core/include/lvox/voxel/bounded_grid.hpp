@@ -17,7 +17,7 @@ class BoundedGrid
     BoundedGrid(BoundedGrid&& other);
 
     // NOTE: no bounds check!
-    Bounds<double> voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const;
+    Bounds<double> voxel_bounds(int idx_x, int idx_y, int idx_z) const;
 
     // Return an index tuple of this layout (x, y, z)
     Index3D index3d_of_point(const Vector& point) const;
