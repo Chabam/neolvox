@@ -103,21 +103,21 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
                                 constexpr double projected_area_of_single_element =
                                     (2. * std::numbers::pi * elem_length * elem_diameter) / 4.;
                                 const double voxel_size = grid.bounded_grid().cell_size();
-                                const double attenuation_coeff =
+                                const double unit_attenuation_coeff =
                                     projected_area_of_single_element /
                                     (voxel_size * voxel_size * voxel_size);
 
-                                const double attenuated_length =
-                                    -(std::log(1. - attenuation_coeff * hit.m_distance_in_voxel) /
-                                      attenuation_coeff);
+                                const double effective_length =
+                                    -(std::log(1. - unit_attenuation_coeff * hit.m_distance_in_voxel) /
+                                      unit_attenuation_coeff);
 
                                 if constexpr (pe::is_uplbl<PadEstimator>::value)
                                     grid.add_length_count_and_variance(
-                                        hit.m_index, attenuated_length, !is_hit_computed
+                                        hit.m_index, effective_length, !is_hit_computed
                                     );
                                 else
                                     grid.add_length_and_count(
-                                        hit.m_index, attenuated_length, !is_hit_computed
+                                        hit.m_index, effective_length, !is_hit_computed
                                     );
                             },
                             grid

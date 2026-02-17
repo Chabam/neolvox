@@ -140,7 +140,7 @@ struct PointCloudWithTheoriticalShots
 
 PointCloudWithTheoriticalShots load_point_cloud_from_file(
     const std::filesystem::path&                        file,
-    std::optional<std::reference_wrapper<lvox::Bounds>> bounds = {}
+    std::optional<std::reference_wrapper<lvox::Bounds<double>>> bounds = {}
 )
 {
     using dim = pdal::Dimension::Id;
@@ -252,7 +252,7 @@ std::vector<Scan> read_dot_in_file(
     std::ifstream  fstream{in_file};
     const fs::path parent_path = in_file.parent_path();
 
-    std::vector<std::future<std::pair<PointCloudWithTheoriticalShots, lvox::Bounds>>> future_point_clouds;
+    std::vector<std::future<std::pair<PointCloudWithTheoriticalShots, lvox::Bounds<double>>>> future_point_clouds;
     std::string line;
     std::vector<Point> scanner_origins;
     while (std::getline(fstream, line))
@@ -277,8 +277,8 @@ std::vector<Scan> read_dot_in_file(
             std::async(
                 [parent_path](
                     const std::string           point_cloud_file_name
-                ) -> std::pair<PointCloudWithTheoriticalShots, lvox::Bounds> {
-                    lvox::Bounds bounds;
+                ) -> std::pair<PointCloudWithTheoriticalShots, lvox::Bounds<double>> {
+                    lvox::Bounds<double> bounds;
 
                     return {load_point_cloud_from_file(
                         fs::path{parent_path / point_cloud_file_name}, {bounds}
@@ -314,7 +314,7 @@ Scan create_scan_using_pdal(
 )
 {
     lvox::Logger logger{"Point cloud loader"};
-    lvox::Bounds scan_bounds;
+    lvox::Bounds<double> scan_bounds;
     point_cloud = load_point_cloud_from_file(file, {scan_bounds});
     std::vector<Scan> scans;
 

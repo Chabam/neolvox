@@ -22,13 +22,13 @@ Point::Point(double x, double y, double z, double gps_time)
 }
 
 
-lvox::Bounds create_bounds(double dim_x, double dim_y, double dim_z)
+lvox::Bounds<double> create_bounds(double dim_x, double dim_y, double dim_z)
 {
     const double half_dim_x = dim_x / 2.0;
     const double half_dim_y = dim_y / 2.0;
     const double half_dim_z = dim_z / 2.0;
 
-    return lvox::Bounds{-half_dim_x, half_dim_x, -half_dim_y, half_dim_y, -half_dim_z, half_dim_z};
+    return lvox::Bounds<double>{-half_dim_x, half_dim_x, -half_dim_y, half_dim_y, -half_dim_z, half_dim_z};
 }
 
 PointCloud generate_cubic_point_cloud(double dim_x, double dim_y, double dim_z)

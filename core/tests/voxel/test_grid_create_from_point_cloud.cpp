@@ -6,8 +6,8 @@ TEST(grid, create_from_point_cloud)
 {
     const auto pc = generate_cubic_point_cloud();
 
-    lvox::Bounds point_cloud_bounds;
-    const double cell_size = 0.5;
+    lvox::Bounds<double> point_cloud_bounds;
+    const double         cell_size = 0.5;
 
     for (const auto& pt : pc)
     {

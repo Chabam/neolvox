@@ -33,6 +33,7 @@ class BoundedGrid
     unsigned int dim_z() const { return m_dim_z; }
 
     const Bounds<double>& bounds() const { return m_bounds; }
+    const Bounds<int>& index_bounds() const { return m_index_bounds; }
 
     double       m_cell_size;
     Bounds<int>  m_index_bounds;

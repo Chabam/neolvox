@@ -49,23 +49,23 @@ TEST(grid, creation_from_box3d)
     {
         const double            cell_size = 15.;
         const lvox::BoundedGrid grid{bounds, cell_size};
-        // 20 / 15 = 1.33333 => 2
+        // 10 / 15 => 0.66667 => 1 * 15 => 15
+        // (10 - (-10)) / 15 = 1.33333 => 2
         EXPECT_EQ(2, grid.dim_x());
-        // 40 / 15 = 2.66667 => 3
-        EXPECT_EQ(3, grid.dim_y());
+        // 20 / 15 => 1.3333 => 2 => 2 * 15 => 30
+        // (30 - (-30)) / 15 = 4
+        EXPECT_EQ(4, grid.dim_y());
+        // 30 / 15 => 2 => 2 * 15 => 30
         // 60 / 15 = 4
         EXPECT_EQ(4, grid.dim_z());
 
         lvox::Bounds grid_bounds = grid.bounds();
 
-        EXPECT_EQ(-10., grid_bounds.m_min_x);
-        // -10 + 2 * 15 = 20
-        EXPECT_EQ(20., grid_bounds.m_max_x);
-        EXPECT_EQ(-20., grid_bounds.m_min_y);
-        // -20 + 3 * 15 = 25
-        EXPECT_EQ(25., grid_bounds.m_max_y);
+        EXPECT_EQ(-15., grid_bounds.m_min_x);
+        EXPECT_EQ(15., grid_bounds.m_max_x);
+        EXPECT_EQ(-30., grid_bounds.m_min_y);
+        EXPECT_EQ(30., grid_bounds.m_max_y);
         EXPECT_EQ(-30., grid_bounds.m_min_z);
-        // -30 + 4 * 15 = 30
         EXPECT_EQ(30., grid_bounds.m_max_z);
     }
 }

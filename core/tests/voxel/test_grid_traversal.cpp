@@ -16,7 +16,7 @@ TEST(grid, grid_traversal_x_axis)
     auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
-    lvox::Bounds point_cloud_bounds;
+    lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {
         point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
@@ -41,9 +41,9 @@ TEST(grid, grid_traversal_x_axis)
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
-            ASSERT_EQ(i, x);
-            ASSERT_EQ(0, y);
-            ASSERT_EQ(0, z);
+            ASSERT_EQ(point_cloud_bounds.m_min_x + i * cell_size, x);
+            ASSERT_EQ(point_cloud_bounds.m_min_y, y);
+            ASSERT_EQ(point_cloud_bounds.m_min_z, z);
         }
     }
     {
@@ -63,9 +63,9 @@ TEST(grid, grid_traversal_x_axis)
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
-            ASSERT_EQ(grid.dim_x() - i - 1, x);
-            ASSERT_EQ(0, y);
-            ASSERT_EQ(0, z);
+            ASSERT_EQ((point_cloud_bounds.m_max_x - cell_size) - i * cell_size, x);
+            ASSERT_EQ(point_cloud_bounds.m_min_y, y);
+            ASSERT_EQ(point_cloud_bounds.m_min_z, z);
         }
     }
 }
@@ -80,7 +80,7 @@ TEST(grid, grid_traversal_y_axis)
     auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
-    lvox::Bounds point_cloud_bounds;
+    lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {
         point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
@@ -105,9 +105,9 @@ TEST(grid, grid_traversal_y_axis)
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
-            ASSERT_EQ(0, x);
-            ASSERT_EQ(i, y);
-            ASSERT_EQ(0, z);
+            ASSERT_EQ(point_cloud_bounds.m_min_x, x);
+            ASSERT_EQ(point_cloud_bounds.m_min_y + i * cell_size, y);
+            ASSERT_EQ(point_cloud_bounds.m_min_z, z);
         }
     }
     {
@@ -127,9 +127,9 @@ TEST(grid, grid_traversal_y_axis)
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
-            ASSERT_EQ(0, x);
-            ASSERT_EQ(grid.dim_y() - i - 1, y);
-            ASSERT_EQ(0, z);
+            ASSERT_EQ(point_cloud_bounds.m_min_x, x);
+            ASSERT_EQ((point_cloud_bounds.m_max_y - cell_size) - i * cell_size, y);
+            ASSERT_EQ(point_cloud_bounds.m_min_z, z);
         }
     }
 }
@@ -143,8 +143,8 @@ TEST(grid, grid_traversal_z_axis)
 
     auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
-    const double cell_size = 1.;
-    lvox::Bounds point_cloud_bounds;
+    const double         cell_size = 1.;
+    lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {
         point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
@@ -168,9 +168,9 @@ TEST(grid, grid_traversal_z_axis)
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
-            ASSERT_EQ(0, x);
-            ASSERT_EQ(0, y);
-            ASSERT_EQ(i, z);
+            ASSERT_EQ(point_cloud_bounds.m_min_x, x);
+            ASSERT_EQ(point_cloud_bounds.m_min_y, y);
+            ASSERT_EQ(point_cloud_bounds.m_min_z + i * cell_size, z);
         }
     }
     {
@@ -190,9 +190,9 @@ TEST(grid, grid_traversal_z_axis)
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
-            ASSERT_EQ(0, x);
-            ASSERT_EQ(0, y);
-            ASSERT_EQ(grid.dim_z() - i - 1, z);
+            ASSERT_EQ(point_cloud_bounds.m_min_x, x);
+            ASSERT_EQ(point_cloud_bounds.m_min_y, y);
+            ASSERT_EQ((point_cloud_bounds.m_max_z - cell_size) - i * cell_size, z);
         }
     }
 }
@@ -207,13 +207,14 @@ TEST(grid, grid_traversal_diagonals)
     auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
-    lvox::Bounds point_cloud_bounds;
+    lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {
         point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
     }
 
     lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
+    auto index_bounds = grid.index_bounds();
 
     // Since the line goes from the highest point to the lowest in diagonal, the ray should hit
     // every x, y, z levels.
@@ -236,21 +237,21 @@ TEST(grid, grid_traversal_diagonals)
         // NOTE: Greater or equal because of floating point errors
         ASSERT_GE(visited_voxel_idxs.size(), std::round((max - min).norm()));
 
-        for (size_t x = 0; x < dim_x; ++x)
+        for (size_t x = index_bounds.m_min_x; x < index_bounds.m_max_x; ++x)
         {
             ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [x](const lvox::Index3D idx) {
                             return idx[0] == x;
                         }) != visited_voxel_idxs.end());
         }
 
-        for (size_t y = 0; y < dim_y; ++y)
+        for (size_t y = index_bounds.m_min_x; y < index_bounds.m_max_y; ++y)
         {
             ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [y](const lvox::Index3D idx) {
                             return idx[1] == y;
                         }) != visited_voxel_idxs.end());
         }
 
-        for (size_t z = 0; z < dim_z; ++z)
+        for (size_t z = index_bounds.m_min_x; z < index_bounds.m_max_z; ++z)
         {
             ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [z](const lvox::Index3D idx) {
                             return idx[2] == z;
@@ -259,11 +260,12 @@ TEST(grid, grid_traversal_diagonals)
     }
     // In the opposite direction as well.
     {
+        constexpr auto epsilon = 0.000001;
         lvox::Vector min{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector max{
-            point_cloud_bounds.m_max_x, point_cloud_bounds.m_max_y, point_cloud_bounds.m_max_z
+            point_cloud_bounds.m_max_x - epsilon, point_cloud_bounds.m_max_y - epsilon, point_cloud_bounds.m_max_z - epsilon
         };
         lvox::Vector dir{min - max};
         lvox::Beam   beam{max, dir};
@@ -277,21 +279,21 @@ TEST(grid, grid_traversal_diagonals)
 
         // NOTE: Greater or equal because of floating point errors
         ASSERT_GE(visited_voxel_idxs.size(), std::round((max - min).norm()));
-        for (size_t x = 0; x < dim_x; ++x)
+        for (size_t x = index_bounds.m_min_x; x < index_bounds.m_max_x; ++x)
         {
             ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [x](const lvox::Index3D idx) {
                             return idx[0] == x;
                         }) != visited_voxel_idxs.end());
         }
 
-        for (size_t y = 0; y < dim_y; ++y)
+        for (size_t y = index_bounds.m_min_x; y < index_bounds.m_max_y; ++y)
         {
             ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [y](const lvox::Index3D idx) {
                             return idx[1] == y;
                         }) != visited_voxel_idxs.end());
         }
 
-        for (size_t z = 0; z < dim_z; ++z)
+        for (size_t z = index_bounds.m_min_x; z < index_bounds.m_max_z; ++z)
         {
             ASSERT_TRUE(std::ranges::find_if(visited_voxel_idxs, [z](const lvox::Index3D idx) {
                             return idx[2] == z;
@@ -307,10 +309,10 @@ TEST(grid, grid_traversal_max_distance)
     const double dim_y = 24;
     const double dim_z = 32;
 
-    auto             pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
+    auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
-    const double cell_size = 1.;
-    lvox::Bounds point_cloud_bounds;
+    const double         cell_size = 1.;
+    lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {
         point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
@@ -337,9 +339,9 @@ TEST(grid, grid_traversal_max_distance)
         for (size_t i = 0; i < visited_voxel_idxs.size(); ++i)
         {
             auto [x, y, z] = visited_voxel_idxs[i];
-            ASSERT_EQ(i, x);
-            ASSERT_EQ(0, y);
-            ASSERT_EQ(0, z);
+            ASSERT_EQ(point_cloud_bounds.m_min_x + i * cell_size, x);
+            ASSERT_EQ(point_cloud_bounds.m_min_y, y);
+            ASSERT_EQ(point_cloud_bounds.m_min_z, z);
         }
     }
 }
@@ -353,7 +355,7 @@ TEST(grid, grid_traversal_exact_distance_in_voxel)
     auto             pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
-    lvox::Bounds point_cloud_bounds;
+    lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {
         point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
@@ -429,7 +431,7 @@ TEST(grid, grid_traversal_rounding_distance_in_voxel)
     auto             pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
     const double cell_size = 1.;
-    lvox::Bounds point_cloud_bounds;
+    lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {
         point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());

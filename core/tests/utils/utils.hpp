@@ -26,7 +26,7 @@ struct Point
 using PointCloud = std::vector<Point>;
 
 // Creates a bound from -(dim/2) to (dim/2)
-lvox::Bounds create_bounds(double dim_x, double dim_y, double dim_z);
+lvox::Bounds<double> create_bounds(double dim_x, double dim_y, double dim_z);
 
 // Generates a point cloud of 8 points at the corners of a cube from -1 to 1
 PointCloud generate_cubic_point_cloud(

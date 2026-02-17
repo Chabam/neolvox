@@ -20,7 +20,7 @@ static void bm_point_cloud_size(benchmark::State& state, bool is_sparse)
         logger.info("Generating point cloud");
         const auto pc = generate_cubic_point_cloud_with_random_points(state.range(0), 30, 40, 20);
 
-        lvox::Bounds point_cloud_bounds;
+        lvox::Bounds<double> point_cloud_bounds;
 
         for (const auto& pt : pc)
             point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());

@@ -21,12 +21,12 @@ BoundedGrid::BoundedGrid(
     , m_dim_z{static_cast<unsigned int>(std::abs(m_index_bounds.m_max_z - m_index_bounds.m_min_z))}
     , m_cell_count{m_dim_x * m_dim_y * m_dim_z}
     , m_bounds{
-          bounds.m_min_x * m_cell_size,
-          bounds.m_max_x * m_cell_size,
-          bounds.m_min_y * m_cell_size,
-          bounds.m_max_y * m_cell_size,
-          bounds.m_min_z * m_cell_size,
-          bounds.m_max_z * m_cell_size
+          m_index_bounds.m_min_x * m_cell_size,
+          m_index_bounds.m_max_x * m_cell_size,
+          m_index_bounds.m_min_y * m_cell_size,
+          m_index_bounds.m_max_y * m_cell_size,
+          m_index_bounds.m_min_z * m_cell_size,
+          m_index_bounds.m_max_z * m_cell_size
       }
 {
 

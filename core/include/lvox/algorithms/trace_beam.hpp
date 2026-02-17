@@ -36,11 +36,12 @@ struct TraceBeam
         using Step           = Eigen::Vector<signed char, 3>;
         constexpr double inf = std::numeric_limits<double>::infinity();
 
-        const Bounds bounds    = m_grid.bounds();
-        const size_t dim_x     = m_grid.dim_x();
-        const size_t dim_y     = m_grid.dim_y();
-        const size_t dim_z     = m_grid.dim_z();
-        const double cell_size = m_grid.cell_size();
+        const Bounds<double> bounds       = m_grid.bounds();
+        const Bounds<int>    index_bounds = m_grid.index_bounds();
+        const size_t         dim_x        = m_grid.dim_x();
+        const size_t         dim_y        = m_grid.dim_y();
+        const size_t         dim_z        = m_grid.dim_z();
+        const double         cell_size    = m_grid.cell_size();
 
         const Vector beam_origin    = beam.origin();
         const Vector beam_direction = beam.direction();
@@ -162,10 +163,12 @@ struct TraceBeam
 
             current_hit.m_distance_in_voxel = total_traveled_distance - prev_distance;
 
-            const bool is_above_min_bounds =
-                current_voxel_x >= 0 && current_voxel_y >= 0 && current_voxel_z >= 0;
-            const bool is_under_max_bounds =
-                current_voxel_x < dim_x && current_voxel_y < dim_y && current_voxel_z < dim_z;
+            const bool is_above_min_bounds = current_voxel_x >= index_bounds.m_min_x &&
+                                             current_voxel_y >= index_bounds.m_min_y &&
+                                             current_voxel_z >= index_bounds.m_min_z;
+            const bool is_under_max_bounds = current_voxel_x < index_bounds.m_max_x &&
+                                             current_voxel_y < index_bounds.m_max_y &&
+                                             current_voxel_z < index_bounds.m_max_z;
             const bool is_under_max_distance = total_traveled_distance <= max_distance;
 
             can_continue = is_above_min_bounds && is_under_max_bounds && is_under_max_distance;

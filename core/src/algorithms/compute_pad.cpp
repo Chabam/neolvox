@@ -125,16 +125,14 @@ void PADEstimation::operator()(algorithms::pe::UnequalPathLengthBeerLambert)
 void PADEstimation::operator()(algorithms::pe::BiasCorrectedMaximumLikelyhoodEstimator)
 {
     estimate_pad_impl(m_grid, m_required_hits, [this](COOGrid::VoxelData voxel_view) -> void {
-        const auto G = [](double val) -> double {
-            return 0.5 * val;
-        };
+        const auto G = 0.5;
 
         const double       hits        = *voxel_view.hit;
         const unsigned int ray_count   = *voxel_view.count;
         const double       hits_length = *voxel_view.hits_length;
         const double       lengths     = *voxel_view.lengths;
 
-        double res = (1. / G(lengths)) * (hits - (hits_length / lengths));
+        double res = (1. / (G * lengths)) * (hits - (hits_length / lengths));
 
         *voxel_view.pad = res;
     });

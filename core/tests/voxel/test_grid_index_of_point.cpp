@@ -11,7 +11,7 @@ TEST(grid, index_of_point)
 
     const auto pc = generate_cubic_point_cloud();
 
-    lvox::Bounds point_cloud_bounds;
+    lvox::Bounds<double> point_cloud_bounds;
     const double cell_size = .5;
     for (const auto pt : pc)
     {

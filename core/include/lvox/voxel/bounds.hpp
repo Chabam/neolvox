@@ -65,8 +65,10 @@ struct Bounds
     {
         m_min_x = std::move(other.m_min_x);
         m_max_x = std::move(other.m_max_x);
+
         m_min_y = std::move(other.m_min_y);
         m_max_y = std::move(other.m_max_y);
+
         m_min_z = std::move(other.m_min_z);
         m_max_z = std::move(other.m_max_z);
 
