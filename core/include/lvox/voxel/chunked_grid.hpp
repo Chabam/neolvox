@@ -35,7 +35,7 @@ class ChunkedGrid
 
         VoxelChunk(bool compute_variance);
 
-        static size_t index3d_to_flat_idx(const Index3D& voxel_idx);
+        size_t index3d_to_flat_idx(const Bounds<int>& index_bounds, const Index3D& voxel_idx);
 
         std::vector<unsigned int> m_hits;
         std::vector<unsigned int> m_counts;

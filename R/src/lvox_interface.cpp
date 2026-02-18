@@ -46,7 +46,7 @@ struct PointCloud
 
     class PointIterator
     {
-        friend class PointCloud;
+        friend struct PointCloud;
 
       public:
         using iterator_category = std::random_access_iterator_tag;
@@ -102,7 +102,7 @@ struct PointCloud
 
         PointIterator operator-(difference_type diff) const
         {
-            auto tmp = *this - diff;
+            auto tmp = *this;
             tmp.m_index -= diff;
             tmp.change_index();
             return tmp;
@@ -303,17 +303,20 @@ Rcpp::List do_lvox_computation(
 //' Perform the PAD estimation for a MLS scan
 //'
 //' @param pointCloud A point cloud acquired from a mobile lidar, this can be LAS object or a list
-//containing X, Y, Z and gpstime. ' @param trajectory A trajectory point cloud acquired from a
-//mobile lidar, this can be LAS object or a list containing X, Y, Z and gpstime. ' @param
-//padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE) ' @param voxelSize
-//The size of the voxels in the grid in meters ' @param useSparseGrid Whether or not to use sparse
-//grid for computation, it should take less memory. ' @param requiredHits The number of return
-//required for PAD computation, if the return amount in the voxel is lower than this number it will
-//be excluded from the estimation ' @param threadCount The amount of parallel processing thread to
-//use. Set this to your core count for best performance. ' @param exportIntermediateData Whether or
-//not to export all intermediate data from the Lvox computation. ' @return A LvoxGrid object
-//containing the 3d grid in a coordinate list (COO) form. It also contains metadata about the grid
-//(voxel size, grid dimensions, etc.)
+//'                   containing X, Y, Z and gpstime.
+//' @param trajectory A trajectory point cloud acquired from a mobile lidar, this can be LAS object
+//'                   or a list containing X, Y, Z and gpstime.
+//' @param padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE)
+//' @param voxelSize The size of the voxels in the grid in meters
+//' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory.
+//' @param requiredHits The number of return required for PAD computation, if the return amount in
+//'                     the voxel is lower than this number it will be excluded from the estimation
+//' @param threadCount The amount of parallel processing thread to use. Set this to your
+//'                    core count for best performance.
+//' @param exportIntermediateData Whether or not to export all intermediate data from the
+//'                                Lvox computation.
+//' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
+//'         contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeMLS(
     const SEXP&       pointCloud,
@@ -341,8 +344,8 @@ Rcpp::List lvoxComputeMLS(
         scans,
         padEstimator,
         voxelSize,
-        requiredHits,
         useSparseGrid,
+        requiredHits,
         threadCount,
         exportIntermediateData
     );
@@ -351,16 +354,19 @@ Rcpp::List lvoxComputeMLS(
 //' Perform the PAD estimation for TLS multi-scans
 //'
 //' @param pointClouds A list of point clouds acquired from a mobile lidar, this can be  LAS object
-//or a list containing X, Y, Z and gpstime. ' @param scannersOrigin A list of corresponding
-//scanner's origins coordinates. ' @param padEstimator Accronym for the PAD estimator to use (BL,
-//CF, UPLBL and BCMLE) ' @param voxelSize The size of the voxels in the grid in meters ' @param
-//useSparseGrid Whether or not to use sparse grid for computation, it should take less memory. '
-//@param requiredHits The number of return required for PAD computation, if the return amount in the
-//voxel is lower than this number it will be excluded from the estimation ' @param threadCount The
-//amount of parallel processing thread to use. Set this to your core count for best performance. '
-//@param exportIntermediateData Whether or not to export all intermediate data from the Lvox
-//computation. ' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form.
-//It also contains metadata about the grid (voxel size, grid dimensions, etc.)
+//'                    or a list containing X, Y, Z and gpstime.
+//' @param scannersOrigin A list of corresponding scanner's origins coordinates.
+//' @param padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE)
+//' @param voxelSize The size of the voxels in the grid in meters
+//' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory.
+//' @param requiredHits The number of return required for PAD computation, if the return amount in
+//'                     the voxel is lower than this number it will be excluded from the estimation
+//' @param threadCount The amount of parallel processing thread to use. Set this to your
+//'                    core count for best performance.
+//' @param exportIntermediateData Whether or not to export all intermediate data from the
+//'                               Lvox computation.
+//' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
+//'         contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeTLS(
     const Rcpp::List& pointClouds,
@@ -401,13 +407,12 @@ Rcpp::List lvoxComputeTLS(
             bounds
         );
     }
-
     return do_lvox_computation(
         scans,
         padEstimator,
         voxelSize,
-        requiredHits,
         useSparseGrid,
+        requiredHits,
         threadCount,
         exportIntermediateData
     );

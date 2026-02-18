@@ -23,9 +23,9 @@ class COOGrid
 
     struct VoxelData
     {
-        std::vector<unsigned int>::iterator x;
-        std::vector<unsigned int>::iterator y;
-        std::vector<unsigned int>::iterator z;
+        std::vector<int>::iterator x;
+        std::vector<int>::iterator y;
+        std::vector<int>::iterator z;
         std::vector<unsigned int>::iterator count;
         std::vector<unsigned int>::iterator hit;
         std::vector<double>::iterator       pad;
@@ -36,9 +36,9 @@ class COOGrid
 
     struct ConstVoxelData
     {
-        std::vector<unsigned int>::const_iterator x;
-        std::vector<unsigned int>::const_iterator y;
-        std::vector<unsigned int>::const_iterator z;
+        std::vector<int>::const_iterator x;
+        std::vector<int>::const_iterator y;
+        std::vector<int>::const_iterator z;
         std::vector<unsigned int>::const_iterator count;
         std::vector<unsigned int>::const_iterator hit;
         std::vector<double>::const_iterator       pad;
@@ -207,9 +207,9 @@ class COOGrid
 
     size_t size() const { return m_size; }
 
-    const std::vector<unsigned int>& xs() const { return m_xs; }
-    const std::vector<unsigned int>& ys() const { return m_ys; }
-    const std::vector<unsigned int>& zs() const { return m_zs; }
+    const std::vector<int>& xs() const { return m_xs; }
+    const std::vector<int>& ys() const { return m_ys; }
+    const std::vector<int>& zs() const { return m_zs; }
     const std::vector<unsigned int>& counts() const { return m_counts; }
     const std::vector<unsigned int>& hits() const { return m_hits; }
     const std::vector<double>& pads() const { return m_pads; }
@@ -221,9 +221,9 @@ class COOGrid
   private:
     bool                      m_uses_variance;
     size_t                    m_size;
-    std::vector<unsigned int> m_xs;
-    std::vector<unsigned int> m_ys;
-    std::vector<unsigned int> m_zs;
+    std::vector<int> m_xs;
+    std::vector<int> m_ys;
+    std::vector<int> m_zs;
     std::vector<unsigned int> m_counts;
     std::vector<unsigned int> m_hits;
     std::vector<double>       m_pads;

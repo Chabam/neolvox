@@ -75,20 +75,28 @@ size_t ChunkedGrid::index3d_to_chunk_idx(const Index3D& voxel_idx) const
 {
     const auto& [x, y, z] = voxel_idx;
 
-    const auto chunk_x_idx = x >> VoxelChunk::s_edge_bits;
-    const auto chunk_y_idx = y >> VoxelChunk::s_edge_bits;
-    const auto chunk_z_idx = z >> VoxelChunk::s_edge_bits;
+    const auto adjusted_x = x - m_bounded_grid.index_bounds().m_min_x;
+    const auto adjusted_y = y - m_bounded_grid.index_bounds().m_min_y;
+    const auto adjusted_z = z - m_bounded_grid.index_bounds().m_min_z;
+
+    const auto chunk_x_idx = adjusted_x >> VoxelChunk::s_edge_bits;
+    const auto chunk_y_idx = adjusted_y >> VoxelChunk::s_edge_bits;
+    const auto chunk_z_idx = adjusted_z >> VoxelChunk::s_edge_bits;
 
     return chunk_x_idx + chunk_y_idx * m_chunks_x + chunk_z_idx * m_chunks_x * m_chunks_y;
 }
 
-size_t ChunkedGrid::VoxelChunk::index3d_to_flat_idx(const Index3D& voxel_idx)
+size_t ChunkedGrid::VoxelChunk::index3d_to_flat_idx(const Bounds<int>& index_bounds, const Index3D& voxel_idx)
 {
     const auto& [x, y, z] = voxel_idx;
 
-    const auto local_x_idx = x & VoxelChunk::s_edge_mask;
-    const auto local_y_idx = y & VoxelChunk::s_edge_mask;
-    const auto local_z_idx = z & VoxelChunk::s_edge_mask;
+    const auto adjusted_x = x - index_bounds.m_min_x;
+    const auto adjusted_y = y - index_bounds.m_min_y;
+    const auto adjusted_z = z - index_bounds.m_min_z;
+
+    const auto local_x_idx = adjusted_x & VoxelChunk::s_edge_mask;
+    const auto local_y_idx = adjusted_y & VoxelChunk::s_edge_mask;
+    const auto local_z_idx = adjusted_z & VoxelChunk::s_edge_mask;
 
     return local_x_idx + local_y_idx * s_edge_size + local_z_idx * s_edge_size * s_edge_size;
 }
@@ -97,7 +105,7 @@ void ChunkedGrid::register_hit(const Index3D& idx)
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx);
-    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(idx);
+    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(m_bounded_grid.index_bounds(), idx);
 
     std::lock_guard lock{chunk->m_write_access};
     chunk->m_hits[voxel_idx_in_chunk] += 1;
@@ -107,7 +115,7 @@ void ChunkedGrid::add_length_and_count(const Index3D& idx, double length, bool i
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx);
-    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(idx);
+    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(m_bounded_grid.index_bounds(), idx);
 
     std::lock_guard lock{chunk->m_write_access};
     chunk->m_lengths[voxel_idx_in_chunk] += length;
@@ -122,7 +130,7 @@ void ChunkedGrid::add_length_count_and_variance(const Index3D& idx, double lengt
 {
     auto       chunk_idx          = index3d_to_chunk_idx(idx);
     auto       chunk              = get_or_create_chunk(chunk_idx);
-    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(idx);
+    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(m_bounded_grid.index_bounds(), idx);
 
     std::unique_lock lock{chunk->m_write_access};
     const double     previous_lengths = chunk->m_lengths[voxel_idx_in_chunk];
