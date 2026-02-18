@@ -290,6 +290,21 @@ Rcpp::List do_lvox_computation(
             grid.bounds().bounds().m_min_x,
             grid.bounds().bounds().m_min_y,
             grid.bounds().bounds().m_min_z
+        ),
+        Rcpp::Named("MaxCoords") = Rcpp::DoubleVector::create(
+            grid.bounds().bounds().m_max_x,
+            grid.bounds().bounds().m_max_y,
+            grid.bounds().bounds().m_max_z
+        ),
+        Rcpp::Named("MinimalIndices") = Rcpp::DoubleVector::create(
+            grid.bounds().index_bounds().m_min_x,
+            grid.bounds().index_bounds().m_min_y,
+            grid.bounds().index_bounds().m_min_z
+        ),
+        Rcpp::Named("MaxIndices") = Rcpp::DoubleVector::create(
+            grid.bounds().index_bounds().m_max_x,
+            grid.bounds().index_bounds().m_max_y,
+            grid.bounds().index_bounds().m_max_z
         )
     );
 

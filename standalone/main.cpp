@@ -476,22 +476,57 @@ void export_to_h5(
         }
 
         return plot_group.createAttribute(name, type, dataspace);
-    };
+        };
+    // Voxel size
     const auto    h5_voxel_size_t = H5::PredType::NATIVE_DOUBLE;
     H5::Attribute voxel_size_attr =
         get_or_create_attribute("Voxel size", h5_voxel_size_t, H5::DataSpace{});
     voxel_size_attr.write(h5_voxel_size_t, &bounded_grid.m_cell_size);
 
-    const auto h5_min_coords_t = H5::PredType::NATIVE_DOUBLE;
+    const auto h5_bounds_coords_t = H5::PredType::NATIVE_DOUBLE;
 
+    // Min coords
     H5::Attribute min_coord_attr = get_or_create_attribute(
-        "Minimal coordinates values", h5_min_coords_t, singular_3d_coord_data_space
+        "Minimal coordinates values", h5_bounds_coords_t, singular_3d_coord_data_space
     );
 
     const std::array<double, 3> min_coords = {
         bounded_grid.bounds().m_min_x, bounded_grid.bounds().m_min_y, bounded_grid.bounds().m_min_z
     };
     min_coord_attr.write(h5_voxel_size_t, min_coords.data());
+
+    // Max coords
+    H5::Attribute max_coord_attr = get_or_create_attribute(
+        "Maximum coordinates values", h5_bounds_coords_t, singular_3d_coord_data_space
+    );
+
+    const std::array<double, 3> max_coords = {
+        bounded_grid.bounds().m_max_x, bounded_grid.bounds().m_max_y, bounded_grid.bounds().m_max_z
+    };
+    min_coord_attr.write(h5_voxel_size_t, max_coords.data());
+
+    const auto h5_bounds_index_t = H5::PredType::NATIVE_INT;
+
+    // Min coords
+    H5::Attribute min_index_attr = get_or_create_attribute(
+        "Minimal index values", h5_bounds_coords_t, singular_3d_coord_data_space
+    );
+
+    const std::array<int, 3> min_indices = {
+        bounded_grid.index_bounds().m_min_x, bounded_grid.index_bounds().m_min_y, bounded_grid.index_bounds().m_min_z
+    };
+    min_coord_attr.write(h5_voxel_size_t, min_indices.data());
+
+    // Max coords
+    H5::Attribute max_index_attr = get_or_create_attribute(
+        "Maximum index values", h5_bounds_index_t, singular_3d_coord_data_space
+    );
+
+    const std::array<int, 3> max_indices = {
+        bounded_grid.index_bounds().m_max_x, bounded_grid.index_bounds().m_max_y, bounded_grid.index_bounds().m_max_z
+    };
+    min_coord_attr.write(h5_voxel_size_t, max_indices.data());
+
 
     // Grid dimensions
     const auto    h5_grid_dim_t = H5::PredType::NATIVE_UINT64;
