@@ -11,7 +11,6 @@ target_sources(lvox_core
   src/scanner/beam.cpp
   src/scanner/spherical_scanner.cpp
   src/voxel/bounded_grid.cpp
-  src/voxel/bounds.cpp
   src/voxel/chunked_grid.cpp
   src/voxel/coo_grid.cpp
   src/voxel/dense_grid.cpp

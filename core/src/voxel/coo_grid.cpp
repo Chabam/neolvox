@@ -59,16 +59,37 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
             [chunk_x, chunk_y, chunk_z](size_t idx) -> Index3D {
                 constexpr auto chunk_dim = ChunkedGrid::VoxelChunk::s_edge_size;
                 return {
-                    chunk_x * chunk_dim + static_cast<unsigned int>(idx % chunk_dim),
-                    chunk_y * chunk_dim + static_cast<unsigned int>((idx / chunk_dim) % chunk_dim),
-                    chunk_z * chunk_dim + static_cast<unsigned int>(idx / (chunk_dim * chunk_dim))
+                    static_cast<int>(chunk_x * chunk_dim + (idx % chunk_dim)),
+                    static_cast<int>(chunk_y * chunk_dim + ((idx / chunk_dim) % chunk_dim)),
+                    static_cast<int>(chunk_z * chunk_dim + (idx / (chunk_dim * chunk_dim)))
                 };
             }
         );
 
-        std::ranges::copy(index3d_with_data | std::views::elements<0>, std::back_inserter(m_xs));
-        std::ranges::copy(index3d_with_data | std::views::elements<1>, std::back_inserter(m_ys));
-        std::ranges::copy(index3d_with_data | std::views::elements<2>, std::back_inserter(m_zs));
+        const auto& index_bounds = grid.bounded_grid().index_bounds();
+        std::ranges::copy(
+            index3d_with_data | std::views::elements<0> |
+                std::views::transform([&index_bounds](auto idx) -> int {
+                    return index_bounds.m_min_x + idx;
+                }),
+            m_xs.begin()
+        );
+
+        std::ranges::copy(
+            index3d_with_data | std::views::elements<1> |
+                std::views::transform([&index_bounds](auto idx) -> int {
+                    return index_bounds.m_min_y + idx;
+                }),
+            m_ys.begin()
+        );
+
+        std::ranges::copy(
+            index3d_with_data | std::views::elements<2> |
+                std::views::transform([&index_bounds](auto idx) -> int {
+                    return index_bounds.m_min_z + idx;
+                }),
+            m_zs.begin()
+        );
 
         std::ranges::copy(
             index_with_data | std::views::transform([&chunk](const size_t& index) -> unsigned int {
@@ -159,9 +180,9 @@ COOGrid::COOGrid(const DenseGrid& grid)
             const auto dim_z = grid.m_bounded_grid.m_dim_z;
 
             return {
-                static_cast<unsigned int>(idx % dim_x),
-                static_cast<unsigned int>((idx / dim_x) % dim_y),
-                static_cast<unsigned int>(idx / (dim_x * dim_y))
+                static_cast<int>(idx % dim_x),
+                static_cast<int>((idx / dim_x) % dim_y),
+                static_cast<int>(idx / (dim_x * dim_y))
             };
         }
     );
@@ -178,9 +199,28 @@ COOGrid::COOGrid(const DenseGrid& grid)
     if (m_uses_variance)
         m_lengths_variance.resize(m_size);
 
-    std::ranges::copy(index3d_with_data | std::views::elements<0>, m_xs.begin());
-    std::ranges::copy(index3d_with_data | std::views::elements<1>, m_ys.begin());
-    std::ranges::copy(index3d_with_data | std::views::elements<2>, m_zs.begin());
+    const auto& index_bounds = grid.bounded_grid().index_bounds();
+    std::ranges::copy(
+        index3d_with_data | std::views::elements<0> |
+            std::views::transform([&index_bounds](auto idx) -> int {
+                return index_bounds.m_min_x + idx;
+            }),
+        m_xs.begin()
+    );
+    std::ranges::copy(
+        index3d_with_data | std::views::elements<1> |
+            std::views::transform([&index_bounds](auto idx) -> int {
+                return index_bounds.m_min_y + idx;
+            }),
+        m_ys.begin()
+    );
+    std::ranges::copy(
+        index3d_with_data | std::views::elements<2> |
+            std::views::transform([&index_bounds](auto idx) -> int {
+                return index_bounds.m_min_z + idx;
+            }),
+        m_zs.begin()
+    );
 
     std::ranges::copy(
         index_with_data | std::views::transform([&grid](const size_t& index) -> unsigned int {

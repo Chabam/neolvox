@@ -15,9 +15,9 @@ print.LVoxGrid <- function(x, ...) {
 #' @return A LvoxHeightProfile object
 as.matrix.LVoxGrid <- function(x, gridDataName = "PAD", ...) {
   dense_grid <- array(0, dim = x$Dimensions)
-  xs <- x$data$X + 1
-  ys <- x$data$Y + 1
-  zs <- x$data$Z + 1
+  xs <- x$data$X + 1 - x$MinimalIndices[1]
+  ys <- x$data$Y + 1 - x$MinimalIndices[2]
+  zs <- x$data$Z + 1 - x$MinimalIndices[3]
   dense_grid[cbind(xs, ys, zs)] <- x$data[[gridDataName]]
   dense_grid
 }

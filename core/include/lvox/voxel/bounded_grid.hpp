@@ -12,18 +12,18 @@ namespace lvox
 class BoundedGrid
 {
   public:
-    BoundedGrid(const Bounds& bounds, double cell_size, unsigned int voxel_alignment = 1);
+    BoundedGrid(const Bounds<double>& bounds, double cell_size, unsigned int voxel_alignment = 1);
     BoundedGrid(const BoundedGrid& other);
     BoundedGrid(BoundedGrid&& other);
 
     // NOTE: no bounds check!
-    Bounds voxel_bounds(size_t idx_x, size_t idx_y, size_t idx_z) const;
+    Bounds<double> voxel_bounds(int idx_x, int idx_y, int idx_z) const;
 
     // Return an index tuple of this layout (x, y, z)
     Index3D index3d_of_point(const Vector& point) const;
 
     // Return an index tuple of this layout (x, y, z)
-    Bounds voxel_bounds_from_point(const Vector& point);
+    Bounds<double> voxel_bounds_from_point(const Vector& point);
 
     double cell_size() const { return m_cell_size; }
     size_t cell_count() const { return m_cell_count; }
@@ -32,17 +32,19 @@ class BoundedGrid
     unsigned int dim_y() const { return m_dim_y; }
     unsigned int dim_z() const { return m_dim_z; }
 
-    const Bounds& bounds() const { return m_bounds; }
+    const Bounds<double>& bounds() const { return m_bounds; }
+    const Bounds<int>& index_bounds() const { return m_index_bounds; }
 
     double       m_cell_size;
+    Bounds<int>  m_index_bounds;
     unsigned int m_dim_x;
     unsigned int m_dim_y;
     unsigned int m_dim_z;
-    size_t       m_cell_count;
-    Bounds       m_bounds;
 
-    unsigned int adjust_dim_to_grid(double distance, unsigned int voxel_alignment);
-    double       adjust_bounds_to_grid(size_t dim, double min) const;
+    size_t         m_cell_count;
+    Bounds<double> m_bounds;
+
+    int    adjust_dim_to_grid(int distance, unsigned int voxel_alignment);
 
     static constexpr auto g_grid_loginfo = R"(
 Creating grid of dimension: {}x{}x{}

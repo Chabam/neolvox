@@ -2,13 +2,13 @@
 #include <algorithm>
 #include <filesystem>
 #include <format>
+#include <fstream>
 #include <functional>
 #include <future>
 #include <iostream>
 #include <iterator>
 #include <memory>
 #include <mutex>
-#include <fstream>
 #include <sstream>
 #include <stdexcept>
 
@@ -26,14 +26,13 @@
 #include <lvox/algorithms/compute_pad.hpp>
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/logger/logger.hpp>
+#include <lvox/logger/progress.hpp>
 #include <lvox/scanner/scan.hpp>
 #include <lvox/scanner/spherical_scanner.hpp>
 #include <lvox/scanner/trajectory.hpp>
 #include <lvox/types.hpp>
-#include <lvox/voxel/coo_grid.hpp>
-
-#include <lvox/logger/progress.hpp>
 #include <lvox/voxel/bounds.hpp>
+#include <lvox/voxel/coo_grid.hpp>
 
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] FILE
@@ -139,8 +138,8 @@ struct PointCloudWithTheoriticalShots
 };
 
 PointCloudWithTheoriticalShots load_point_cloud_from_file(
-    const std::filesystem::path&                        file,
-    std::optional<std::reference_wrapper<lvox::Bounds>> bounds = {}
+    const std::filesystem::path&                                file,
+    std::optional<std::reference_wrapper<lvox::Bounds<double>>> bounds = {}
 )
 {
     using dim = pdal::Dimension::Id;
@@ -208,9 +207,7 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
         }
         else
         {
-            out.m_point_cloud.emplace_back(
-                x, y, z, pt.template getFieldAs<double>(dim::GpsTime)
-            );
+            out.m_point_cloud.emplace_back(x, y, z, pt.template getFieldAs<double>(dim::GpsTime));
 
             if (calculate_bounds)
             {
@@ -245,15 +242,17 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
 }
 
 std::vector<Scan> read_dot_in_file(
-    const std::filesystem::path& in_file, std::vector<PointCloudWithTheoriticalShots>& out_point_clouds
+    const std::filesystem::path&                 in_file,
+    std::vector<PointCloudWithTheoriticalShots>& out_point_clouds
 )
 {
     namespace fs = std::filesystem;
     std::ifstream  fstream{in_file};
     const fs::path parent_path = in_file.parent_path();
 
-    std::vector<std::future<std::pair<PointCloudWithTheoriticalShots, lvox::Bounds>>> future_point_clouds;
-    std::string line;
+    std::vector<std::future<std::pair<PointCloudWithTheoriticalShots, lvox::Bounds<double>>>>
+                       future_point_clouds;
+    std::string        line;
     std::vector<Point> scanner_origins;
     while (std::getline(fstream, line))
     {
@@ -275,14 +274,16 @@ std::vector<Scan> read_dot_in_file(
 
         future_point_clouds.emplace_back(
             std::async(
-                [parent_path](
-                    const std::string           point_cloud_file_name
-                ) -> std::pair<PointCloudWithTheoriticalShots, lvox::Bounds> {
-                    lvox::Bounds bounds;
+                [parent_path](const std::string point_cloud_file_name)
+                    -> std::pair<PointCloudWithTheoriticalShots, lvox::Bounds<double>> {
+                    lvox::Bounds<double> bounds;
 
-                    return {load_point_cloud_from_file(
-                        fs::path{parent_path / point_cloud_file_name}, {bounds}
-                    ), bounds};
+                    return {
+                        load_point_cloud_from_file(
+                            fs::path{parent_path / point_cloud_file_name}, {bounds}
+                        ),
+                        bounds
+                    };
                 },
                 point_cloud_file_name.str()
             )
@@ -290,14 +291,16 @@ std::vector<Scan> read_dot_in_file(
     }
 
     std::vector<Scan> out_scans;
-    const auto scan_count = future_point_clouds.size();
+    const auto        scan_count = future_point_clouds.size();
     out_scans.reserve(scan_count);
     out_point_clouds.reserve(scan_count);
     for (size_t i = 0; i < scan_count; ++i)
     {
         auto&& [point_cloud, bounds] = future_point_clouds[i].get();
-        auto pc = out_point_clouds.emplace_back(std::move(point_cloud));
-        auto scan = out_scans.emplace_back(out_point_clouds[i].m_point_cloud, scanner_origins[i], std::move(bounds));
+        auto pc                      = out_point_clouds.emplace_back(std::move(point_cloud));
+        auto scan                    = out_scans.emplace_back(
+            out_point_clouds[i].m_point_cloud, scanner_origins[i], std::move(bounds)
+        );
 
         if (pc.m_blank_shots)
             scan.m_blank_shots = *pc.m_blank_shots;
@@ -313,8 +316,8 @@ Scan create_scan_using_pdal(
     std::optional<Point>                 scan_origin = {}
 )
 {
-    lvox::Logger logger{"Point cloud loader"};
-    lvox::Bounds scan_bounds;
+    lvox::Logger         logger{"Point cloud loader"};
+    lvox::Bounds<double> scan_bounds;
     point_cloud = load_point_cloud_from_file(file, {scan_bounds});
     std::vector<Scan> scans;
 
@@ -364,9 +367,9 @@ void export_to_h5(
     }
 
     file                                       = H5::H5File{filename.string(), H5F_ACC_TRUNC};
-    std::vector<unsigned int> xs               = grid.xs();
-    std::vector<unsigned int> ys               = grid.ys();
-    std::vector<unsigned int> zs               = grid.zs();
+    std::vector<int>          xs               = grid.xs();
+    std::vector<int>          ys               = grid.ys();
+    std::vector<int>          zs               = grid.zs();
     std::vector<unsigned int> counts           = grid.counts();
     std::vector<unsigned int> hits             = grid.hits();
     std::vector<double>       pads             = grid.pads();
@@ -406,7 +409,7 @@ void export_to_h5(
 
     logger.info("Exporting grid to '{}'", filename.string());
 
-    const H5::PredType h5_index_t = H5::PredType::NATIVE_UINT;
+    const H5::PredType h5_index_t = H5::PredType::NATIVE_INT;
     {
         H5::DataSet xs_data = get_or_create_dataset("x", h5_index_t, data_space);
         xs_data.write(xs.data(), h5_index_t);
@@ -473,22 +476,57 @@ void export_to_h5(
         }
 
         return plot_group.createAttribute(name, type, dataspace);
-    };
+        };
+    // Voxel size
     const auto    h5_voxel_size_t = H5::PredType::NATIVE_DOUBLE;
     H5::Attribute voxel_size_attr =
         get_or_create_attribute("Voxel size", h5_voxel_size_t, H5::DataSpace{});
     voxel_size_attr.write(h5_voxel_size_t, &bounded_grid.m_cell_size);
 
-    const auto h5_min_coords_t = H5::PredType::NATIVE_DOUBLE;
+    const auto h5_bounds_coords_t = H5::PredType::NATIVE_DOUBLE;
 
+    // Min coords
     H5::Attribute min_coord_attr = get_or_create_attribute(
-        "Minimal coordinates values", h5_min_coords_t, singular_3d_coord_data_space
+        "Minimal coordinates values", h5_bounds_coords_t, singular_3d_coord_data_space
     );
 
     const std::array<double, 3> min_coords = {
         bounded_grid.bounds().m_min_x, bounded_grid.bounds().m_min_y, bounded_grid.bounds().m_min_z
     };
     min_coord_attr.write(h5_voxel_size_t, min_coords.data());
+
+    // Max coords
+    H5::Attribute max_coord_attr = get_or_create_attribute(
+        "Maximum coordinates values", h5_bounds_coords_t, singular_3d_coord_data_space
+    );
+
+    const std::array<double, 3> max_coords = {
+        bounded_grid.bounds().m_max_x, bounded_grid.bounds().m_max_y, bounded_grid.bounds().m_max_z
+    };
+    min_coord_attr.write(h5_voxel_size_t, max_coords.data());
+
+    const auto h5_bounds_index_t = H5::PredType::NATIVE_INT;
+
+    // Min coords
+    H5::Attribute min_index_attr = get_or_create_attribute(
+        "Minimal index values", h5_bounds_coords_t, singular_3d_coord_data_space
+    );
+
+    const std::array<int, 3> min_indices = {
+        bounded_grid.index_bounds().m_min_x, bounded_grid.index_bounds().m_min_y, bounded_grid.index_bounds().m_min_z
+    };
+    min_coord_attr.write(h5_voxel_size_t, min_indices.data());
+
+    // Max coords
+    H5::Attribute max_index_attr = get_or_create_attribute(
+        "Maximum index values", h5_bounds_index_t, singular_3d_coord_data_space
+    );
+
+    const std::array<int, 3> max_indices = {
+        bounded_grid.index_bounds().m_max_x, bounded_grid.index_bounds().m_max_y, bounded_grid.index_bounds().m_max_z
+    };
+    min_coord_attr.write(h5_voxel_size_t, max_indices.data());
+
 
     // Grid dimensions
     const auto    h5_grid_dim_t = H5::PredType::NATIVE_UINT64;

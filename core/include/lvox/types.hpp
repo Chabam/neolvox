@@ -23,7 +23,7 @@ concept PointCloud = std::ranges::range<T> && Point<V> &&
                          { r.size() } -> std::convertible_to<size_t>;
                      };
 
-using Index3D = std::array<unsigned int, 3>;
+using Index3D = std::array<int, 3>;
 } // namespace lvox
 
 #endif // LVOX_TYPES_HPP

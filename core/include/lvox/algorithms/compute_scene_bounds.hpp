@@ -11,9 +11,9 @@ namespace algorithms
 {
 
 template <Point PointT, PointCloud<PointT> PointCloudT>
-lvox::Bounds compute_scene_bounds(const std::vector<Scan<PointT, PointCloudT>>& scans)
+lvox::Bounds<double> compute_scene_bounds(const std::vector<Scan<PointT, PointCloudT>>& scans)
 {
-    Bounds total_bounds;
+    Bounds<double> total_bounds;
 
     for (const auto& scan : scans)
         total_bounds.grow(scan.m_bounds);
