@@ -76,9 +76,9 @@ Options:
                                               They are slower, but will require less memory.
                                               [disabled by default]
 
-   -r, --required-hits    number              The number of return required for PAD computation, if
-                                              the return amount in the voxel is lower than this number
-                                              it will be excluded from the estimation [5 by default]
+   -r, --required-counts    number            The number of ray required for PAD computation, if
+                                              the amount of rays that entered the voxel is lower than this
+                                              number it will be excluded from the estimation [5 by default]
 
    -l, --log-level        debug, info,        Max log level to display [defaults to info]
                           warning, error
@@ -128,7 +128,7 @@ std::optional<fs::path> g_traj_file            = {};
 fs::path                g_grid_file            = "out.h5";
 bool                    g_include_all_info     = false;
 bool                    g_use_sparse_grids     = false;
-unsigned int            g_required_hits        = 5;
+unsigned int            g_required_counts      = 5;
 fs::path                g_file;
 
 struct PointCloudWithTheoriticalShots
@@ -476,7 +476,7 @@ void export_to_h5(
         }
 
         return plot_group.createAttribute(name, type, dataspace);
-        };
+    };
     // Voxel size
     const auto    h5_voxel_size_t = H5::PredType::NATIVE_DOUBLE;
     H5::Attribute voxel_size_attr =
@@ -513,7 +513,9 @@ void export_to_h5(
     );
 
     const std::array<int, 3> min_indices = {
-        bounded_grid.index_bounds().m_min_x, bounded_grid.index_bounds().m_min_y, bounded_grid.index_bounds().m_min_z
+        bounded_grid.index_bounds().m_min_x,
+        bounded_grid.index_bounds().m_min_y,
+        bounded_grid.index_bounds().m_min_z
     };
     min_coord_attr.write(h5_voxel_size_t, min_indices.data());
 
@@ -523,10 +525,11 @@ void export_to_h5(
     );
 
     const std::array<int, 3> max_indices = {
-        bounded_grid.index_bounds().m_max_x, bounded_grid.index_bounds().m_max_y, bounded_grid.index_bounds().m_max_z
+        bounded_grid.index_bounds().m_max_x,
+        bounded_grid.index_bounds().m_max_y,
+        bounded_grid.index_bounds().m_max_z
     };
     min_coord_attr.write(h5_voxel_size_t, max_indices.data());
-
 
     // Grid dimensions
     const auto    h5_grid_dim_t = H5::PredType::NATIVE_UINT64;
@@ -629,7 +632,7 @@ int main(int argc, char* argv[])
         }
         else if (*arg_it == "-r" || *arg_it == "--required-hits")
         {
-            g_required_hits = std::stoi(*++arg_it);
+            g_required_counts = std::stoi(*++arg_it);
         }
         else if (*arg_it == "-l" || *arg_it == "--log-level")
         {
@@ -689,7 +692,7 @@ int main(int argc, char* argv[])
         .m_pad_estimator        = g_pad_estimator,
         .m_compute_theoriticals = g_compute_theoriticals,
         .m_use_sparse_grid      = g_use_sparse_grids,
-        .m_required_hits        = g_required_hits,
+        .m_required_counts      = g_required_counts,
         .m_log_stream           = std::cout
     };
 

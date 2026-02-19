@@ -29,7 +29,7 @@ class PADEstimation
 
   private:
     COOGrid&     m_grid;
-    unsigned int m_required_hits;
+    unsigned int m_required_counts;
 };
 
 void compute_pad(COOGrid& grid, const ComputeOptions& options);
