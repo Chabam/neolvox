@@ -3,7 +3,7 @@
 
 #include <lvox/voxel/grid.hpp>
 
-TEST(grid, creation_from_box3d)
+TEST(grid, creation_from_bounds)
 {
     const double dim_x = 20;
     const double dim_y = 40;
@@ -67,5 +67,42 @@ TEST(grid, creation_from_box3d)
         EXPECT_EQ(30., grid_bounds.m_max_y);
         EXPECT_EQ(-30., grid_bounds.m_min_z);
         EXPECT_EQ(30., grid_bounds.m_max_z);
+    }
+
+    {
+        const double            cell_size = 1.;
+        const lvox::BoundedGrid grid{bounds, cell_size, 8};
+        EXPECT_EQ(32, grid.dim_x());
+        EXPECT_EQ(48, grid.dim_y());
+        EXPECT_EQ(64, grid.dim_z());
+
+        lvox::Bounds grid_bounds = grid.bounds();
+
+        EXPECT_EQ(-16., grid_bounds.m_min_x);
+        EXPECT_EQ(16., grid_bounds.m_max_x);
+        EXPECT_EQ(-24., grid_bounds.m_min_y);
+        EXPECT_EQ(24., grid_bounds.m_max_y);
+        EXPECT_EQ(-32., grid_bounds.m_min_z);
+        EXPECT_EQ(32., grid_bounds.m_max_z);
+    }
+
+    {
+        const double            cell_size = 1.;
+        const lvox::BoundedGrid grid{bounds, cell_size};
+        const lvox::BoundedGrid grid_aligned{bounds, cell_size, 8};
+
+        EXPECT_GT(grid_aligned.dim_x(), grid.dim_x());
+        EXPECT_GT(grid_aligned.dim_y(), grid.dim_y());
+        EXPECT_GT(grid_aligned.dim_z(), grid.dim_z());
+
+        lvox::Bounds grid_bounds = grid.bounds();
+        lvox::Bounds aligned_grid_bounds = grid_aligned.bounds();
+
+        EXPECT_LT(aligned_grid_bounds.m_min_x, grid_bounds.m_min_x);
+        EXPECT_GT(aligned_grid_bounds.m_max_x, grid_bounds.m_max_x);
+        EXPECT_LT(aligned_grid_bounds.m_min_y, grid_bounds.m_min_y);
+        EXPECT_GT(aligned_grid_bounds.m_max_y, grid_bounds.m_max_y);
+        EXPECT_LT(aligned_grid_bounds.m_min_z, grid_bounds.m_min_z);
+        EXPECT_GT(aligned_grid_bounds.m_max_z, grid_bounds.m_max_z);
     }
 }

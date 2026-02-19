@@ -33,7 +33,7 @@ class BoundedGrid
     unsigned int dim_z() const { return m_dim_z; }
 
     const Bounds<double>& bounds() const { return m_bounds; }
-    const Bounds<int>& index_bounds() const { return m_index_bounds; }
+    const Bounds<int>&    index_bounds() const { return m_index_bounds; }
 
     double       m_cell_size;
     Bounds<int>  m_index_bounds;
@@ -44,7 +44,7 @@ class BoundedGrid
     size_t         m_cell_count;
     Bounds<double> m_bounds;
 
-    int    adjust_dim_to_grid(int distance, unsigned int voxel_alignment);
+    static int adjust_dim_to_alignment(int voxel_count_from_origin, unsigned int voxel_alignment, bool lower_bound);
 
     static constexpr auto g_grid_loginfo = R"(
 Creating grid of dimension: {}x{}x{}

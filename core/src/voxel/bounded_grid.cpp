@@ -9,12 +9,12 @@ BoundedGrid::BoundedGrid(
 )
     : m_cell_size{cell_size}
     , m_index_bounds{
-        BoundedGrid::adjust_dim_to_grid(std::floor(bounds.m_min_x / m_cell_size), voxel_alignment),
-        BoundedGrid::adjust_dim_to_grid(std::ceil(bounds.m_max_x / m_cell_size), voxel_alignment),
-        BoundedGrid::adjust_dim_to_grid(std::floor(bounds.m_min_y / m_cell_size), voxel_alignment),
-        BoundedGrid::adjust_dim_to_grid(std::ceil(bounds.m_max_y / m_cell_size), voxel_alignment),
-        BoundedGrid::adjust_dim_to_grid(std::floor(bounds.m_min_z / m_cell_size), voxel_alignment),
-        BoundedGrid::adjust_dim_to_grid(std::ceil(bounds.m_max_z / m_cell_size), voxel_alignment),
+        BoundedGrid::adjust_dim_to_alignment(std::floor(bounds.m_min_x / m_cell_size), voxel_alignment, true),
+        BoundedGrid::adjust_dim_to_alignment(std::ceil(bounds.m_max_x / m_cell_size), voxel_alignment, false),
+        BoundedGrid::adjust_dim_to_alignment(std::floor(bounds.m_min_y / m_cell_size), voxel_alignment, true),
+        BoundedGrid::adjust_dim_to_alignment(std::ceil(bounds.m_max_y / m_cell_size), voxel_alignment, false),
+        BoundedGrid::adjust_dim_to_alignment(std::floor(bounds.m_min_z / m_cell_size), voxel_alignment, true),
+        BoundedGrid::adjust_dim_to_alignment(std::ceil(bounds.m_max_z / m_cell_size), voxel_alignment, false),
     }
     , m_dim_x{static_cast<unsigned int>(std::abs(m_index_bounds.m_max_x - m_index_bounds.m_min_x))}
     , m_dim_y{static_cast<unsigned int>(std::abs(m_index_bounds.m_max_y - m_index_bounds.m_min_y))}
@@ -112,17 +112,28 @@ Bounds<double> BoundedGrid::voxel_bounds(int idx_x, int idx_y, int idx_z) const
     };
 }
 
-int BoundedGrid::adjust_dim_to_grid(int distance, unsigned int voxel_alignment)
+int BoundedGrid::adjust_dim_to_alignment(
+    int voxel_count_from_origin, unsigned int voxel_alignment, bool lower_bounds
+)
 {
-    if (distance % voxel_alignment == 0)
-        return distance;
+    if (voxel_count_from_origin % voxel_alignment == 0)
+        return voxel_count_from_origin;
 
-    int offset = voxel_alignment - (distance % voxel_alignment);
-    if (distance < 0)
-        offset = -offset;
+    const bool   negative_coords        = voxel_count_from_origin < 0;
+    const double abs_voxels_from_origin = std::abs(voxel_count_from_origin);
 
-    // Rounding to the nearest chunk dimension.
-    return distance + offset;
+    // The following section will make the grid go a "voxel aligment"
+    // further than the current computed value from the origin.
+    int new_multiple;
+    if (lower_bounds)
+        new_multiple = std::floor(abs_voxels_from_origin / voxel_alignment);
+    else
+        new_multiple = std::ceil(abs_voxels_from_origin / voxel_alignment);
+
+    if (negative_coords)
+        new_multiple = -new_multiple;
+
+    return new_multiple * voxel_alignment;
 }
 
 } // namespace lvox

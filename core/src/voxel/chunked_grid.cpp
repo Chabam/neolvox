@@ -86,7 +86,9 @@ size_t ChunkedGrid::index3d_to_chunk_idx(const Index3D& voxel_idx) const
     return chunk_x_idx + chunk_y_idx * m_chunks_x + chunk_z_idx * m_chunks_x * m_chunks_y;
 }
 
-size_t ChunkedGrid::VoxelChunk::index3d_to_flat_idx(const Bounds<int>& index_bounds, const Index3D& voxel_idx)
+size_t ChunkedGrid::VoxelChunk::index3d_to_flat_idx(
+    const Bounds<int>& index_bounds, const Index3D& voxel_idx
+)
 {
     const auto& [x, y, z] = voxel_idx;
 
