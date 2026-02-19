@@ -1,8 +1,8 @@
 #ifndef LVOX_COMPUTE_SCENE_BOUNDS_HPP
 #define LVOX_COMPUTE_SCENE_BOUNDS_HPP
 
-#include <lvox/voxel/bounds.hpp>
 #include <lvox/scanner/scan.hpp>
+#include <lvox/voxel/bounds.hpp>
 
 namespace lvox
 {

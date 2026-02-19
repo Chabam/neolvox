@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <utils/utils.hpp>
+
 #include <lvox/voxel/grid.hpp>
 
 TEST(grid, cell_count)

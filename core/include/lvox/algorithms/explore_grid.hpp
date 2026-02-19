@@ -108,7 +108,9 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
                                     (voxel_size * voxel_size * voxel_size);
 
                                 const double effective_length =
-                                    -(std::log(1. - unit_attenuation_coeff * hit.m_distance_in_voxel) /
+                                    -(std::log(
+                                          1. - unit_attenuation_coeff * hit.m_distance_in_voxel
+                                      ) /
                                       unit_attenuation_coeff);
 
                                 if constexpr (pe::is_uplbl<PadEstimator>::value)

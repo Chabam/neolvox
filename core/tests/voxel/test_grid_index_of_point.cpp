@@ -1,18 +1,19 @@
 #include <gtest/gtest.h>
 #include <utils/utils.hpp>
-#include <lvox/voxel/grid.hpp>
+
 #include <lvox/types.hpp>
+#include <lvox/voxel/grid.hpp>
 
 TEST(grid, index_of_point)
 {
-    const double     dim_x = 4;
-    const double     dim_y = 4;
-    const double     dim_z = 4;
+    const double dim_x = 4;
+    const double dim_y = 4;
+    const double dim_z = 4;
 
     const auto pc = generate_cubic_point_cloud();
 
     lvox::Bounds<double> point_cloud_bounds;
-    const double cell_size = .5;
+    const double         cell_size = .5;
     for (const auto pt : pc)
     {
         point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());

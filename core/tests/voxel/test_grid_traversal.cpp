@@ -3,8 +3,8 @@
 
 #include <lvox/algorithms/trace_beam.hpp>
 #include <lvox/scanner/beam.hpp>
-#include <lvox/voxel/grid.hpp>
 #include <lvox/types.hpp>
+#include <lvox/voxel/grid.hpp>
 
 TEST(grid, grid_traversal_x_axis)
 {
@@ -15,7 +15,7 @@ TEST(grid, grid_traversal_x_axis)
 
     auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
-    const double cell_size = 1.;
+    const double         cell_size = 1.;
     lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {
@@ -79,7 +79,7 @@ TEST(grid, grid_traversal_y_axis)
 
     auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
-    const double cell_size = 1.;
+    const double         cell_size = 1.;
     lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {
@@ -206,7 +206,7 @@ TEST(grid, grid_traversal_diagonals)
 
     auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
-    const double cell_size = 1.;
+    const double         cell_size = 1.;
     lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {
@@ -214,7 +214,7 @@ TEST(grid, grid_traversal_diagonals)
     }
 
     lvox::BoundedGrid grid{point_cloud_bounds, cell_size};
-    auto index_bounds = grid.index_bounds();
+    auto              index_bounds = grid.index_bounds();
 
     // Since the line goes from the highest point to the lowest in diagonal, the ray should hit
     // every x, y, z levels.
@@ -261,11 +261,13 @@ TEST(grid, grid_traversal_diagonals)
     // In the opposite direction as well.
     {
         constexpr auto epsilon = 0.000001;
-        lvox::Vector min{
+        lvox::Vector   min{
             point_cloud_bounds.m_min_x, point_cloud_bounds.m_min_y, point_cloud_bounds.m_min_z
         };
         lvox::Vector max{
-            point_cloud_bounds.m_max_x - epsilon, point_cloud_bounds.m_max_y - epsilon, point_cloud_bounds.m_max_z - epsilon
+            point_cloud_bounds.m_max_x - epsilon,
+            point_cloud_bounds.m_max_y - epsilon,
+            point_cloud_bounds.m_max_z - epsilon
         };
         lvox::Vector dir{min - max};
         lvox::Beam   beam{max, dir};
@@ -352,9 +354,9 @@ TEST(grid, grid_traversal_exact_distance_in_voxel)
     const double dim_y = 20;
     const double dim_z = 30;
 
-    auto             pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
+    auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
-    const double cell_size = 1.;
+    const double         cell_size = 1.;
     lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {
@@ -428,9 +430,9 @@ TEST(grid, grid_traversal_rounding_distance_in_voxel)
     const double dim_y = 20;
     const double dim_z = 30;
 
-    auto             pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
+    auto pc = generate_cubic_point_cloud(dim_x, dim_y, dim_z);
 
-    const double cell_size = 1.;
+    const double         cell_size = 1.;
     lvox::Bounds<double> point_cloud_bounds;
     for (const auto pt : pc)
     {

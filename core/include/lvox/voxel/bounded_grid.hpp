@@ -44,7 +44,9 @@ class BoundedGrid
     size_t         m_cell_count;
     Bounds<double> m_bounds;
 
-    static int adjust_dim_to_alignment(int distance_from_origin, int voxel_alignment, bool lower_bound);
+    static int adjust_dim_to_alignment(
+        int distance_from_origin, int voxel_alignment, bool lower_bound
+    );
 
     static constexpr auto g_grid_loginfo = R"(
 Creating grid of dimension: {}x{}x{}

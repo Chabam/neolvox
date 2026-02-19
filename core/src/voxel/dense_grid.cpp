@@ -41,13 +41,14 @@ DenseGrid::DenseGrid(DenseGrid&& other)
 
 size_t DenseGrid::index3d_to_flat_idx(const Index3D& voxel_idx) const
 {
-    const auto& [x, y, z] = voxel_idx;
+    const auto& [x, y, z]    = voxel_idx;
     const auto& index_bounds = m_bounded_grid.index_bounds();
-    const auto adjusted_x = x - index_bounds.m_min_x;
-    const auto adjusted_y = y - index_bounds.m_min_y;
-    const auto adjusted_z = z - index_bounds.m_min_z;
+    const auto  adjusted_x   = x - index_bounds.m_min_x;
+    const auto  adjusted_y   = y - index_bounds.m_min_y;
+    const auto  adjusted_z   = z - index_bounds.m_min_z;
 
-    return adjusted_x + adjusted_y * m_bounded_grid.dim_x() + adjusted_z * m_bounded_grid.dim_x() * m_bounded_grid.dim_y();
+    return adjusted_x + adjusted_y * m_bounded_grid.dim_x() +
+           adjusted_z * m_bounded_grid.dim_x() * m_bounded_grid.dim_y();
 }
 
 void DenseGrid::register_hit(const Index3D& voxel_idx)

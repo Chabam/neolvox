@@ -30,17 +30,17 @@ class DenseGrid
         double m_mean;
         double m_m2;
     };
-    using wa_ptr = std::shared_ptr<WelfordAggregate>;
+    using wa_ptr        = std::shared_ptr<WelfordAggregate>;
     using atomic_wa_ptr = std::atomic<wa_ptr>;
-    using atomic_f64 = std::atomic<double>;
+    using atomic_f64    = std::atomic<double>;
 
-    BoundedGrid m_bounded_grid;
-    std::vector<std::atomic_uint>              m_hits;
-    std::vector<std::atomic_uint>              m_counts;
-    std::vector<atomic_f64>                    m_lengths;
-    std::vector<atomic_f64>                    m_hits_lengths;
-    std::vector<atomic_wa_ptr>                 m_lengths_variance;
-    std::vector<atomic_f64>                    m_pad;
+    BoundedGrid                   m_bounded_grid;
+    std::vector<std::atomic_uint> m_hits;
+    std::vector<std::atomic_uint> m_counts;
+    std::vector<atomic_f64>       m_lengths;
+    std::vector<atomic_f64>       m_hits_lengths;
+    std::vector<atomic_wa_ptr>    m_lengths_variance;
+    std::vector<atomic_f64>       m_pad;
 
     size_t index3d_to_flat_idx(const Index3D& voxel_idx) const;
 };

@@ -26,11 +26,7 @@ static void bm_point_cloud_size(benchmark::State& state, bool is_sparse)
             point_cloud_bounds.grow(pt.x(), pt.y(), pt.z());
 
         std::vector<lvox::Scan<Point, PointCloud>> scans;
-        scans.emplace_back(
-            pc,
-            Point{0., 0., 0.},
-            point_cloud_bounds
-        );
+        scans.emplace_back(pc, Point{0., 0., 0.}, point_cloud_bounds);
         lvox::algorithms::ComputeOptions options{
             .m_voxel_size           = 0.1,
             .m_job_limit            = std::thread::hardware_concurrency(),

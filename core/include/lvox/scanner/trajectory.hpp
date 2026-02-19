@@ -2,6 +2,7 @@
 #define LVOX_TRAJECTORY_HPP
 
 #include <optional>
+
 #include <lvox/types.hpp>
 
 namespace lvox

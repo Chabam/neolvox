@@ -17,10 +17,7 @@ Ray count
 )";
 
 SphericalScanner::SphericalScanner(
-    const Vector& origin,
-    double              horizontal_fov,
-    double              vertical_fov,
-    double              angular_resolution
+    const Vector& origin, double horizontal_fov, double vertical_fov, double angular_resolution
 )
     : m_beams{}
 {

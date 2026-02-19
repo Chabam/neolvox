@@ -1,5 +1,5 @@
-#include <lvox/voxel/bounded_grid.hpp>
 #include <lvox/logger/logger.hpp>
+#include <lvox/voxel/bounded_grid.hpp>
 
 namespace lvox
 {

@@ -4,10 +4,10 @@
 #include <optional>
 #include <variant>
 
-#include <lvox/types.hpp>
 #include <lvox/logger/logger.hpp>
-#include <lvox/voxel/bounds.hpp>
 #include <lvox/scanner/trajectory.hpp>
+#include <lvox/types.hpp>
+#include <lvox/voxel/bounds.hpp>
 
 namespace lvox
 {
@@ -26,7 +26,8 @@ struct Scan
     struct ComputeBeamOrigin
     {
         const double gps_time;
-        Vector operator()(const PointT& scan_origin) {
+        Vector       operator()(const PointT& scan_origin)
+        {
             return Vector{scan_origin.x(), scan_origin.y(), scan_origin.z()};
         }
 

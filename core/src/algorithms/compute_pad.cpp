@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <execution>
+#include <ranges>
 
 #include <lvox/algorithms/compute_options.hpp>
 #include <lvox/algorithms/compute_pad.hpp>
@@ -10,7 +11,6 @@
 #include <lvox/scanner/scan.hpp>
 #include <lvox/voxel/coo_grid.hpp>
 #include <lvox/voxel/grid.hpp>
-#include <ranges>
 
 namespace lvox::algorithms
 {
@@ -18,9 +18,10 @@ namespace lvox::algorithms
 template <typename PADEstimationFunc>
 void estimate_pad_impl(COOGrid& grid, unsigned int required_counts, PADEstimationFunc&& func)
 {
-    auto filtered_grid = grid | std::views::filter([required_counts](COOGrid::VoxelData voxel_view) {
-                             return *voxel_view.count >= required_counts;
-                         });
+    auto filtered_grid =
+        grid | std::views::filter([required_counts](COOGrid::VoxelData voxel_view) {
+            return *voxel_view.count >= required_counts;
+        });
     std::for_each(std::execution::par, filtered_grid.begin(), filtered_grid.end(), func);
 }
 
