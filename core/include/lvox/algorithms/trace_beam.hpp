@@ -48,14 +48,12 @@ struct TraceBeam
 
         if (!bounds.contains(beam_origin.x(), beam_origin.y(), beam_origin.z()))
         {
-            constexpr auto err_msg = "Beam of origin ({},{},{}) is outside the grid";
+            constexpr auto err_msg = "Beam of origin ({},{},{}) is outside the grid, ignoring it";
             Logger{"Grid Traversal"}.error(
                 err_msg, beam_origin.x(), beam_origin.y(), beam_origin.z()
             );
 
-            throw std::runtime_error{
-                std::format(err_msg, beam_origin.x(), beam_origin.y(), beam_origin.z())
-            };
+            return;
         }
 
         // Source: https://stackoverflow.com/a/4609795

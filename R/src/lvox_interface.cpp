@@ -250,17 +250,22 @@ Rcpp::List do_lvox_computation(
     double                   voxelSize,
     bool                     useSparseGrid,
     unsigned int             requiredCounts,
-    unsigned int             threadCount,
-    bool                     exportIntermediateData
+    bool                     exportIntermediateData,
+    lvox::Bounds<double>     bounds,
+    double                   smallestElementSurface,
+    unsigned int             threadCount
 )
 {
     const lvox::algorithms::ComputeOptions compute_options{
-        .m_voxel_size           = voxelSize,
-        .m_job_limit            = threadCount,
-        .m_pad_estimator        = get_estimator_from_string(padEstimator),
-        .m_compute_theoriticals = false, // TODO: support theoriticals
-        .m_use_sparse_grid      = useSparseGrid,
-        .m_log_stream           = Rcpp::Rcout
+        .m_voxel_size            = voxelSize,
+        .m_job_limit             = threadCount,
+        .m_pad_estimator         = get_estimator_from_string(padEstimator),
+        .m_compute_theoriticals  = false, // TODO: support theoriticals
+        .m_use_sparse_grid       = useSparseGrid,
+        .m_required_counts       = requiredCounts,
+        .m_smallest_element_area = smallestElementSurface,
+        .m_bounds                = bounds,
+        .m_log_stream            = Rcpp::Rcout
     };
 
     lvox::COOGrid   grid = lvox::algorithms::compute_pad(scans, compute_options);
@@ -315,7 +320,6 @@ Rcpp::List do_lvox_computation(
 
 // [[Rcpp::depends(RcppParallel)]]
 
-// clang-format off
 //' Perform the PAD estimation for a MLS scan
 //'
 //' @param pointCloud A point cloud acquired from a mobile lidar, this can be LAS object or a list
@@ -327,13 +331,18 @@ Rcpp::List do_lvox_computation(
 //' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory.
 //' @param requiredCounts The number of ray required for PAD computation, if the amount of rays that
 //'                       entered the voxel is lower than this number it will be excluded from the estimation
-//' @param threadCount The amount of parallel processing thread to use. Set this to your
-//'                    core count for best performance.
 //' @param exportIntermediateData Whether or not to export all intermediate data from the
 //'                                Lvox computation.
+//' @param bounds The bounds that will be used for creating the voxel grid.
+//'               The input format is made of a pair of coordinates representing the lowest and
+//'               highest points of the bounding box: `list(c(-1, -1, -1), c(1, 1, 1))`
+//' @param smallestElementSurface The surface area of the smallest element of the forest scene.
+//'                               This value is used in BCMLE and UPBL as a mean of removing bias
+//'                               for unexplored voxels. If set to 0, it will be ignored.
+//' @param threadCount The amount of parallel processing thread to use. Set this to your
+//'                    core count for best performance.
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
 //'         contains metadata about the grid (voxel size, grid dimensions, etc.)
-// clang-format on
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeMLS(
     const SEXP&       pointCloud,
@@ -343,19 +352,31 @@ Rcpp::List lvoxComputeMLS(
     bool              useSparseGrid          = false,
     unsigned int      requiredCounts         = 5,
     bool              exportIntermediateData = false,
+    Rcpp::List        bounds                 = R_NilValue,
+    double            smallestElementSurface = 0,
     unsigned int      threadCount            = 8
 )
 {
-    lvox::Bounds<double> bounds;
+    lvox::Bounds<double> lvox_bounds;
     PointCloud           points = try_read_point_cloud_as_las(pointCloud);
 
-    for (const auto& pt : points)
+    if (bounds)
+    {        Rcpp::DoubleVector min_point = bounds[0];
+        Rcpp::DoubleVector max_point = bounds[1];
+        lvox_bounds                  = lvox::Bounds{
+            min_point[0], max_point[0], min_point[1], max_point[1], min_point[2], max_point[2]
+        };
+    }
+    else
     {
-        bounds.grow(pt.x(), pt.y(), pt.z());
+        for (const auto& pt : points)
+        {
+            lvox_bounds.grow(pt.x(), pt.y(), pt.z());
+        }
     }
 
     std::vector<Scan> scans;
-    scans.emplace_back(points, read_point_cloud_from_raw_data(trajectory), bounds);
+    scans.emplace_back(points, read_point_cloud_from_raw_data(trajectory), lvox_bounds);
 
     return do_lvox_computation(
         scans,
@@ -363,12 +384,13 @@ Rcpp::List lvoxComputeMLS(
         voxelSize,
         useSparseGrid,
         requiredCounts,
-        threadCount,
-        exportIntermediateData
+        exportIntermediateData,
+        lvox_bounds,
+        smallestElementSurface,
+        threadCount
     );
 }
 
-// clang-format off
 //' Perform the PAD estimation for TLS multi-scans
 //'
 //' @param pointClouds A list of point clouds acquired from a mobile lidar, this can be  LAS object
@@ -383,9 +405,14 @@ Rcpp::List lvoxComputeMLS(
 //'                    core count for best performance.
 //' @param exportIntermediateData Whether or not to export all intermediate data from the
 //'                               Lvox computation.
+//' @param bounds The bounds that will be used for creating the voxel grid.
+//'               The input format is made of a pair of coordinates representing the lowest and
+//'               highest points of the bounding box: `list(c(-1, -1, -1), c(1, 1, 1))`
+//' @param smallestElementSurface The surface area of the smallest element of the forest scene.
+//'                               This value is used in BCMLE and UPBL as a mean of removing bias
+//'                               for unexplored voxels. If set to 0, it will be ignored.
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
 //'         contains metadata about the grid (voxel size, grid dimensions, etc.)
-// clang-format on
 // [[Rcpp::export]]
 Rcpp::List lvoxComputeTLS(
     const Rcpp::List& pointClouds,
@@ -395,6 +422,8 @@ Rcpp::List lvoxComputeTLS(
     unsigned int      requiredCounts         = 5,
     bool              useSparseGrid          = false,
     bool              exportIntermediateData = false,
+    Rcpp::List        bounds                 = R_NilValue,
+    double            smallestElementSurface = 0,
     unsigned int      threadCount            = 8
 )
 {
@@ -404,35 +433,55 @@ Rcpp::List lvoxComputeTLS(
             "origin"
         );
 
-    lvox::Bounds<double>    bounds;
+    lvox::Bounds<double>    lvox_bounds;
     std::vector<Scan>       scans;
     std::vector<PointCloud> point_clouds;
+    std::vector<Point>      origins_point;
     scans.reserve(pointClouds.size());
     point_clouds.reserve(pointClouds.size());
+
     for (size_t i = 0; i < pointClouds.size(); ++i)
     {
         point_clouds.emplace_back(try_read_point_cloud_as_las(pointClouds[i]));
-
-        for (const auto& pt : point_clouds[i])
-        {
-            bounds.grow(pt.x(), pt.y(), pt.z());
-        }
-
         Rcpp::DoubleVector current_origin = scannersOrigin[i];
-
-        scans.emplace_back(
-            point_clouds[i],
-            Point{current_origin[0], current_origin[1], current_origin[2], 0},
-            bounds
+        origins_point.emplace_back(
+            Point{current_origin[0], current_origin[1], current_origin[2], 0}
         );
     }
+
+    if (bounds)
+    {
+        Rcpp::DoubleVector min_point = bounds[0];
+        Rcpp::DoubleVector max_point = bounds[1];
+        lvox_bounds                  = lvox::Bounds{
+            min_point[0], max_point[0], min_point[1], max_point[1], min_point[2], max_point[2]
+        };
+    }
+    else
+    {
+        for (const auto& pc : point_clouds)
+        {
+            for (const auto& pt : pc)
+            {
+                lvox_bounds.grow(pt.x(), pt.y(), pt.z());
+            }
+        }
+    }
+
+    for (size_t i = 0; i < pointClouds.size(); ++i)
+    {
+        scans.emplace_back(point_clouds[i], origins_point[i], lvox_bounds);
+    }
+
     return do_lvox_computation(
         scans,
         padEstimator,
         voxelSize,
         useSparseGrid,
         requiredCounts,
-        threadCount,
-        exportIntermediateData
+        exportIntermediateData,
+        lvox_bounds,
+        smallestElementSurface,
+        threadCount
     );
 }

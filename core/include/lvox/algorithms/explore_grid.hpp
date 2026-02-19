@@ -50,6 +50,19 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
         const_iterator begin() const { return m_start; }
         const_iterator end() const { return m_end; }
     };
+    double unit_attenuation_coeff = 0.0;
+
+    if (options.m_smallest_element_area != 0)
+    {
+        const double voxel_size = std::visit(
+            [](auto&& grid) {
+                return grid.bounded_grid().cell_size();
+            },
+            grid
+        );
+        unit_attenuation_coeff =
+            options.m_smallest_element_area / (voxel_size * voxel_size * voxel_size);
+    }
 
     const auto ray_trace = [&](const PointRange& points) -> void {
         for (const auto& timed_point : points)
@@ -83,35 +96,23 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
             double max_distance = std::numeric_limits<double>::infinity();
 
             if constexpr (limit_ray_length)
-            {
                 max_distance = beam_dir.norm();
-            }
 
             bool is_hit_computed = false;
 
             grid_traversal(
                 Beam{point_origin, beam_dir},
-                [&grid, &is_hit_computed](const VoxelHitInfo& hit) {
+                [&grid, &is_hit_computed, unit_attenuation_coeff](const VoxelHitInfo& hit) {
                     if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
                         std::visit(
-                            [&hit, &is_hit_computed](auto& grid) {
-                                // TODO: make this configurable maybe, and
-                                // based on a specific PAD estimation method So far it's based on
-                                // Computree's NeedleFromDimension
-                                constexpr double elem_length   = 0.06;
-                                constexpr double elem_diameter = 0.02;
-                                constexpr double projected_area_of_single_element =
-                                    (2. * std::numbers::pi * elem_length * elem_diameter) / 4.;
-                                const double voxel_size = grid.bounded_grid().cell_size();
-                                const double unit_attenuation_coeff =
-                                    projected_area_of_single_element /
-                                    (voxel_size * voxel_size * voxel_size);
-
-                                const double effective_length =
-                                    -(std::log(
-                                          1. - unit_attenuation_coeff * hit.m_distance_in_voxel
-                                      ) /
-                                      unit_attenuation_coeff);
+                            [&hit, &is_hit_computed, unit_attenuation_coeff](auto& grid) {
+                                double effective_length = hit.m_distance_in_voxel;
+                                if (unit_attenuation_coeff != 0.0)
+                                    effective_length =
+                                        -(std::log(
+                                              1. - unit_attenuation_coeff * hit.m_distance_in_voxel
+                                          ) /
+                                          unit_attenuation_coeff);
 
                                 if constexpr (pe::is_uplbl<PadEstimator>::value)
                                     grid.add_length_count_and_variance(

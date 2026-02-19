@@ -58,10 +58,17 @@ COOGrid compute_pad(
         std::holds_alternative<pe::UnequalPathLengthBeerLambert>(options.m_pad_estimator);
 
     Grid grid = std::invoke([&]() -> Grid {
-        if (options.m_use_sparse_grid)
-            return ChunkedGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
+        Bounds<double> bounds;
+
+        if (options.m_bounds)
+            bounds = *options.m_bounds;
         else
-            return DenseGrid{compute_scene_bounds(scans), options.m_voxel_size, uses_variance};
+            bounds = compute_scene_bounds(scans);
+
+        if (options.m_use_sparse_grid)
+            return ChunkedGrid{bounds, options.m_voxel_size, uses_variance};
+        else
+            return DenseGrid{bounds, options.m_voxel_size, uses_variance};
     });
 
     auto scan_num = 1;

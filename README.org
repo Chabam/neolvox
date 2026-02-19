@@ -183,8 +183,9 @@ $ cmake --build build/
   - [ ] Assess all options
   - [ ] Test their impact
   - [ ] Remove the unnecessary ones
-- [ ] Bounding box as input
-- [ ] Bounding aligned to axis at (0,0,0)
+- [ ] Support mutliple scans as arguments in the standalone version
+- [X] Bounding box as input
+- [X] Bounding aligned to axis at (0,0,0)
 - [-] Handling mores classes
   - [ ] Disabling ground for hits
   - [ ] Trunk

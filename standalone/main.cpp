@@ -47,18 +47,6 @@ Options:
    -v, --voxel-size       decimal             Size in meters of each voxel elements
                                               of the grid. [defaults to 0.5]
 
-   -g, --grid             filename            Outputs the grid of PAD voxel values to a
-                                              hdf5 file. [defaults to out.h5]
-
-   -b, --blanks           none                Whether or not to use points classified with
-                                              flag 0 as reference for "blank shots". These
-                                              can used alongside virtual scene to measure
-                                              the impact of rays that didn't touch anything
-                                              on PAD estimations. [disabled by defaults]
-
-   -j, --jobs             number              A number of parallel jobs to use.
-                                              [defaults to the amount of core]
-
    -m, --method           BL, CF, ULPBL,      The PAD estimator to use. Here's the
                           BCMLE               description of each values:
                                                 - BL: Beer-Lambert [default]
@@ -68,6 +56,31 @@ Options:
                                                 - BCMLE: Bias Corrected Maximum
                                                   Likelyhood Estimator
 
+   -r, --required-counts  number              The number of ray required for PAD computation, if
+                                              the amount of rays that entered the voxel is lower
+                                              than this number it will be excluded from the estimation
+                                              [5 by default]
+
+   -b, --bounds           numbers             The bounds that will be used for creating the voxel grid.
+                                              The input format is as followed MINIMAL_COORD,MAXIMAL_COORD,
+                                              where MINIMAL_COORD and MAXIMAL_COORD are formatted as such
+                                              (0.0,0.0,0.0). So an example of use, would be something like
+                                              this (-1.0,-1.0,-1.0)(1.0,1.0,1.0)
+                                              [computed automatically by default]
+
+   -u, --unit-surface     number              The surface area of the smallest element of the forest scene.
+                                              This value is used in BCMLE and UPBL as a mean of removing bias
+                                              for unexplored voxels. If set to 0, it will be ignored.
+                                              [defaults to 0]
+
+
+   -g, --grid             filename            Name of the outputted hdf5 file that will containt the grid
+                                              of PAD voxel values. [defaults to out.h5]
+
+   -j, --jobs             number              A number of parallel jobs to use.
+                                              [defaults to the amount of core]
+
+
    -a, --all              none                Whether or not to include all the information
                                               from the grid (ray counts, lengths, etc.) in the
                                               exported file. [disabled by default]
@@ -76,15 +89,18 @@ Options:
                                               They are slower, but will require less memory.
                                               [disabled by default]
 
-   -r, --required-counts    number            The number of ray required for PAD computation, if
-                                              the amount of rays that entered the voxel is lower than this
-                                              number it will be excluded from the estimation [5 by default]
+   -e, --empty            none                Whether or not to use points classified with
+                                              flag 0 as reference for "blank shots". These
+                                              can used alongside virtual scene to measure
+                                              the impact of rays that didn't touch anything
+                                              on PAD estimations. [disabled by default]
+
 
    -l, --log-level        debug, info,        Max log level to display [defaults to info]
                           warning, error
 
    -h, --help                                 Prints this message
-    )";
+)";
 
 namespace lvox_pe = lvox::algorithms::pad_estimators;
 namespace fs      = std::filesystem;
@@ -116,20 +132,22 @@ using Scan          = lvox::Scan<Point, PointCloud>;
 using ScannerOrigin = lvox::ScannerOrigin<Point, PointCloud>;
 using Trajectory    = lvox::Trajectory<Point, PointCloud>;
 
-bool                    g_is_mls               = false;
-bool                    g_outputs_profile      = false;
-double                  g_voxel_size           = 0.5;
-unsigned int            g_job_count            = std::thread::hardware_concurrency();
-lvox_pe::PADEstimator   g_pad_estimator        = lvox_pe::BeerLambert{};
-bool                    g_compute_theoriticals = false;
-std::optional<Point>    g_scan_origin          = {};
-std::mutex              g_print_guard          = {};
-std::optional<fs::path> g_traj_file            = {};
-fs::path                g_grid_file            = "out.h5";
-bool                    g_include_all_info     = false;
-bool                    g_use_sparse_grids     = false;
-unsigned int            g_required_counts      = 5;
-fs::path                g_file;
+bool                                g_is_mls                = false;
+bool                                g_outputs_profile       = false;
+double                              g_voxel_size            = 0.5;
+unsigned int                        g_job_count             = std::thread::hardware_concurrency();
+lvox_pe::PADEstimator               g_pad_estimator         = lvox_pe::BeerLambert{};
+bool                                g_compute_theoriticals  = false;
+std::optional<Point>                g_scan_origin           = {};
+std::mutex                          g_print_guard           = {};
+std::optional<fs::path>             g_traj_file             = {};
+fs::path                            g_grid_file             = "out.h5";
+bool                                g_include_all_info      = false;
+bool                                g_use_sparse_grids      = false;
+unsigned int                        g_required_counts       = 5;
+std::optional<lvox::Bounds<double>> g_bounds                = {};
+double                              g_smallest_element_area = 0.;
+fs::path                            g_file;
 
 struct PointCloudWithTheoriticalShots
 {
@@ -616,9 +634,37 @@ int main(int argc, char* argv[])
         else if (*arg_it == "-h" || *arg_it == "--help")
         {
             std::cout << g_usage_info << std::endl;
-            return 0;
         }
-        else if (*arg_it == "-b" || *arg_it == "--blanks")
+        else if (*arg_it == "-b" || *arg_it == "--bounds")
+        {
+            std::string bounds_str = *++arg_it;
+            std::transform(
+                bounds_str.begin(), bounds_str.end(), bounds_str.begin(), [](char c) -> char {
+                    if (c == '(' || c == ')' || c == ',')
+                        return ' ';
+
+                    return c;
+                }
+            );
+
+            std::istringstream   iss{bounds_str};
+            lvox::Bounds<double> bounds;
+            iss >> bounds.m_min_x;
+            iss >> bounds.m_min_y;
+            iss >> bounds.m_min_z;
+
+            iss >> bounds.m_max_x;
+            iss >> bounds.m_max_y;
+            iss >> bounds.m_max_z;
+
+            g_bounds = std::move(bounds);
+
+        }
+        else if (*arg_it == "-u" || *arg_it == "--unit-surface")
+        {
+            g_smallest_element_area = std::stod(*++arg_it);
+        }
+        else if (*arg_it == "-e" || *arg_it == "--empty")
         {
             g_compute_theoriticals = true;
         }
@@ -687,13 +733,15 @@ int main(int argc, char* argv[])
     }
 
     const lvox::algorithms::ComputeOptions compute_options{
-        .m_voxel_size           = g_voxel_size,
-        .m_job_limit            = g_job_count,
-        .m_pad_estimator        = g_pad_estimator,
-        .m_compute_theoriticals = g_compute_theoriticals,
-        .m_use_sparse_grid      = g_use_sparse_grids,
-        .m_required_counts      = g_required_counts,
-        .m_log_stream           = std::cout
+        .m_voxel_size            = g_voxel_size,
+        .m_job_limit             = g_job_count,
+        .m_pad_estimator         = g_pad_estimator,
+        .m_compute_theoriticals  = g_compute_theoriticals,
+        .m_use_sparse_grid       = g_use_sparse_grids,
+        .m_required_counts       = g_required_counts,
+        .m_smallest_element_area = g_smallest_element_area,
+        .m_bounds                = g_bounds,
+        .m_log_stream            = std::cout
     };
 
     lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
