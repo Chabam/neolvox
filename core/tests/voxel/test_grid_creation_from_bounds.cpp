@@ -68,6 +68,15 @@ TEST(grid, creation_from_bounds)
         EXPECT_EQ(-30., grid_bounds.m_min_z);
         EXPECT_EQ(30., grid_bounds.m_max_z);
     }
+}
+
+TEST(grid, creation_from_bounds_with_alignment)
+{
+    const double dim_x = 20;
+    const double dim_y = 40;
+    const double dim_z = 60;
+
+    lvox::Bounds bounds = create_bounds(dim_x, dim_y, dim_z);
 
     {
         const double            cell_size = 1.;
@@ -95,7 +104,49 @@ TEST(grid, creation_from_bounds)
         EXPECT_GT(grid_aligned.dim_y(), grid.dim_y());
         EXPECT_GT(grid_aligned.dim_z(), grid.dim_z());
 
-        lvox::Bounds grid_bounds = grid.bounds();
+        lvox::Bounds grid_bounds         = grid.bounds();
+        lvox::Bounds aligned_grid_bounds = grid_aligned.bounds();
+
+        EXPECT_LT(aligned_grid_bounds.m_min_x, grid_bounds.m_min_x);
+        EXPECT_GT(aligned_grid_bounds.m_max_x, grid_bounds.m_max_x);
+        EXPECT_LT(aligned_grid_bounds.m_min_y, grid_bounds.m_min_y);
+        EXPECT_GT(aligned_grid_bounds.m_max_y, grid_bounds.m_max_y);
+        EXPECT_LT(aligned_grid_bounds.m_min_z, grid_bounds.m_min_z);
+        EXPECT_GT(aligned_grid_bounds.m_max_z, grid_bounds.m_max_z);
+    }
+
+    {
+        lvox::Bounds<double>    negative_bounds{-20, -10, -20, -10, -20, -10};
+        const double            cell_size = 1.;
+        const lvox::BoundedGrid grid{negative_bounds, cell_size};
+        const lvox::BoundedGrid grid_aligned{negative_bounds, cell_size, 8};
+
+        EXPECT_GT(grid_aligned.dim_x(), grid.dim_x());
+        EXPECT_GT(grid_aligned.dim_y(), grid.dim_y());
+        EXPECT_GT(grid_aligned.dim_z(), grid.dim_z());
+
+        lvox::Bounds grid_bounds         = grid.bounds();
+        lvox::Bounds aligned_grid_bounds = grid_aligned.bounds();
+
+        EXPECT_LT(aligned_grid_bounds.m_min_x, grid_bounds.m_min_x);
+        EXPECT_GT(aligned_grid_bounds.m_max_x, grid_bounds.m_max_x);
+        EXPECT_LT(aligned_grid_bounds.m_min_y, grid_bounds.m_min_y);
+        EXPECT_GT(aligned_grid_bounds.m_max_y, grid_bounds.m_max_y);
+        EXPECT_LT(aligned_grid_bounds.m_min_z, grid_bounds.m_min_z);
+        EXPECT_GT(aligned_grid_bounds.m_max_z, grid_bounds.m_max_z);
+    }
+
+    {
+        lvox::Bounds<double>    negative_bounds{10, 20, 10, 20, 10, 20};
+        const double            cell_size = 1.;
+        const lvox::BoundedGrid grid{negative_bounds, cell_size};
+        const lvox::BoundedGrid grid_aligned{negative_bounds, cell_size, 8};
+
+        EXPECT_GT(grid_aligned.dim_x(), grid.dim_x());
+        EXPECT_GT(grid_aligned.dim_y(), grid.dim_y());
+        EXPECT_GT(grid_aligned.dim_z(), grid.dim_z());
+
+        lvox::Bounds grid_bounds         = grid.bounds();
         lvox::Bounds aligned_grid_bounds = grid_aligned.bounds();
 
         EXPECT_LT(aligned_grid_bounds.m_min_x, grid_bounds.m_min_x);

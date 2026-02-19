@@ -112,8 +112,10 @@ Bounds<double> BoundedGrid::voxel_bounds(int idx_x, int idx_y, int idx_z) const
     };
 }
 
+// Intionally using `int voxel_alignment' here, so that it produces
+// correct values when multiplying
 int BoundedGrid::adjust_dim_to_alignment(
-    int voxel_count_from_origin, unsigned int voxel_alignment, bool lower_bounds
+    int voxel_count_from_origin, int voxel_alignment, bool lower_bounds
 )
 {
     if (voxel_count_from_origin % voxel_alignment == 0)
@@ -125,10 +127,10 @@ int BoundedGrid::adjust_dim_to_alignment(
     // The following section will make the grid go a "voxel aligment"
     // further than the current computed value from the origin.
     int new_multiple;
-    if (lower_bounds)
-        new_multiple = std::floor(abs_voxels_from_origin / voxel_alignment);
-    else
+    if (lower_bounds == negative_coords)
         new_multiple = std::ceil(abs_voxels_from_origin / voxel_alignment);
+    else
+        new_multiple = std::floor(abs_voxels_from_origin / voxel_alignment);
 
     if (negative_coords)
         new_multiple = -new_multiple;
