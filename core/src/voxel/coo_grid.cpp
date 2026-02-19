@@ -72,7 +72,7 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
                 std::views::transform([&index_bounds](auto idx) -> int {
                     return index_bounds.m_min_x + idx;
                 }),
-            m_xs.begin()
+            std::back_inserter(m_xs)
         );
 
         std::ranges::copy(
@@ -80,7 +80,7 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
                 std::views::transform([&index_bounds](auto idx) -> int {
                     return index_bounds.m_min_y + idx;
                 }),
-            m_ys.begin()
+            std::back_inserter(m_ys)
         );
 
         std::ranges::copy(
@@ -88,7 +88,7 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
                 std::views::transform([&index_bounds](auto idx) -> int {
                     return index_bounds.m_min_z + idx;
                 }),
-            m_zs.begin()
+            std::back_inserter(m_zs)
         );
 
         std::ranges::copy(
