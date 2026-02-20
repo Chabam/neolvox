@@ -323,28 +323,29 @@ Rcpp::List do_lvox_computation(
 //' Perform the PAD estimation for a MLS scan
 //'
 //' @param pointCloud A point cloud acquired from a mobile lidar, this can be LAS object or a list
-//'                   containing X, Y, Z and gpstime.
+//'    containing X, Y, Z and gpstime.
 //' @param trajectory A trajectory point cloud acquired from a mobile lidar, this can be LAS object
-//'                   or a list containing X, Y, Z and gpstime.
+//'    or a list containing X, Y, Z and gpstime.
 //' @param padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE)
 //' @param voxelSize The size of the voxels in the grid in meters
 //' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory.
 //' @param requiredCounts The number of ray required for PAD computation, if the amount of rays that
-//'                       entered the voxel is lower than this number it will be excluded from the estimation
+//'    entered the voxel is lower than this number it will be excluded from the estimation
 //' @param exportIntermediateData Whether or not to export all intermediate data from the
-//'                                Lvox computation.
+//'    Lvox computation.
 //' @param bounds The bounds that will be used for creating the voxel grid.
-//'               The input format is made of a pair of coordinates representing the lowest and
-//'               highest points of the bounding box: `list(c(-1, -1, -1), c(1, 1, 1))`
+//'    The input format is made of a pair of coordinates representing the lowest and
+//'    highest points of the bounding box: `list(c(-1, -1, -1), c(1, 1, 1))`
 //' @param smallestElementArea The surface area of the smallest element of the forest scene.
-//'                               This value is used in BCMLE and UPBL as a mean of removing bias
-//'                               for unexplored voxels. If set to 0, it will be ignored.
+//'    This value is used in BCMLE and UPBL as a mean of removing bias
+//'    for unexplored voxels. If set to 0, it will be ignored. Several helper functions are provided
+//'    to compute the projected area in `LVoxSmallestElementArea.R`.
 //' @param threadCount The amount of parallel processing thread to use. Set this to your
-//'                    core count for best performance.
+//'    core count for best performance.
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
-//'         contains metadata about the grid (voxel size, grid dimensions, etc.)
+//'    contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
-Rcpp::List computeMLS(
+Rcpp::List estimatePADForMLS(
     const SEXP&       pointCloud,
     const Rcpp::List& trajectory,
     std::string       padEstimator           = "BCMLE",
@@ -394,27 +395,28 @@ Rcpp::List computeMLS(
 //' Perform the PAD estimation for TLS multi-scans
 //'
 //' @param pointClouds A list of point clouds acquired from a mobile lidar, this can be  LAS object
-//'                    or a list containing X, Y, Z and gpstime.
+//'    or a list containing X, Y, Z and gpstime.
 //' @param scannersOrigin A list of corresponding scanner's origins coordinates.
 //' @param padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE)
 //' @param voxelSize The size of the voxels in the grid in meters
 //' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory.
 //' @param requiredCounts The number of ray required for PAD computation, if the amount of rays that
-//'                       entered the voxel is lower than this number it will be excluded from the estimation
+//'    entered the voxel is lower than this number it will be excluded from the estimation
 //' @param threadCount The amount of parallel processing thread to use. Set this to your
-//'                    core count for best performance.
+//'    core count for best performance.
 //' @param exportIntermediateData Whether or not to export all intermediate data from the
-//'                               Lvox computation.
+//'    Lvox computation.
 //' @param bounds The bounds that will be used for creating the voxel grid.
-//'               The input format is made of a pair of coordinates representing the lowest and
-//'               highest points of the bounding box: `list(c(-1, -1, -1), c(1, 1, 1))`
+//'    The input format is made of a pair of coordinates representing the lowest and
+//'    highest points of the bounding box: `list(c(-1, -1, -1), c(1, 1, 1))`
 //' @param smallestElementArea The surface area of the smallest element of the forest scene.
-//'                               This value is used in BCMLE and UPBL as a mean of removing bias
-//'                               for unexplored voxels. If set to 0, it will be ignored.
+//'    This value is used in BCMLE and UPBL as a mean of removing bias
+//'    for unexplored voxels. If set to 0, it will be ignored. Several helper functions are provided
+//'    to compute the projected area in `LVoxSmallestElementArea.R`.
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
-//'         contains metadata about the grid (voxel size, grid dimensions, etc.)
+//'    contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
-Rcpp::List computeTLS(
+Rcpp::List estimatePADForTLS(
     const Rcpp::List& pointClouds,
     const Rcpp::List& scannersOrigin,
     std::string       padEstimator           = "BCMLE",
