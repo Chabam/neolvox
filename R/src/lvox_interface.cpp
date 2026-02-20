@@ -346,24 +346,26 @@ Rcpp::List do_lvox_computation(
 //'    contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List estimatePADForMLS(
-    const SEXP&       pointCloud,
-    const Rcpp::List& trajectory,
-    std::string       padEstimator           = "BCMLE",
-    double            voxelSize              = 0.5,
-    bool              useSparseGrid          = false,
-    unsigned int      requiredCounts         = 5,
-    bool              exportIntermediateData = false,
-    Rcpp::List        bounds                 = R_NilValue,
-    double            smallestElementArea = 0,
-    unsigned int      threadCount            = 8
+    const SEXP&                pointCloud,
+    const Rcpp::List&          trajectory,
+    std::string                padEstimator           = "BCMLE",
+    double                     voxelSize              = 0.5,
+    bool                       useSparseGrid          = false,
+    unsigned int               requiredCounts         = 5,
+    bool                       exportIntermediateData = false,
+    Rcpp::Nullable<Rcpp::List> bounds                 = R_NilValue,
+    double                     smallestElementArea    = 0,
+    unsigned int               threadCount            = 8
 )
 {
     lvox::Bounds<double> lvox_bounds;
     PointCloud           points = try_read_point_cloud_as_las(pointCloud);
 
-    if (bounds)
-    {        Rcpp::DoubleVector min_point = bounds[0];
-        Rcpp::DoubleVector max_point = bounds[1];
+    if (!bounds.isNull())
+    {
+        Rcpp::List provided_bounds   = Rcpp::List(bounds);
+        Rcpp::DoubleVector min_point = provided_bounds[0];
+        Rcpp::DoubleVector max_point = provided_bounds[1];
         lvox_bounds                  = lvox::Bounds{
             min_point[0], max_point[0], min_point[1], max_point[1], min_point[2], max_point[2]
         };
@@ -417,16 +419,16 @@ Rcpp::List estimatePADForMLS(
 //'    contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List estimatePADForTLS(
-    const Rcpp::List& pointClouds,
-    const Rcpp::List& scannersOrigin,
-    std::string       padEstimator           = "BCMLE",
-    double            voxelSize              = 0.5,
-    unsigned int      requiredCounts         = 5,
-    bool              useSparseGrid          = false,
-    bool              exportIntermediateData = false,
-    Rcpp::List        bounds                 = R_NilValue,
-    double            smallestElementArea = 0,
-    unsigned int      threadCount            = 8
+    const Rcpp::List&          pointClouds,
+    const Rcpp::List&          scannersOrigin,
+    std::string                padEstimator           = "BCMLE",
+    double                     voxelSize              = 0.5,
+    unsigned int               requiredCounts         = 5,
+    bool                       useSparseGrid          = false,
+    bool                       exportIntermediateData = false,
+    Rcpp::Nullable<Rcpp::List> bounds                 = R_NilValue,
+    double                     smallestElementArea    = 0,
+    unsigned int               threadCount            = 8
 )
 {
     if (pointClouds.size() != scannersOrigin.size())
@@ -451,10 +453,11 @@ Rcpp::List estimatePADForTLS(
         );
     }
 
-    if (bounds)
+    if (!bounds.isNull())
     {
-        Rcpp::DoubleVector min_point = bounds[0];
-        Rcpp::DoubleVector max_point = bounds[1];
+        Rcpp::List provided_bounds   = Rcpp::List(bounds);
+        Rcpp::DoubleVector min_point = provided_bounds[0];
+        Rcpp::DoubleVector max_point = provided_bounds[1];
         lvox_bounds                  = lvox::Bounds{
             min_point[0], max_point[0], min_point[1], max_point[1], min_point[2], max_point[2]
         };

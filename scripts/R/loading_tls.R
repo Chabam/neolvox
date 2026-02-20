@@ -16,7 +16,12 @@ origins <- list(
   ## c(-0.821686, -10.803126, 94.414889),
   ## c(11.340925, 2.670768, 94.75565)
 )
-grid <- lvoxComputeTLS(tls, origins, bounds = list(c(-1,-1,-1), c(1,1,1)))
+grid <- estimatePADForTLS(
+  tls,
+  origins,
+  padEstimator = "BCMLE",
+  smallestElementArea = needleProjectedAreaFromDimensions(0.06, 0.01)
+)
 hp <- computeHeightProfile(grid)
 hp
 plot(hp)
