@@ -252,7 +252,7 @@ Rcpp::List do_lvox_computation(
     unsigned int             requiredCounts,
     bool                     exportIntermediateData,
     lvox::Bounds<double>     bounds,
-    double                   smallestElementSurface,
+    double                   smallestElementArea,
     unsigned int             threadCount
 )
 {
@@ -263,7 +263,7 @@ Rcpp::List do_lvox_computation(
         .m_compute_theoriticals  = false, // TODO: support theoriticals
         .m_use_sparse_grid       = useSparseGrid,
         .m_required_counts       = requiredCounts,
-        .m_smallest_element_area = smallestElementSurface,
+        .m_smallest_element_area = smallestElementArea,
         .m_bounds                = bounds,
         .m_log_stream            = Rcpp::Rcout
     };
@@ -336,7 +336,7 @@ Rcpp::List do_lvox_computation(
 //' @param bounds The bounds that will be used for creating the voxel grid.
 //'               The input format is made of a pair of coordinates representing the lowest and
 //'               highest points of the bounding box: `list(c(-1, -1, -1), c(1, 1, 1))`
-//' @param smallestElementSurface The surface area of the smallest element of the forest scene.
+//' @param smallestElementArea The surface area of the smallest element of the forest scene.
 //'                               This value is used in BCMLE and UPBL as a mean of removing bias
 //'                               for unexplored voxels. If set to 0, it will be ignored.
 //' @param threadCount The amount of parallel processing thread to use. Set this to your
@@ -344,7 +344,7 @@ Rcpp::List do_lvox_computation(
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
 //'         contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
-Rcpp::List lvoxComputeMLS(
+Rcpp::List computeMLS(
     const SEXP&       pointCloud,
     const Rcpp::List& trajectory,
     std::string       padEstimator           = "BCMLE",
@@ -353,7 +353,7 @@ Rcpp::List lvoxComputeMLS(
     unsigned int      requiredCounts         = 5,
     bool              exportIntermediateData = false,
     Rcpp::List        bounds                 = R_NilValue,
-    double            smallestElementSurface = 0,
+    double            smallestElementArea = 0,
     unsigned int      threadCount            = 8
 )
 {
@@ -386,7 +386,7 @@ Rcpp::List lvoxComputeMLS(
         requiredCounts,
         exportIntermediateData,
         lvox_bounds,
-        smallestElementSurface,
+        smallestElementArea,
         threadCount
     );
 }
@@ -408,13 +408,13 @@ Rcpp::List lvoxComputeMLS(
 //' @param bounds The bounds that will be used for creating the voxel grid.
 //'               The input format is made of a pair of coordinates representing the lowest and
 //'               highest points of the bounding box: `list(c(-1, -1, -1), c(1, 1, 1))`
-//' @param smallestElementSurface The surface area of the smallest element of the forest scene.
+//' @param smallestElementArea The surface area of the smallest element of the forest scene.
 //'                               This value is used in BCMLE and UPBL as a mean of removing bias
 //'                               for unexplored voxels. If set to 0, it will be ignored.
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
 //'         contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
-Rcpp::List lvoxComputeTLS(
+Rcpp::List computeTLS(
     const Rcpp::List& pointClouds,
     const Rcpp::List& scannersOrigin,
     std::string       padEstimator           = "BCMLE",
@@ -423,7 +423,7 @@ Rcpp::List lvoxComputeTLS(
     bool              useSparseGrid          = false,
     bool              exportIntermediateData = false,
     Rcpp::List        bounds                 = R_NilValue,
-    double            smallestElementSurface = 0,
+    double            smallestElementArea = 0,
     unsigned int      threadCount            = 8
 )
 {
@@ -481,7 +481,7 @@ Rcpp::List lvoxComputeTLS(
         requiredCounts,
         exportIntermediateData,
         lvox_bounds,
-        smallestElementSurface,
+        smallestElementArea,
         threadCount
     );
 }
