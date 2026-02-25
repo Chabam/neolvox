@@ -3,7 +3,7 @@ Type: Package
 Title: LVox bindings for R
 Version: @PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@
 Date: 2025-07-30
-Authors@R: person("Félix", "Chabot", role = c("aut", "cre"), email =
+Authors@R: person("Felix", "Chabot", role = c("aut", "cre"), email =
         "fchabot1337@gmail.com")
 Description: Lvox is an algorithm that computes Pland Area Density from lidar data.
 URL: https://github.com/chabam/neolvox

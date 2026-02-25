@@ -183,12 +183,12 @@ $ cmake --build build/
   - [ ] Assess all options
   - [ ] Test their impact
   - [ ] Remove the unnecessary ones
-- [ ] Support mutliple scans as arguments in the standalone version
+- [X] Support mutliple scans as arguments in the standalone version
 - [X] Bounding box as input
 - [X] Bounding aligned to axis at (0,0,0)
-- [-] Handling mores classes
+- [ ] Handling more classes
   - [ ] Disabling ground for hits
   - [ ] Trunk
   - [ ] Leaves
   - [ ] Stem
-  - [X] Blank shots
+  - [ ] Blank shots

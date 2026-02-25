@@ -1,3 +1,4 @@
+#' @export
 print.LVoxGrid <- function(x, ...) {
   cat("LVoxGrid\n")
   cat("Dimensions (x, y, z): ", paste(x$Dimensions, collapse = "x"), "\n")

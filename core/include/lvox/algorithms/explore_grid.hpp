@@ -200,26 +200,6 @@ void explore_grid(Grid& grid, const Scan<PointT, PointCloudT>& scan, const Compu
     );
 }
 
-template <Point PointT, PointCloud<PointT> PointCloudT>
-void explore_grid_theoriticals(
-    Grid& grid, const Scan<PointT, PointCloudT>& scan, const ComputeOptions& options
-)
-{
-    using ScanT                     = Scan<PointT, PointCloudT>;
-    constexpr bool limit_ray_length = false;
-    constexpr bool compute_hits     = false;
-    Logger         logger{"Explore grid theoriticals", options.m_log_stream};
-    std::visit(
-        [&](auto&& chosen_estimator) {
-            using T = std::decay_t<decltype(chosen_estimator)>;
-            explore_grid_impl<ScanT, PointT, PointCloudT, limit_ray_length, compute_hits, T>(
-                grid, scan, options, logger
-            );
-        },
-        options.m_pad_estimator
-    );
-}
-
 } // namespace algorithms
 
 } // namespace lvox

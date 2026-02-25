@@ -57,14 +57,13 @@ COOGrid compute_pad(
     const bool uses_variance =
         std::holds_alternative<pe::UnequalPathLengthBeerLambert>(options.m_pad_estimator);
 
+    Bounds<double> bounds;
+    if (options.m_bounds)
+        bounds = *options.m_bounds;
+    else
+        bounds = compute_scene_bounds(scans);
+
     Grid grid = std::invoke([&]() -> Grid {
-        Bounds<double> bounds;
-
-        if (options.m_bounds)
-            bounds = *options.m_bounds;
-        else
-            bounds = compute_scene_bounds(scans);
-
         if (options.m_use_sparse_grid)
             return ChunkedGrid{bounds, options.m_voxel_size, uses_variance};
         else
@@ -74,12 +73,6 @@ COOGrid compute_pad(
     auto scan_num = 1;
     for (const auto& scan : scans)
     {
-        if (options.m_compute_theoriticals && scan.m_blank_shots)
-        {
-            logger.info("Compute theoriticals {}/{}", scan_num, scans.size());
-            explore_grid_theoriticals(grid, scan, options);
-        }
-
         logger.info("Compute ray counts and length {}/{}", scan_num, scans.size());
         explore_grid(grid, scan, options);
         ++scan_num;

@@ -1,7 +1,9 @@
+#' @export
 print.LVoxHeightProfile <- function(x, ...) {
   print(cbind(paste0(rev(x$Heights), "m"), rev(x$PAD)))
 }
 
+#' @export
 plot.LVoxHeightProfile <- function(x, y = NULL, ..., main = NULL) {
   plot(x$PAD, x$Heights,
        type = "l",

@@ -97,7 +97,7 @@ struct PointCloud
 
         friend PointIterator operator+(difference_type other, const PointIterator& diff)
         {
-            return other + diff;
+            return diff + other;
         }
 
         PointIterator operator-(difference_type diff) const

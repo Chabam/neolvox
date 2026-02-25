@@ -2,7 +2,6 @@
 #define LVOX_VOXEL_COO_GRID_HPP
 
 #include <cstddef>
-#include <filesystem>
 #include <iterator>
 #include <vector>
 

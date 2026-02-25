@@ -14,7 +14,6 @@ struct ComputeOptions
     double                              m_voxel_size;
     unsigned int                        m_job_limit;
     pad_estimators::PADEstimator        m_pad_estimator;
-    bool                                m_compute_theoriticals;
     bool                                m_use_sparse_grid;
     unsigned int                        m_required_counts;
     double                              m_smallest_element_area;

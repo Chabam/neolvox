@@ -2,9 +2,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <format>
-#include <fstream>
 #include <functional>
-#include <future>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -35,14 +33,19 @@
 #include <lvox/voxel/coo_grid.hpp>
 
 constexpr auto g_usage_info =
-    R"(Usage: lvox [OPTIONS] FILE
-Options:
-   ARGS                   EXPECTED VALUES     DESCRIPTION
+    R"(Usage: lvox [OPTIONS] [-s SCAN_FILE [-o COORDINATE | -t TRAJECTORY_FILE]]...
+Scan definitions:
+   -s, --scan             filename            Path to a trajectory file, at least one required for
+                                              computing PAD. [none by default]
+
    -t, --trajectory       filename            Path to a trajectory file, required for
                                               computing an MLS scan. [none by default]
 
    -o, --scan-origin      x y z               Coordinates for the scan position when
-                                              computing a TLS scan. [defaults to (0,0,0)]
+                                              computing a TLS scan. Will be matched with the previous
+                                              scan input [defaults to (0,0,0)]
+Computing options:
+   NAME                   EXPECTED VALUES     DESCRIPTION
 
    -v, --voxel-size       decimal             Size in meters of each voxel elements
                                               of the grid. [defaults to 0.5]
@@ -73,7 +76,6 @@ Options:
                                               for unexplored voxels. If set to 0, it will be ignored.
                                               [defaults to 0]
 
-
    -g, --grid             filename            Name of the outputted hdf5 file that will containt the grid
                                               of PAD voxel values. [defaults to out.h5]
 
@@ -85,16 +87,9 @@ Options:
                                               from the grid (ray counts, lengths, etc.) in the
                                               exported file. [disabled by default]
 
-   -s, --sparse           none                Whether or not to use sparse grids for computation.
+   -sg, --sparse-grid     none                Whether or not to use sparse grids for computation.
                                               They are slower, but will require less memory.
                                               [disabled by default]
-
-   -e, --empty            none                Whether or not to use points classified with
-                                              flag 0 as reference for "blank shots". These
-                                              can used alongside virtual scene to measure
-                                              the impact of rays that didn't touch anything
-                                              on PAD estimations. [disabled by default]
-
 
    -l, --log-level        debug, info,        Max log level to display [defaults to info]
                           warning, error
@@ -108,6 +103,14 @@ namespace fs      = std::filesystem;
 // Type definitions
 struct Point
 {
+    Point(double x, double y, double z, double gps_time = 0)
+        : m_x{x}
+        , m_y{y}
+        , m_z{z}
+        , m_gps_time{gps_time}
+    {
+    }
+
     double x() const { return m_x; }
     double y() const { return m_y; }
     double z() const { return m_z; }
@@ -132,15 +135,15 @@ using Scan          = lvox::Scan<Point, PointCloud>;
 using ScannerOrigin = lvox::ScannerOrigin<Point, PointCloud>;
 using Trajectory    = lvox::Trajectory<Point, PointCloud>;
 
-bool                                g_is_mls                = false;
 bool                                g_outputs_profile       = false;
 double                              g_voxel_size            = 0.5;
 unsigned int                        g_job_count             = std::thread::hardware_concurrency();
 lvox_pe::PADEstimator               g_pad_estimator         = lvox_pe::BeerLambert{};
-bool                                g_compute_theoriticals  = false;
-std::optional<Point>                g_scan_origin           = {};
+std::vector<Point>                  g_scan_origins          = {};
+std::vector<PointCloud>             g_point_clouds          = {};
+std::vector<lvox::Bounds<double>>   g_point_cloud_bounds    = {};
 std::mutex                          g_print_guard           = {};
-std::optional<fs::path>             g_traj_file             = {};
+std::vector<Trajectory>             g_scan_trajectories     = {};
 fs::path                            g_grid_file             = "out.h5";
 bool                                g_include_all_info      = false;
 bool                                g_use_sparse_grids      = false;
@@ -149,13 +152,7 @@ std::optional<lvox::Bounds<double>> g_bounds                = {};
 double                              g_smallest_element_area = 0.;
 fs::path                            g_file;
 
-struct PointCloudWithTheoriticalShots
-{
-    PointCloud                m_point_cloud;
-    std::optional<PointCloud> m_blank_shots;
-};
-
-PointCloudWithTheoriticalShots load_point_cloud_from_file(
+PointCloud load_point_cloud_from_file(
     const std::filesystem::path&                                file,
     std::optional<std::reference_wrapper<lvox::Bounds<double>>> bounds = {}
 )
@@ -203,9 +200,7 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
         logger.info("Loading file {}", file.filename().string());
     }
 
-    PointCloudWithTheoriticalShots out;
-    out.m_point_cloud = PointCloud{};
-
+    PointCloud out;
     const bool                 calculate_bounds = bounds.has_value();
     pdal::StreamCallbackFilter sc;
     sc.setCallback([calculate_bounds, &bounds, &out, &progress](const auto& pt) mutable -> bool {
@@ -214,23 +209,11 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
         const double z    = pt.template getFieldAs<double>(dim::Z);
         const int    clss = pt.template getFieldAs<int>(dim::Classification);
 
-        if (g_compute_theoriticals && clss == 0)
-        {
-            if (!out.m_blank_shots)
-            {
-                out.m_blank_shots = PointCloud{};
-            }
-            (*out.m_blank_shots)
-                .emplace_back(x, y, z, pt.template getFieldAs<double>(dim::GpsTime));
-        }
-        else
-        {
-            out.m_point_cloud.emplace_back(x, y, z, pt.template getFieldAs<double>(dim::GpsTime));
+        out.emplace_back(x, y, z, pt.template getFieldAs<double>(dim::GpsTime));
 
-            if (calculate_bounds)
-            {
-                bounds->get().grow(x, y, z);
-            }
+        if (calculate_bounds)
+        {
+            bounds->get().grow(x, y, z);
         }
 
         progress.increase_progression_by(1);
@@ -257,116 +240,6 @@ PointCloudWithTheoriticalShots load_point_cloud_from_file(
     }
 
     return out;
-}
-
-std::vector<Scan> read_dot_in_file(
-    const std::filesystem::path&                 in_file,
-    std::vector<PointCloudWithTheoriticalShots>& out_point_clouds
-)
-{
-    namespace fs = std::filesystem;
-    std::ifstream  fstream{in_file};
-    const fs::path parent_path = in_file.parent_path();
-
-    std::vector<std::future<std::pair<PointCloudWithTheoriticalShots, lvox::Bounds<double>>>>
-                       future_point_clouds;
-    std::string        line;
-    std::vector<Point> scanner_origins;
-    while (std::getline(fstream, line))
-    {
-        std::istringstream iss{line};
-        std::ostringstream point_cloud_file_name;
-        iss.get(*point_cloud_file_name.rdbuf(), ' ');
-
-        iss.seekg(std::string{" Z+F "}.size(), std::ios_base::cur);
-
-        double x;
-        double y;
-        double z;
-
-        iss >> x;
-        iss >> y;
-        iss >> z;
-
-        scanner_origins.emplace_back(x, y, z);
-
-        future_point_clouds.emplace_back(
-            std::async(
-                [parent_path](const std::string point_cloud_file_name)
-                    -> std::pair<PointCloudWithTheoriticalShots, lvox::Bounds<double>> {
-                    lvox::Bounds<double> bounds;
-
-                    return {
-                        load_point_cloud_from_file(
-                            fs::path{parent_path / point_cloud_file_name}, {bounds}
-                        ),
-                        bounds
-                    };
-                },
-                point_cloud_file_name.str()
-            )
-        );
-    }
-
-    std::vector<Scan> out_scans;
-    const auto        scan_count = future_point_clouds.size();
-    out_scans.reserve(scan_count);
-    out_point_clouds.reserve(scan_count);
-    for (size_t i = 0; i < scan_count; ++i)
-    {
-        auto&& [point_cloud, bounds] = future_point_clouds[i].get();
-        auto pc                      = out_point_clouds.emplace_back(std::move(point_cloud));
-        auto scan                    = out_scans.emplace_back(
-            out_point_clouds[i].m_point_cloud, scanner_origins[i], std::move(bounds)
-        );
-
-        if (pc.m_blank_shots)
-            scan.m_blank_shots = *pc.m_blank_shots;
-    }
-
-    return out_scans;
-}
-
-Scan create_scan_using_pdal(
-    const std::filesystem::path&         file,
-    PointCloudWithTheoriticalShots&      point_cloud,
-    std::optional<std::filesystem::path> traj_file   = {},
-    std::optional<Point>                 scan_origin = {}
-)
-{
-    lvox::Logger         logger{"Point cloud loader"};
-    lvox::Bounds<double> scan_bounds;
-    point_cloud = load_point_cloud_from_file(file, {scan_bounds});
-    std::vector<Scan> scans;
-
-    lvox::ScannerOrigin<Point, PointCloud> scanner_origin;
-
-    if (traj_file)
-    {
-        if (scan_origin && *scan_origin != Point{0, 0, 0})
-        {
-            logger.warn("Scan origin being set while in MLS mode, ignoring it");
-        }
-
-        logger.info("Loading trajectory file {}", traj_file->string());
-
-        scanner_origin = Trajectory{load_point_cloud_from_file(*traj_file, {}).m_point_cloud};
-    }
-    else if (scan_origin)
-    {
-        scanner_origin = *scan_origin;
-    }
-    else // Defaulting to (0,0,0)
-    {
-        scanner_origin = Point{0, 0, 0};
-    }
-
-    Scan scan{point_cloud.m_point_cloud, scanner_origin, scan_bounds};
-
-    if (point_cloud.m_blank_shots)
-        scan.m_blank_shots = *point_cloud.m_blank_shots;
-
-    return scan;
 }
 
 void export_to_h5(
@@ -579,8 +452,16 @@ int main(int argc, char* argv[])
         // TODO: handle this better? Or just make it PDAL plugin
         if (*arg_it == "-t" || *arg_it == "--trajectory")
         {
-            g_is_mls    = true;
-            g_traj_file = *++arg_it;
+            fs::path traj_file = *++arg_it;
+            if (!g_scan_origins.empty())
+            {
+                logger.warn("Scan trajectory being set while in TLS mode, ignoring it");
+                continue;
+            }
+
+            logger.info("Loading trajectory file {}", traj_file.string());
+
+            g_scan_trajectories.emplace_back(load_point_cloud_from_file(traj_file, {}));
         }
         else if (*arg_it == "-v" || *arg_it == "--voxel-size")
         {
@@ -588,13 +469,28 @@ int main(int argc, char* argv[])
         }
         else if (*arg_it == "-o" || *arg_it == "--scan-origin")
         {
-            g_scan_origin = {std::stod(*++arg_it), std::stod(*++arg_it), std::stod(*++arg_it)};
+            if (!g_scan_trajectories.empty())
+            {
+                logger.warn("Scan origin being set while in MLS mode, ignoring it");
+                continue;
+            }
+
+            g_scan_origins.emplace_back(
+                std::stod(*++arg_it), std::stod(*++arg_it), std::stod(*++arg_it), 0
+            );
+        }
+        else if (*arg_it == "-s" || *arg_it == "--scan")
+        {
+            fs::path point_cloud_file = *++arg_it;
+            lvox::Bounds<double>& bounds = g_point_cloud_bounds.emplace_back();
+
+            // TODO: Somehow make it not compute bounds when one is provided, although that's a very neglible optimization.
+            g_point_clouds.emplace_back(load_point_cloud_from_file(point_cloud_file, std::ref(bounds)));
         }
         else if (*arg_it == "-g" || *arg_it == "--grid")
         {
             g_grid_file = *++arg_it;
         }
-
         else if (*arg_it == "-m" || *arg_it == "--method")
         {
             std::string pad_compute_method_str = *++arg_it;
@@ -664,15 +560,11 @@ int main(int argc, char* argv[])
         {
             g_smallest_element_area = std::stod(*++arg_it);
         }
-        else if (*arg_it == "-e" || *arg_it == "--empty")
-        {
-            g_compute_theoriticals = true;
-        }
         else if (*arg_it == "-a" || *arg_it == "--all")
         {
             g_include_all_info = true;
         }
-        else if (*arg_it == "-s" || *arg_it == "--sparse")
+        else if (*arg_it == "-sg" || *arg_it == "--sparse-grid")
         {
             g_use_sparse_grids = true;
         }
@@ -717,26 +609,30 @@ int main(int argc, char* argv[])
         ++arg_it;
     }
 
-    std::vector<Scan>                           scans;
-    std::vector<PointCloudWithTheoriticalShots> point_clouds;
-
-    if (g_file.extension() == ".in")
+    std::vector<Scan> scans;
+    if (g_scan_trajectories.empty())
     {
-        scans = read_dot_in_file(g_file, point_clouds);
+        for (size_t i = 0; i < g_point_clouds.size(); ++i)
+        {
+            scans.emplace_back(Scan{g_point_clouds[i], g_scan_origins[i], g_point_cloud_bounds[i], {}});
+        }
     }
     else
     {
-        point_clouds.resize(1);
-        scans.emplace_back(
-            create_scan_using_pdal(g_file, point_clouds[0], g_traj_file, g_scan_origin)
-        );
+        // TODO: check if we want to support MLS mutli-scan?
+        scans.emplace_back(Scan{g_point_clouds[0], g_scan_trajectories[0], g_point_cloud_bounds[0], {}});
+    }
+
+    if (scans.empty())
+    {
+        logger.warn("No scans defined, nothing to be done!");
+        return 0;
     }
 
     const lvox::algorithms::ComputeOptions compute_options{
         .m_voxel_size            = g_voxel_size,
         .m_job_limit             = g_job_count,
         .m_pad_estimator         = g_pad_estimator,
-        .m_compute_theoriticals  = g_compute_theoriticals,
         .m_use_sparse_grid       = g_use_sparse_grids,
         .m_required_counts       = g_required_counts,
         .m_smallest_element_area = g_smallest_element_area,
