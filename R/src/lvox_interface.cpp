@@ -260,7 +260,6 @@ Rcpp::List do_lvox_computation(
         .m_voxel_size            = voxelSize,
         .m_job_limit             = threadCount,
         .m_pad_estimator         = get_estimator_from_string(padEstimator),
-        .m_compute_theoriticals  = false, // TODO: support theoriticals
         .m_use_sparse_grid       = useSparseGrid,
         .m_required_counts       = requiredCounts,
         .m_smallest_element_area = smallestElementArea,
