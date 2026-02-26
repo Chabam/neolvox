@@ -482,10 +482,11 @@ int main(int argc, char* argv[])
                 logger.warn("Scan origin being set while in MLS mode, ignoring it");
                 continue;
             }
+            auto x = std::stod(*++arg_it);
+            auto y = std::stod(*++arg_it);
+            auto z = std::stod(*++arg_it);
 
-            g_scan_origins.emplace_back(
-                std::stod(*++arg_it), std::stod(*++arg_it), std::stod(*++arg_it), 0
-            );
+            auto& p = g_scan_origins.emplace_back(x, y, z, 0);
         }
         else if (*arg_it == "-s" || *arg_it == "--scan")
         {
@@ -617,11 +618,25 @@ int main(int argc, char* argv[])
         ++arg_it;
     }
 
+    if ((!g_scan_origins.empty() && g_scan_origins.size() != g_point_clouds.size()) ||
+        (!g_scan_trajectories.empty() && g_scan_trajectories.size() != g_point_clouds.size()))
+    {
+        logger.error("Provided point cloud configuration is invalid: too many or too little origins/trajectories.");
+        return 1;
+    }
+
     std::vector<Scan> scans;
     if (g_scan_trajectories.empty())
     {
         for (size_t i = 0; i < g_point_clouds.size(); ++i)
         {
+            logger.info(
+                "Point cloud #{} at origin ({},{},{})",
+                i + 1,
+                g_scan_origins[i].x(),
+                g_scan_origins[i].y(),
+                g_scan_origins[i].z()
+            );
             scans.emplace_back(Scan{g_point_clouds[i], g_scan_origins[i], g_point_cloud_bounds[i], {}});
         }
     }
