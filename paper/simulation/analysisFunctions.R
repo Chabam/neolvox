@@ -57,3 +57,17 @@ getReferenceVoxels <- function(voxelValuesFile, metadataFile) {
   dense_grid[cbind(xs, ys, zs)] <- refDataAll$area
   dense_grid
 }
+
+computeHeightProfileRef <- function(denseGrid, metadataFile) {
+  metadata <- read.csv(metadataFile, header = FALSE)
+  minZ <- metadata[metadata$V1 == "first_voxel_z",]$V2
+  zDim <- metadata[metadata$V1 == "dimension_z",]$V2
+  voxSize <- metadata[metadata$V1 == "voxel_size_m",]$V2
+
+  denseGrid[is.nan(denseGrid)] <- 0
+  denseGrid[is.infinite(denseGrid)] <- 0
+  profile_real_height <- seq(0, zDim - 1) * voxSize + minZ
+  profile <- apply(denseGrid, MARGIN = 3, FUN = mean)
+
+  structure(list(Heights = profile_real_height, PAD = profile), class = "LVoxHeightProfile")
+}
