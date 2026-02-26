@@ -9,9 +9,10 @@ namespace lvox
 
 enum class Classification
 {
-    HIT,
+    UNCLASSIFIED,
     BLANK,
     GROUND,
+    MOUNTAINS,
     WOOD,
     BRANCH,
     LEAF

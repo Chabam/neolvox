@@ -109,11 +109,12 @@ namespace fs      = std::filesystem;
 // Type definitions
 struct Point
 {
-    Point(double x, double y, double z, double gps_time = 0)
+    Point(double x, double y, double z, double gps_time, lvox::Classification classification)
         : m_x{x}
         , m_y{y}
         , m_z{z}
         , m_gps_time{gps_time}
+        , m_classification{classification}
     {
     }
 
@@ -121,7 +122,7 @@ struct Point
     double y() const { return m_y; }
     double z() const { return m_z; }
     double gps_time() const { return m_gps_time; }
-    lvox::Classification classification() const { return lvox::Classification::HIT; }
+    lvox::Classification classification() const { return m_classification; }
 
     bool operator==(const Point& other) const
     {
@@ -134,7 +135,8 @@ struct Point
     double m_x;
     double m_y;
     double m_z;
-    double m_gps_time = 0.0;
+    double m_gps_time;
+    lvox::Classification m_classification;
 };
 
 using PointCloud    = std::vector<Point>;
@@ -212,12 +214,35 @@ PointCloud load_point_cloud_from_file(
     const bool                 calculate_bounds = bounds.has_value();
     pdal::StreamCallbackFilter sc;
     sc.setCallback([calculate_bounds, &bounds, &out, &progress](const auto& pt) mutable -> bool {
-        const double x    = pt.template getFieldAs<double>(dim::X);
-        const double y    = pt.template getFieldAs<double>(dim::Y);
-        const double z    = pt.template getFieldAs<double>(dim::Z);
-        const int    clss = pt.template getFieldAs<int>(dim::Classification);
+        const double x        = pt.template getFieldAs<double>(dim::X);
+        const double y        = pt.template getFieldAs<double>(dim::Y);
+        const double z        = pt.template getFieldAs<double>(dim::Z);
+        const double gps_time = pt.template getFieldAs<double>(dim::Z);
+        const int    clss_i   = pt.template getFieldAs<int>(dim::Classification);
 
-        out.emplace_back(x, y, z, pt.template getFieldAs<double>(dim::GpsTime));
+        lvox::Classification cls;
+        switch (clss_i)
+        {
+            // TODO: make this configurable (comes from simpleforestmesh)
+            case 1:
+                cls = lvox::Classification::UNCLASSIFIED;
+                break;
+            case 2:
+                cls = lvox::Classification::GROUND;
+                break;
+            case 3:
+                cls = lvox::Classification::MOUNTAINS;
+                break;
+            case 4:
+                cls = lvox::Classification::BLANK;
+                break;
+            default:
+                cls = lvox::Classification::UNCLASSIFIED;
+                break;
+        }
+
+        out.emplace_back(x, y, z, gps_time, cls);
+
 
         if (calculate_bounds)
         {
@@ -494,7 +519,7 @@ int main(int argc, char* argv[])
             auto y = std::stod(*++arg_it);
             auto z = std::stod(*++arg_it);
 
-            auto& p = g_scan_origins.emplace_back(x, y, z, 0);
+            auto& p = g_scan_origins.emplace_back(x, y, z, 0, lvox::Classification::UNCLASSIFIED);
         }
         else if (*arg_it == "-s" || *arg_it == "--scan")
         {
