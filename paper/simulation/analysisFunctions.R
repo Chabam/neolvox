@@ -1,14 +1,14 @@
 library(lvoxR)
 library(lidR)
 
-loadPointClouds <- function(dir) {
-  lapply(seq(0, 4), function(n) {
+loadPointClouds <- function(dir, scanCount) {
+  lapply(seq(0, scanCount - 1), function(n) {
     readLAS(file.path(dir, paste0("leg00", n, "_points.laz")))
   })
 }
 
-loadOrigins <- function(dir) {
-  lapply(seq(0, 4), function(n) {
+loadOrigins <- function(dir, scanCount) {
+  lapply(seq(0, scanCount - 1), function(n) {
     rawLine <- readLines(file(file.path(dir, paste0("leg00", n, "_trajectory.txt"))), n=1)
     values <- strsplit(rawLine, " ")
     as.double(unlist(head(values[[1]], n = 3)))
@@ -25,16 +25,17 @@ findMinCoords <- function(pointClouds) {
 
 getBounds <- function(metadataFile) {
   metadata <- read.csv(metadataFile, header = FALSE)
+  voxSize <- metadata[metadata$V1 == "voxel_size_m",]$V2
   lowestPoint <- c(
     metadata[metadata$V1 == "first_voxel_x",]$V2,
     metadata[metadata$V1 == "first_voxel_y",]$V2,
     metadata[metadata$V1 == "first_voxel_z",]$V2
-  )
+  ) * voxSize
   highestPoint <- lowestPoint +
     c(
       metadata[metadata$V1 == "dimension_x",]$V2,
       metadata[metadata$V1 == "dimension_y",]$V2,
-      metadata[metadata$V1 == "dimension_z",]$V2)
+      metadata[metadata$V1 == "dimension_z",]$V2) * voxSize
   list(lowestPoint, highestPoint)
 }
 
@@ -48,7 +49,7 @@ getReferenceVoxels <- function(voxelValuesFile, metadataFile) {
             metadata[metadata$V1 == "dimension_z",]$V2)
   refData <- read.csv(paste0(voxelValuesFile))
   refData <- data.frame(refData)
-  refDataAll <- refData[refData$tag == "all",]
+  refDataAll <- aggregate(list(area = refData$area), FUN = sum, by = refData[c("X", "Y", "Z")])
 
   dense_grid <- array(0, dim = dims)
   xs <- refDataAll$X + 1 - lowestPoint[1]
