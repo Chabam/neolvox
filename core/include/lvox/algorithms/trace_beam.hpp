@@ -1,9 +1,7 @@
 #ifndef LVOX_TRACE_BEAM_HPP
 #define LVOX_TRACE_BEAM_HPP
 
-#include <format>
 #include <limits>
-#include <stdexcept>
 
 #include <lvox/logger/logger.hpp>
 #include <lvox/scanner/beam.hpp>
@@ -16,6 +14,7 @@ struct VoxelHitInfo
 {
     Index3D m_index;
     double  m_distance_in_voxel;
+    bool    m_is_destination;
 };
 
 template <bool exact_distance>
@@ -120,6 +119,7 @@ struct TraceBeam
         VoxelHitInfo current_hit{
             .m_index             = Index3D{current_voxel_x, current_voxel_y, current_voxel_z},
             .m_distance_in_voxel = 0.,
+            .m_is_destination    = false,
         };
         bool can_continue = true;
         do
@@ -176,6 +176,8 @@ struct TraceBeam
                 if (prev_distance + current_hit.m_distance_in_voxel > max_distance)
                     current_hit.m_distance_in_voxel = max_distance - prev_distance;
             }
+
+            current_hit.m_is_destination = !is_under_max_distance;
 
             if (current_hit.m_distance_in_voxel > 0)
                 callback(current_hit);

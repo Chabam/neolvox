@@ -72,40 +72,21 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
             using ComputeBeamOrigin = ScanT::ComputeBeamOrigin;
             const Vector scan_origin =
                 std::visit(ComputeBeamOrigin{gps_time}, scan.m_scanner_origin);
-
-            // If we compute the hits, we start at the point in the
-            // point cloud towards the scanner. This is done to avoid
-            // recomputing the index of the point since it is provided
-            // by the grid traversal.
-            const Vector beam_dir = std::invoke([&scan_origin, &pt]() {
-                if constexpr (compute_hits)
-                    return Vector{scan_origin - pt};
-                else
-                    return Vector{pt - scan_origin};
-            });
-
-            // Invertly, if we do not compute the hits, we start at
-            // the scanner towards the point.
-            const Vector point_origin = std::invoke([&scan_origin, &pt]() {
-                if constexpr (compute_hits)
-                    return pt;
-                else
-                    return scan_origin;
-            });
+            const Vector beam_dir{pt - scan_origin};
 
             double max_distance = std::numeric_limits<double>::infinity();
 
             if constexpr (limit_ray_length)
                 max_distance = beam_dir.norm();
 
-            bool is_hit_computed = false;
-
             grid_traversal(
-                Beam{point_origin, beam_dir},
-                [&grid, &is_hit_computed, unit_attenuation_coeff](const VoxelHitInfo& hit) {
+                Beam{scan_origin, beam_dir},
+                [&grid, unit_attenuation_coeff](const VoxelHitInfo& hit) {
+
                     if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
+                    {
                         std::visit(
-                            [&hit, &is_hit_computed, unit_attenuation_coeff](auto& grid) {
+                            [&hit, unit_attenuation_coeff](auto& grid) {
                                 double effective_length = hit.m_distance_in_voxel;
                                 if (unit_attenuation_coeff != 0.0)
                                     effective_length =
@@ -116,28 +97,31 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
 
                                 if constexpr (pe::is_uplbl<PadEstimator>::value)
                                     grid.add_length_count_and_variance(
-                                        hit.m_index, effective_length, !is_hit_computed
+                                        hit.m_index, effective_length, hit.m_is_destination
                                     );
                                 else
                                     grid.add_length_and_count(
-                                        hit.m_index, effective_length, !is_hit_computed
+                                        hit.m_index, effective_length, hit.m_is_destination
                                     );
                             },
                             grid
                         );
+                    }
                     else
+                    {
                         std::visit(
-                            [&hit, &is_hit_computed](auto& grid) {
+                            [&hit](auto& grid) {
                                 grid.add_length_and_count(
-                                    hit.m_index, hit.m_distance_in_voxel, !is_hit_computed
+                                    hit.m_index, hit.m_distance_in_voxel, hit.m_is_destination
                                 );
                             },
                             grid
                         );
+                    }
 
                     if constexpr (compute_hits)
                     {
-                        if (!is_hit_computed)
+                        if (hit.m_is_destination)
                         {
                             std::visit(
                                 [&hit](auto& grid) {
@@ -145,8 +129,6 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
                                 },
                                 grid
                             );
-
-                            is_hit_computed = true;
                         }
                     }
                 },
