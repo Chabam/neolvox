@@ -7,12 +7,23 @@
 namespace lvox
 {
 
+enum class Classification
+{
+    HIT,
+    BLANK,
+    GROUND,
+    WOOD,
+    BRANCH,
+    LEAF
+};
+
 template <typename T>
 concept Point = requires(const T& pts) {
     { pts.x() } -> std::convertible_to<double>;
     { pts.y() } -> std::convertible_to<double>;
     { pts.z() } -> std::convertible_to<double>;
     { pts.gps_time() } -> std::convertible_to<double>;
+    { pts.classification() } -> std::convertible_to<Classification>;
 };
 
 using Vector = Eigen::Vector3d;

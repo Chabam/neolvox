@@ -91,6 +91,12 @@ Computing options:
                                               They are slower, but will require less memory.
                                               [disabled by default]
 
+   -c, --classification  none                 Whether or not to use point classification with.
+                                              These can used alongside virtual scene to measure
+                                              the impact of rays that didn't touch anything
+                                              on PAD estimations. [disabled by default]
+
+
    -l, --log-level        debug, info,        Max log level to display [defaults to info]
                           warning, error
 
@@ -115,6 +121,7 @@ struct Point
     double y() const { return m_y; }
     double z() const { return m_z; }
     double gps_time() const { return m_gps_time; }
+    lvox::Classification classification() const { return lvox::Classification::HIT; }
 
     bool operator==(const Point& other) const
     {
@@ -142,6 +149,7 @@ lvox_pe::PADEstimator               g_pad_estimator         = lvox_pe::BeerLambe
 std::vector<Point>                  g_scan_origins          = {};
 std::vector<PointCloud>             g_point_clouds          = {};
 std::vector<lvox::Bounds<double>>   g_point_cloud_bounds    = {};
+bool                                g_use_classifications   = false;
 std::mutex                          g_print_guard           = {};
 std::vector<Trajectory>             g_scan_trajectories     = {};
 fs::path                            g_grid_file             = "out.h5";
@@ -563,11 +571,14 @@ int main(int argc, char* argv[])
             iss >> bounds.m_max_z;
 
             g_bounds = std::move(bounds);
-
         }
         else if (*arg_it == "-u" || *arg_it == "--unit-surface")
         {
             g_smallest_element_area = std::stod(*++arg_it);
+        }
+        else if (*arg_it == "-c" || *arg_it == "--classification")
+        {
+            g_use_classifications = true;
         }
         else if (*arg_it == "-a" || *arg_it == "--all")
         {
@@ -637,13 +648,13 @@ int main(int argc, char* argv[])
                 g_scan_origins[i].y(),
                 g_scan_origins[i].z()
             );
-            scans.emplace_back(Scan{g_point_clouds[i], g_scan_origins[i], g_point_cloud_bounds[i], {}});
+            scans.emplace_back(Scan{g_point_clouds[i], g_scan_origins[i], g_point_cloud_bounds[i]});
         }
     }
     else
     {
         // TODO: check if we want to support MLS mutli-scan?
-        scans.emplace_back(Scan{g_point_clouds[0], g_scan_trajectories[0], g_point_cloud_bounds[0], {}});
+        scans.emplace_back(Scan{g_point_clouds[0], g_scan_trajectories[0], g_point_cloud_bounds[0]});
     }
 
     if (scans.empty())
@@ -659,6 +670,7 @@ int main(int argc, char* argv[])
         .m_use_sparse_grid       = g_use_sparse_grids,
         .m_required_counts       = g_required_counts,
         .m_smallest_element_area = g_smallest_element_area,
+        .m_use_classification    = g_use_classifications,
         .m_bounds                = g_bounds,
         .m_log_stream            = std::cout
     };

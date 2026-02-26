@@ -2,7 +2,6 @@
 #define LVOX_EXPLORE_GRID_HPP
 
 #include <future>
-#include <numbers>
 
 #include <lvox/algorithms/compute_options.hpp>
 #include <lvox/algorithms/trace_beam.hpp>
@@ -22,8 +21,7 @@ template <
     typename ScanT,
     Point              PointT,
     PointCloud<PointT> PointCloudT,
-    bool               limit_ray_length,
-    bool               compute_hits,
+    bool use_classifications,
     typename PadEstimator>
 void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& options, Logger logger)
 {
@@ -72,16 +70,34 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
             using ComputeBeamOrigin = ScanT::ComputeBeamOrigin;
             const Vector scan_origin =
                 std::visit(ComputeBeamOrigin{gps_time}, scan.m_scanner_origin);
-            const Vector beam_dir{pt - scan_origin};
 
+            bool compute_hit = true;
+            bool limit_ray_length = true;
+
+            if constexpr (use_classifications)
+            {
+                switch (timed_point.classification())
+                {
+                    case Classification::BLANK:
+                        limit_ray_length = false;
+                        [[fallthrough]];
+                    case Classification::GROUND:
+                        compute_hit = false;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            const Vector beam_dir{pt - scan_origin};
             double max_distance = std::numeric_limits<double>::infinity();
 
-            if constexpr (limit_ray_length)
+            if (limit_ray_length)
                 max_distance = beam_dir.norm();
 
             grid_traversal(
                 Beam{scan_origin, beam_dir},
-                [&grid, unit_attenuation_coeff](const VoxelHitInfo& hit) {
+                [&grid, unit_attenuation_coeff, compute_hit](const VoxelHitInfo& hit) {
 
                     if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
                     {
@@ -119,7 +135,7 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
                         );
                     }
 
-                    if constexpr (compute_hits)
+                    if (compute_hit)
                     {
                         if (hit.m_is_destination)
                         {
@@ -167,16 +183,25 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
 template <Point PointT, PointCloud<PointT> PointCloudT>
 void explore_grid(Grid& grid, const Scan<PointT, PointCloudT>& scan, const ComputeOptions& options)
 {
-    using ScanT                     = Scan<PointT, PointCloudT>;
-    constexpr bool limit_ray_length = true;
-    constexpr bool compute_hits     = true;
-    Logger         logger{"Explore grid", options.m_log_stream};
+    using ScanT = Scan<PointT, PointCloudT>;
+    Logger logger{"Explore grid", options.m_log_stream};
     std::visit(
         [&](auto&& chosen_estimator) {
             using T = std::decay_t<decltype(chosen_estimator)>;
-            explore_grid_impl<ScanT, PointT, PointCloudT, limit_ray_length, compute_hits, T>(
-                grid, scan, options, logger
-            );
+            if (options.m_use_classification)
+            {
+                constexpr bool use_classification = true;
+                explore_grid_impl<ScanT, PointT, PointCloudT, use_classification, T>(
+                    grid, scan, options, logger
+                );
+            }
+            else
+            {
+                constexpr bool use_classification = false;
+                explore_grid_impl<ScanT, PointT, PointCloudT, use_classification, T>(
+                    grid, scan, options, logger
+                );
+            }
         },
         options.m_pad_estimator
     );
