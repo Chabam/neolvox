@@ -21,11 +21,13 @@ struct Point
     double y() const { return m_y; }
     double z() const { return m_z; }
     double gps_time() const { return m_gps_time; }
+    lvox::Classification classification() const { return m_classification; }
 
     double m_x;
     double m_y;
     double m_z;
     double m_gps_time;
+    lvox::Classification m_classification;
 };
 
 struct PointCloud
@@ -34,13 +36,15 @@ struct PointCloud
         const Rcpp::NumericVector& xs,
         const Rcpp::NumericVector& ys,
         const Rcpp::NumericVector& zs,
-        const Rcpp::NumericVector& gps_times
+        const Rcpp::NumericVector& gps_times,
+        const Rcpp::NumericVector& classifications
     )
         : m_count{static_cast<size_t>(xs.size())}
         , m_xs{xs}
         , m_ys{ys}
         , m_zs{zs}
         , m_gps_times{gps_times}
+        , m_classifications{classifications}
     {
     }
 
@@ -155,14 +159,39 @@ struct PointCloud
             , m_point_cloud{point_cloud}
             , m_value{std::invoke([this]() -> std::optional<value_type> {
                 if (m_index < m_point_cloud->m_count)
+                {
+                    lvox::Classification cls;
+                    switch (m_point_cloud->m_classifications[m_index])
+                    {
+                        // TODO: make this configurable (comes from simpleforestmesh)
+                        case 1:
+                            cls = lvox::Classification::UNCLASSIFIED;
+                            break;
+                        case 2:
+                            cls = lvox::Classification::GROUND;
+                            break;
+                        case 3:
+                            cls = lvox::Classification::MOUNTAINS;
+                            break;
+                        case 4:
+                            cls = lvox::Classification::SKY;
+                            break;
+                        default:
+                            cls = lvox::Classification::UNCLASSIFIED;
+                            break;
+                    }
+
                     return value_type{
                         m_point_cloud->m_xs[m_index],
                         m_point_cloud->m_ys[m_index],
                         m_point_cloud->m_zs[m_index],
-                        m_point_cloud->m_gps_times[m_index]
+                        m_point_cloud->m_gps_times[m_index],
+                        cls
                     };
-                else
+                }
+                else {
                     return {};
+                }
             })}
         {
         }
@@ -197,6 +226,7 @@ struct PointCloud
     Rcpp::DoubleVector m_ys;
     Rcpp::DoubleVector m_zs;
     Rcpp::DoubleVector m_gps_times;
+    Rcpp::IntegerVector m_classifications;
 };
 
 using Scan          = lvox::Scan<Point, PointCloud>;
@@ -205,7 +235,7 @@ using Trajectory    = lvox::Trajectory<Point, PointCloud>;
 
 PointCloud read_point_cloud_from_raw_data(const Rcpp::List& raw_data)
 {
-    return PointCloud{raw_data["X"], raw_data["Y"], raw_data["Z"], raw_data["gpstime"]};
+  return PointCloud{raw_data["X"], raw_data["Y"], raw_data["Z"], raw_data["gpstime"], raw_data["Classification"]};
 }
 
 PointCloud try_read_point_cloud_as_las(const SEXP& expr)
@@ -253,6 +283,7 @@ Rcpp::List do_lvox_computation(
     bool                     exportIntermediateData,
     lvox::Bounds<double>     bounds,
     double                   smallestElementArea,
+    bool                     useClassification,
     unsigned int             threadCount
 )
 {
@@ -263,6 +294,7 @@ Rcpp::List do_lvox_computation(
         .m_use_sparse_grid       = useSparseGrid,
         .m_required_counts       = requiredCounts,
         .m_smallest_element_area = smallestElementArea,
+        .m_use_classification    = useClassification,
         .m_bounds                = bounds,
         .m_log_stream            = Rcpp::Rcout
     };
@@ -349,10 +381,11 @@ Rcpp::List estimatePADForMLS(
     const Rcpp::List&          trajectory,
     std::string                padEstimator           = "BCMLE",
     double                     voxelSize              = 0.5,
-    bool                       useSparseGrid          = false,
     unsigned int               requiredCounts         = 5,
+    bool                       useSparseGrid          = false,
     bool                       exportIntermediateData = false,
     Rcpp::Nullable<Rcpp::List> bounds                 = R_NilValue,
+    bool                       useClassification      = false,
     double                     smallestElementArea    = 0,
     unsigned int               threadCount            = 8
 )
@@ -389,6 +422,7 @@ Rcpp::List estimatePADForMLS(
         exportIntermediateData,
         lvox_bounds,
         smallestElementArea,
+        useClassification,
         threadCount
     );
 }
@@ -426,6 +460,7 @@ Rcpp::List estimatePADForTLS(
     bool                       useSparseGrid          = false,
     bool                       exportIntermediateData = false,
     Rcpp::Nullable<Rcpp::List> bounds                 = R_NilValue,
+    bool                       useClassification      = false,
     double                     smallestElementArea    = 0,
     unsigned int               threadCount            = 8
 )
@@ -448,7 +483,7 @@ Rcpp::List estimatePADForTLS(
         point_clouds.emplace_back(try_read_point_cloud_as_las(pointClouds[i]));
         Rcpp::DoubleVector current_origin = scannersOrigin[i];
         origins_point.emplace_back(
-            Point{current_origin[0], current_origin[1], current_origin[2], 0}
+            Point{current_origin[0], current_origin[1], current_origin[2], 0, lvox::Classification::UNCLASSIFIED}
         );
     }
 
@@ -467,7 +502,9 @@ Rcpp::List estimatePADForTLS(
         {
             for (const auto& pt : pc)
             {
-                lvox_bounds.grow(pt.x(), pt.y(), pt.z());
+                if (!(pt.classification() == lvox::Classification::SKY ||
+                      pt.classification() == lvox::Classification::MOUNTAINS))
+                    lvox_bounds.grow(pt.x(), pt.y(), pt.z());
             }
         }
     }
@@ -486,6 +523,7 @@ Rcpp::List estimatePADForTLS(
         exportIntermediateData,
         lvox_bounds,
         smallestElementArea,
+        useClassification,
         threadCount
     );
 }

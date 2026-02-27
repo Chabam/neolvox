@@ -78,7 +78,7 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
             {
                 switch (timed_point.classification())
                 {
-                    case Classification::BLANK:
+                    case Classification::SKY:
                         limit_ray_length = false;
                         [[fallthrough]];
                     case Classification::GROUND:

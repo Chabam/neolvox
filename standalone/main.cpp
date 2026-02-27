@@ -220,6 +220,7 @@ PointCloud load_point_cloud_from_file(
         const double gps_time = pt.template getFieldAs<double>(dim::Z);
         const int    clss_i   = pt.template getFieldAs<int>(dim::Classification);
 
+        bool increases_bounds = true;
         lvox::Classification cls;
         switch (clss_i)
         {
@@ -232,9 +233,11 @@ PointCloud load_point_cloud_from_file(
                 break;
             case 3:
                 cls = lvox::Classification::MOUNTAINS;
+                increases_bounds = false;
                 break;
             case 4:
-                cls = lvox::Classification::BLANK;
+                cls = lvox::Classification::SKY;
+                increases_bounds = false;
                 break;
             default:
                 cls = lvox::Classification::UNCLASSIFIED;
@@ -244,7 +247,7 @@ PointCloud load_point_cloud_from_file(
         out.emplace_back(x, y, z, gps_time, cls);
 
 
-        if (calculate_bounds)
+        if (calculate_bounds && increases_bounds)
         {
             bounds->get().grow(x, y, z);
         }
@@ -655,7 +658,7 @@ int main(int argc, char* argv[])
     }
 
     if ((!g_scan_origins.empty() && g_scan_origins.size() != g_point_clouds.size()) ||
-        (!g_scan_trajectories.empty() && g_scan_trajectories.size() != g_point_clouds.size()))
+            (!g_scan_trajectories.empty() && g_scan_trajectories.size() != g_point_clouds.size()))
     {
         logger.error("Provided point cloud configuration is invalid: too many or too little origins/trajectories.");
         return 1;
@@ -666,14 +669,32 @@ int main(int argc, char* argv[])
     {
         for (size_t i = 0; i < g_point_clouds.size(); ++i)
         {
+            const auto& pc = g_point_clouds[i];
+            auto count_class_type = [&pc](lvox::Classification cls_type) -> size_t {
+                return std::count_if(
+                    pc.begin(),
+                    pc.begin(),
+                    [cls_type](const Point& p) -> bool {
+                        return p.classification() == cls_type;
+                    });
+            };
+
             logger.info(
-                "Point cloud #{} at origin ({},{},{})",
+                R"(
+Point cloud #{} at origin ({},{},{})
+UNCLASSIFIED: {}
+SKY: {}
+MOUNTAINS: {}
+                 )",
                 i + 1,
                 g_scan_origins[i].x(),
                 g_scan_origins[i].y(),
-                g_scan_origins[i].z()
+                g_scan_origins[i].z(),
+                count_class_type(lvox::Classification::UNCLASSIFIED),
+                count_class_type(lvox::Classification::SKY),
+                count_class_type(lvox::Classification::MOUNTAINS)
             );
-            scans.emplace_back(Scan{g_point_clouds[i], g_scan_origins[i], g_point_cloud_bounds[i]});
+            scans.emplace_back(Scan{pc, g_scan_origins[i], g_point_cloud_bounds[i]});
         }
     }
     else

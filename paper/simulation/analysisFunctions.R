@@ -1,4 +1,3 @@
-library(lvoxR)
 library(lidR)
 
 loadPointClouds <- function(dir, scanCount) {

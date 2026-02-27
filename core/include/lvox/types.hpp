@@ -9,13 +9,13 @@ namespace lvox
 
 enum class Classification
 {
-    UNCLASSIFIED,
-    BLANK,
-    GROUND,
-    MOUNTAINS,
-    WOOD,
     BRANCH,
-    LEAF
+    GROUND,
+    LEAF,
+    MOUNTAINS,
+    SKY,
+    WOOD,
+    UNCLASSIFIED,
 };
 
 template <typename T>
