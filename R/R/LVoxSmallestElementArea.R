@@ -36,6 +36,6 @@ broadLeafProjectedAreaFromDimensions <- function(length) {
 #'   `lvoxR::computeTLS` and `lvoxR::computeMLS`
 #' @param flatArea The flat area of the broad leaf expressed in meters
 #' @return The random projected area of the broad leaf
-needleProjectedAreaFromFlatArea <- function(flatArea) {
+broadLeafProjectedAreaFromFlatArea <- function(flatArea) {
   (2 * flatArea) / 4
 }

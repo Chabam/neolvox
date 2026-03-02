@@ -66,7 +66,8 @@ computeHeightProfileRef <- function(denseGrid, metadataFile) {
 
   denseGrid[is.nan(denseGrid)] <- 0
   denseGrid[is.infinite(denseGrid)] <- 0
-  profile_real_height <- seq(0, zDim - 1) * voxSize + minZ
+  denseGrid <- denseGrid / (voxSize ^ 3)
+  profile_real_height <- seq(0, zDim - 1) * voxSize + minZ * voxSize
   profile <- apply(denseGrid, MARGIN = 3, FUN = mean)
 
   structure(list(Heights = profile_real_height, PAD = profile), class = "LVoxHeightProfile")

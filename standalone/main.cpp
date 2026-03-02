@@ -575,6 +575,7 @@ int main(int argc, char* argv[])
         else if (*arg_it == "-h" || *arg_it == "--help")
         {
             std::cout << g_usage_info << std::endl;
+            return 0;
         }
         else if (*arg_it == "-b" || *arg_it == "--bounds")
         {
