@@ -217,7 +217,7 @@ PointCloud load_point_cloud_from_file(
         const double x        = pt.template getFieldAs<double>(dim::X);
         const double y        = pt.template getFieldAs<double>(dim::Y);
         const double z        = pt.template getFieldAs<double>(dim::Z);
-        const double gps_time = pt.template getFieldAs<double>(dim::Z);
+        const double gps_time = pt.template getFieldAs<double>(dim::GpsTime);
         const int    clss_i   = pt.template getFieldAs<int>(dim::Classification);
 
         bool increases_bounds = true;
