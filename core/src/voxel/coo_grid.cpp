@@ -30,10 +30,8 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
     , m_bounded_grid{grid.m_bounded_grid}
 {
     auto chunk_idx = 0;
-    for (const auto& a_chunk : grid.m_chunks)
+    for (const auto& chunk : grid.m_chunks_data)
     {
-        auto chunk = a_chunk.load(std::memory_order_relaxed);
-
         if (!chunk)
         {
             ++chunk_idx;

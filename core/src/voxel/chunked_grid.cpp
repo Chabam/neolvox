@@ -25,7 +25,8 @@ ChunkedGrid::ChunkedGrid(const Bounds<double>& bounds, double cell_size, bool co
           std::ceil(static_cast<float>(m_bounded_grid.m_dim_z) / VoxelChunk::s_edge_size)
       )}
     , m_chunk_count{m_chunks_x * m_chunks_y * m_chunks_z}
-    , m_chunks{m_chunk_count}
+    , m_chunks_data{m_chunk_count}
+    , m_chunks_ptrs{m_chunk_count}
 {
 }
 
@@ -35,7 +36,8 @@ ChunkedGrid::ChunkedGrid(ChunkedGrid&& other)
     , m_chunks_y{std::move(other.m_chunks_y)}
     , m_chunks_z{std::move(other.m_chunks_z)}
     , m_chunk_count{std::move(other.m_chunk_count)}
-    , m_chunks{std::move(other.m_chunks)}
+    , m_chunks_data{std::move(other.m_chunks_data)}
+    , m_chunks_ptrs{std::move(other.m_chunks_ptrs)}
 {
 }
 
@@ -53,22 +55,25 @@ ChunkedGrid::VoxelChunk::VoxelChunk(bool compute_variance)
 {
 }
 
-ChunkedGrid::chunk_ptr ChunkedGrid::get_or_create_chunk(size_t chunk_idx)
+const ChunkedGrid::chunk_ptr& ChunkedGrid::get_or_create_chunk(size_t chunk_idx)
 {
-    auto& chunk_ref      = m_chunks[chunk_idx];
+    auto& chunk_ref      = m_chunks_ptrs[chunk_idx];
     auto  existing_chunk = chunk_ref.load(std::memory_order_acquire);
 
     if (existing_chunk)
-        return existing_chunk;
+        return m_chunks_data[chunk_idx];
 
-    auto new_chunk = std::make_shared<VoxelChunk>(m_compute_variance);
+    auto new_chunk = std::make_unique<VoxelChunk>(m_compute_variance);
 
     if (chunk_ref.compare_exchange_strong(
-            existing_chunk, new_chunk, std::memory_order_release, std::memory_order_acquire
+            existing_chunk, new_chunk.get(), std::memory_order_release, std::memory_order_acquire
         ))
-        return new_chunk;
+    {
+        m_chunks_data[chunk_idx] = std::move(new_chunk);
+        return m_chunks_data[chunk_idx];
+    }
 
-    return existing_chunk;
+    return m_chunks_data[chunk_idx];
 }
 
 size_t ChunkedGrid::index3d_to_chunk_idx(const Index3D& voxel_idx) const
@@ -105,9 +110,9 @@ size_t ChunkedGrid::VoxelChunk::index3d_to_flat_idx(
 
 void ChunkedGrid::register_hit(const Index3D& idx)
 {
-    auto       chunk_idx          = index3d_to_chunk_idx(idx);
-    auto       chunk              = get_or_create_chunk(chunk_idx);
-    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(m_bounded_grid.index_bounds(), idx);
+    auto        chunk_idx          = index3d_to_chunk_idx(idx);
+    const auto& chunk              = get_or_create_chunk(chunk_idx);
+    const auto  voxel_idx_in_chunk = chunk->index3d_to_flat_idx(m_bounded_grid.index_bounds(), idx);
 
     std::lock_guard lock{chunk->m_write_access};
     chunk->m_hits[voxel_idx_in_chunk] += 1;
@@ -115,9 +120,9 @@ void ChunkedGrid::register_hit(const Index3D& idx)
 
 void ChunkedGrid::add_length_and_count(const Index3D& idx, double length, bool is_hit)
 {
-    auto       chunk_idx          = index3d_to_chunk_idx(idx);
-    auto       chunk              = get_or_create_chunk(chunk_idx);
-    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(m_bounded_grid.index_bounds(), idx);
+    auto        chunk_idx          = index3d_to_chunk_idx(idx);
+    const auto& chunk              = get_or_create_chunk(chunk_idx);
+    const auto  voxel_idx_in_chunk = chunk->index3d_to_flat_idx(m_bounded_grid.index_bounds(), idx);
 
     std::lock_guard lock{chunk->m_write_access};
     chunk->m_lengths[voxel_idx_in_chunk] += length;
@@ -130,9 +135,9 @@ void ChunkedGrid::add_length_and_count(const Index3D& idx, double length, bool i
 
 void ChunkedGrid::add_length_count_and_variance(const Index3D& idx, double length, bool is_hit)
 {
-    auto       chunk_idx          = index3d_to_chunk_idx(idx);
-    auto       chunk              = get_or_create_chunk(chunk_idx);
-    const auto voxel_idx_in_chunk = chunk->index3d_to_flat_idx(m_bounded_grid.index_bounds(), idx);
+    auto        chunk_idx          = index3d_to_chunk_idx(idx);
+    const auto& chunk              = get_or_create_chunk(chunk_idx);
+    const auto  voxel_idx_in_chunk = chunk->index3d_to_flat_idx(m_bounded_grid.index_bounds(), idx);
 
     std::unique_lock lock{chunk->m_write_access};
     const double     previous_lengths = chunk->m_lengths[voxel_idx_in_chunk];

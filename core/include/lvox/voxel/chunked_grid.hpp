@@ -45,8 +45,8 @@ class ChunkedGrid
         std::mutex                m_write_access;
     };
 
-    using chunk_ptr   = std::shared_ptr<VoxelChunk>;
-    using a_chunk_ptr = std::atomic<chunk_ptr>;
+    using chunk_ptr   = std::unique_ptr<VoxelChunk>;
+    using a_chunk_ptr = std::atomic<VoxelChunk*>;
 
     BoundedGrid              m_bounded_grid;
     bool                     m_compute_variance;
@@ -54,11 +54,13 @@ class ChunkedGrid
     unsigned int             m_chunks_y;
     unsigned int             m_chunks_z;
     size_t                   m_chunk_count;
-    std::vector<a_chunk_ptr> m_chunks;
+    std::vector<chunk_ptr>   m_chunks_data;
+    std::vector<a_chunk_ptr> m_chunks_ptrs;
 
-    chunk_ptr get_or_create_chunk(size_t chunk_idx);
+    const chunk_ptr& get_or_create_chunk(size_t chunk_idx);
+
     // Returns a pair of the chunk index in the index of the voxel in the chunk
-    size_t    index3d_to_chunk_idx(const Index3D& voxel_idx) const;
+    size_t index3d_to_chunk_idx(const Index3D& voxel_idx) const;
 };
 
 } // namespace lvox
