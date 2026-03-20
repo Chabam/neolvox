@@ -242,6 +242,15 @@ COOGrid::COOGrid(const DenseGrid& grid)
         );
     }
 
+    {
+        std::ranges::copy(
+            index_with_data | std::views::transform([&grid](const size_t& index) -> double {
+                return grid.m_hits_lengths[index];
+            }),
+            m_hits_lengths.begin()
+        );
+    }
+
     if (m_uses_variance)
     {
         std::ranges::copy(

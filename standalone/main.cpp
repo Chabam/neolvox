@@ -378,6 +378,12 @@ void export_to_h5(
             lengths_data.write(lengths.data(), h5_lengths_t);
         }
 
+        {
+            H5::PredType h5_hits_lengths_t = H5::PredType::NATIVE_DOUBLE;
+            H5::DataSet  hits_lengths_data = get_or_create_dataset("hits lengths", h5_hits_lengths_t, data_space);
+            hits_lengths_data.write(lengths.data(), h5_hits_lengths_t);
+        }
+
         if (!lengths_variance.empty())
         {
             H5::PredType h5_lengths_var_t = H5::PredType::NATIVE_DOUBLE;
