@@ -16,7 +16,9 @@ lvox::Bounds<double> compute_scene_bounds(const std::vector<Scan<PointT, PointCl
     Bounds<double> total_bounds;
 
     for (const auto& scan : scans)
+    {
         total_bounds.grow(scan.m_bounds);
+    }
 
     return total_bounds;
 }

@@ -17,6 +17,7 @@ struct ComputeOptions
     bool                                m_use_sparse_grid;
     unsigned int                        m_required_counts;
     double                              m_smallest_element_area;
+    bool                                m_use_classification;
     std::optional<lvox::Bounds<double>> m_bounds;
     std::ostream&                       m_log_stream;
 };

@@ -91,6 +91,12 @@ Computing options:
                                               They are slower, but will require less memory.
                                               [disabled by default]
 
+   -c, --classification  none                 Whether or not to use point classification with.
+                                              These can used alongside virtual scene to measure
+                                              the impact of rays that didn't touch anything
+                                              on PAD estimations. [disabled by default]
+
+
    -l, --log-level        debug, info,        Max log level to display [defaults to info]
                           warning, error
 
@@ -103,11 +109,12 @@ namespace fs      = std::filesystem;
 // Type definitions
 struct Point
 {
-    Point(double x, double y, double z, double gps_time = 0)
+    Point(double x, double y, double z, double gps_time, lvox::Classification classification)
         : m_x{x}
         , m_y{y}
         , m_z{z}
         , m_gps_time{gps_time}
+        , m_classification{classification}
     {
     }
 
@@ -115,6 +122,7 @@ struct Point
     double y() const { return m_y; }
     double z() const { return m_z; }
     double gps_time() const { return m_gps_time; }
+    lvox::Classification classification() const { return m_classification; }
 
     bool operator==(const Point& other) const
     {
@@ -127,7 +135,8 @@ struct Point
     double m_x;
     double m_y;
     double m_z;
-    double m_gps_time = 0.0;
+    double m_gps_time;
+    lvox::Classification m_classification;
 };
 
 using PointCloud    = std::vector<Point>;
@@ -142,6 +151,7 @@ lvox_pe::PADEstimator               g_pad_estimator         = lvox_pe::BeerLambe
 std::vector<Point>                  g_scan_origins          = {};
 std::vector<PointCloud>             g_point_clouds          = {};
 std::vector<lvox::Bounds<double>>   g_point_cloud_bounds    = {};
+bool                                g_use_classifications   = false;
 std::mutex                          g_print_guard           = {};
 std::vector<Trajectory>             g_scan_trajectories     = {};
 fs::path                            g_grid_file             = "out.h5";
@@ -204,14 +214,40 @@ PointCloud load_point_cloud_from_file(
     const bool                 calculate_bounds = bounds.has_value();
     pdal::StreamCallbackFilter sc;
     sc.setCallback([calculate_bounds, &bounds, &out, &progress](const auto& pt) mutable -> bool {
-        const double x    = pt.template getFieldAs<double>(dim::X);
-        const double y    = pt.template getFieldAs<double>(dim::Y);
-        const double z    = pt.template getFieldAs<double>(dim::Z);
-        const int    clss = pt.template getFieldAs<int>(dim::Classification);
+        const double x        = pt.template getFieldAs<double>(dim::X);
+        const double y        = pt.template getFieldAs<double>(dim::Y);
+        const double z        = pt.template getFieldAs<double>(dim::Z);
+        const double gps_time = pt.template getFieldAs<double>(dim::Z);
+        const int    clss_i   = pt.template getFieldAs<int>(dim::Classification);
 
-        out.emplace_back(x, y, z, pt.template getFieldAs<double>(dim::GpsTime));
+        bool increases_bounds = true;
+        lvox::Classification cls;
+        switch (clss_i)
+        {
+            // TODO: make this configurable (comes from simpleforestmesh)
+            case 1:
+                cls = lvox::Classification::UNCLASSIFIED;
+                break;
+            case 2:
+                cls = lvox::Classification::GROUND;
+                break;
+            case 3:
+                cls = lvox::Classification::MOUNTAINS;
+                increases_bounds = false;
+                break;
+            case 4:
+                cls = lvox::Classification::SKY;
+                increases_bounds = false;
+                break;
+            default:
+                cls = lvox::Classification::UNCLASSIFIED;
+                break;
+        }
 
-        if (calculate_bounds)
+        out.emplace_back(x, y, z, gps_time, cls);
+
+
+        if (calculate_bounds && increases_bounds)
         {
             bounds->get().grow(x, y, z);
         }
@@ -486,7 +522,7 @@ int main(int argc, char* argv[])
             auto y = std::stod(*++arg_it);
             auto z = std::stod(*++arg_it);
 
-            auto& p = g_scan_origins.emplace_back(x, y, z, 0);
+            auto& p = g_scan_origins.emplace_back(x, y, z, 0, lvox::Classification::UNCLASSIFIED);
         }
         else if (*arg_it == "-s" || *arg_it == "--scan")
         {
@@ -539,6 +575,7 @@ int main(int argc, char* argv[])
         else if (*arg_it == "-h" || *arg_it == "--help")
         {
             std::cout << g_usage_info << std::endl;
+            return 0;
         }
         else if (*arg_it == "-b" || *arg_it == "--bounds")
         {
@@ -563,11 +600,14 @@ int main(int argc, char* argv[])
             iss >> bounds.m_max_z;
 
             g_bounds = std::move(bounds);
-
         }
         else if (*arg_it == "-u" || *arg_it == "--unit-surface")
         {
             g_smallest_element_area = std::stod(*++arg_it);
+        }
+        else if (*arg_it == "-c" || *arg_it == "--classification")
+        {
+            g_use_classifications = true;
         }
         else if (*arg_it == "-a" || *arg_it == "--all")
         {
@@ -619,7 +659,7 @@ int main(int argc, char* argv[])
     }
 
     if ((!g_scan_origins.empty() && g_scan_origins.size() != g_point_clouds.size()) ||
-        (!g_scan_trajectories.empty() && g_scan_trajectories.size() != g_point_clouds.size()))
+            (!g_scan_trajectories.empty() && g_scan_trajectories.size() != g_point_clouds.size()))
     {
         logger.error("Provided point cloud configuration is invalid: too many or too little origins/trajectories.");
         return 1;
@@ -630,20 +670,38 @@ int main(int argc, char* argv[])
     {
         for (size_t i = 0; i < g_point_clouds.size(); ++i)
         {
+            const auto& pc = g_point_clouds[i];
+            auto count_class_type = [&pc](lvox::Classification cls_type) -> size_t {
+                return std::count_if(
+                    pc.begin(),
+                    pc.begin(),
+                    [cls_type](const Point& p) -> bool {
+                        return p.classification() == cls_type;
+                    });
+            };
+
             logger.info(
-                "Point cloud #{} at origin ({},{},{})",
+                R"(
+Point cloud #{} at origin ({},{},{})
+UNCLASSIFIED: {}
+SKY: {}
+MOUNTAINS: {}
+                 )",
                 i + 1,
                 g_scan_origins[i].x(),
                 g_scan_origins[i].y(),
-                g_scan_origins[i].z()
+                g_scan_origins[i].z(),
+                count_class_type(lvox::Classification::UNCLASSIFIED),
+                count_class_type(lvox::Classification::SKY),
+                count_class_type(lvox::Classification::MOUNTAINS)
             );
-            scans.emplace_back(Scan{g_point_clouds[i], g_scan_origins[i], g_point_cloud_bounds[i], {}});
+            scans.emplace_back(Scan{pc, g_scan_origins[i], g_point_cloud_bounds[i]});
         }
     }
     else
     {
         // TODO: check if we want to support MLS mutli-scan?
-        scans.emplace_back(Scan{g_point_clouds[0], g_scan_trajectories[0], g_point_cloud_bounds[0], {}});
+        scans.emplace_back(Scan{g_point_clouds[0], g_scan_trajectories[0], g_point_cloud_bounds[0]});
     }
 
     if (scans.empty())
@@ -659,6 +717,7 @@ int main(int argc, char* argv[])
         .m_use_sparse_grid       = g_use_sparse_grids,
         .m_required_counts       = g_required_counts,
         .m_smallest_element_area = g_smallest_element_area,
+        .m_use_classification    = g_use_classifications,
         .m_bounds                = g_bounds,
         .m_log_stream            = std::cout
     };
