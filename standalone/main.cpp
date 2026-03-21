@@ -35,73 +35,75 @@
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] [-s SCAN_FILE [-o COORDINATE | -t TRAJECTORY_FILE]]...
 Scan definitions:
-   -s, --scan             filename            Path to a trajectory file, at least one required for
-                                              computing PAD. [none by default]
+   -s, --scan                           filename            Path to a trajectory file, at least one required for
+                                                            computing PAD. [none by default]
 
-   -t, --trajectory       filename            Path to a trajectory file, required for
-                                              computing an MLS scan. [none by default]
+   -t, --trajectory                     filename            Path to a trajectory file, required for
+                                                            computing an MLS scan. [none by default]
 
-   -o, --scan-origin      x y z               Coordinates for the scan position when
-                                              computing a TLS scan. Will be matched with the previous
-                                              scan input [defaults to (0,0,0)]
+   -o, --scan-origin                    x y z               Coordinates for the scan position when
+                                                            computing a TLS scan. Will be matched with the previous
+                                                            scan input [defaults to (0,0,0)]
 Computing options:
-   NAME                   EXPECTED VALUES     DESCRIPTION
+   NAME                                 EXPECTED VALUES     DESCRIPTION
 
-   -v, --voxel-size       decimal             Size in meters of each voxel elements
-                                              of the grid. [defaults to 0.5]
+   -v, --voxel-size                     decimal             Size in meters of each voxel elements
+                                                            of the grid. [defaults to 0.5]
 
-   -m, --method           BL, CF, ULPBL,      The PAD estimator to use. Here's the
-                          BCMLE               description of each values:
-                                                - BL: Beer-Lambert [default]
-                                                - CF: Contact Frequency
-                                                - UPLBL: Unequal Path Length
-                                                  Beer Lambert
-                                                - BCMLE: Bias Corrected Maximum
-                                                  Likelyhood Estimator
+   -m, --method                         BL, CF, ULPBL,      The PAD estimator to use. Here's the
+                                        BCMLE               description of each values:
+                                                              - BL: Beer-Lambert [default]
+                                                              - CF: Contact Frequency
+                                                              - UPLBL: Unequal Path Length
+                                                                Beer Lambert
+                                                              - BCMLE: Bias Corrected Maximum
+                                                                Likelyhood Estimator
 
-   -r, --required-counts  number              The number of ray required for PAD computation, if
-                                              the amount of rays that entered the voxel is lower
-                                              than this number it will be excluded from the estimation
-                                              [5 by default]
+   -r, --required-counts                number              The number of ray required for PAD computation, if
+                                                            the amount of rays that entered the voxel is lower
+                                                            than this number it will be excluded from the estimation
+                                                            [5 by default]
 
-   -b, --bounds           numbers             The bounds that will be used for creating the voxel grid.
-                                              The input format is as followed MINIMAL_COORD,MAXIMAL_COORD,
-                                              where MINIMAL_COORD and MAXIMAL_COORD are formatted as such
-                                              (0.0,0.0,0.0). So an example of use, would be something like
-                                              this (-1.0,-1.0,-1.0)(1.0,1.0,1.0)
-                                              [computed automatically by default]
+   -b, --bounds                         numbers             The bounds that will be used for creating the voxel grid.
+                                                            The input format is as followed MINIMAL_COORD,MAXIMAL_COORD,
+                                                            where MINIMAL_COORD and MAXIMAL_COORD are formatted as such
+                                                            (0.0,0.0,0.0). So an example of use, would be something like
+                                                            this (-1.0,-1.0,-1.0)(1.0,1.0,1.0)
+                                                            [computed automatically by default]
 
-   -u, --unit-surface     number              The surface area of the smallest element of the forest scene.
-                                              This value is used in BCMLE and UPBL as a mean of removing bias
-                                              for unexplored voxels. If set to 0, it will be ignored.
-                                              [defaults to 0]
+   -u, --unit-surface                   number              The surface area of the smallest element of the forest scene.
+                                                            This value is used in BCMLE and UPBL as a mean of removing bias
+                                                            for unexplored voxels. If set to 0, it will be ignored.
+                                                            [defaults to 0]
 
-   -g, --grid             filename            Name of the outputted hdf5 file that will containt the grid
-                                              of PAD voxel values. [defaults to out.h5]
+   -g, --grid                           filename            Name of the outputted hdf5 file that will containt the grid
+                                                            of PAD voxel values. [defaults to out.h5]
 
-   -j, --jobs             number              A number of parallel jobs to use.
-                                              [defaults to the amount of core]
-
-
-   -a, --all              none                Whether or not to include all the information
-                                              from the grid (ray counts, lengths, etc.) in the
-                                              exported file. [disabled by default]
-
-   -sg, --sparse-grid     none                Whether or not to use sparse grids for computation.
-                                              They are slower, but will require less memory.
-                                              [disabled by default]
-
-   -c, --classification  none                 Whether or not to use point classification with.
-                                              These can used alongside virtual scene to measure
-                                              the impact of rays that didn't touch anything
-                                              on PAD estimations. [disabled by default]
+   -j, --jobs                           number              A number of parallel jobs to use.
+                                                            [defaults to the amount of core]
 
 
-   -l, --log-level        debug, info,        Max log level to display [defaults to info]
-                          warning, error
+   -a, --all                            none                Whether or not to include all the information
+                                                            from the grid (ray counts, lengths, etc.) in the
+                                                            exported file. [disabled by default]
 
-   -h, --help                                 Prints this message
-)";
+   -sg, --sparse-grid                   none                Whether or not to use sparse grids for computation.
+                                                            They are slower, but will require less memory.
+                                                            [disabled by default]
+
+   -tc, --theorical-classifications     list of integers    A comma separeted list of integer values representing the classes
+                                                            of the points that should be considered as "theoritical" points.
+                                                            This is used to represent points that have not touched anything.
+
+   -hc, --hitless-classifications       list of integers    A comma separeted list of integer values representing the classes
+                                                            of the points that should not be considered as returns in the PAD
+                                                            estimation. Useful for excluded ground points.
+
+   -l, --log-level                      debug, info,        Max log level to display [defaults to info]
+                                        warning, error
+
+   -h, --help                                               Prints this message
+     )";
 
 namespace lvox_pe = lvox::algorithms::pad_estimators;
 namespace fs      = std::filesystem;
@@ -109,12 +111,13 @@ namespace fs      = std::filesystem;
 // Type definitions
 struct Point
 {
-    Point(double x, double y, double z, double gps_time, lvox::Classification classification)
+    Point(double x, double y, double z, double gps_time, bool is_hit, bool is_theoritical)
         : m_x{x}
         , m_y{y}
         , m_z{z}
         , m_gps_time{gps_time}
-        , m_classification{classification}
+        , m_is_hit{is_hit}
+        , m_is_theoritical{is_theoritical}
     {
     }
 
@@ -122,7 +125,8 @@ struct Point
     double y() const { return m_y; }
     double z() const { return m_z; }
     double gps_time() const { return m_gps_time; }
-    lvox::Classification classification() const { return m_classification; }
+    bool   is_theoritical() const { return m_is_theoritical; }
+    bool   is_hit() const { return m_is_hit; }
 
     bool operator==(const Point& other) const
     {
@@ -136,7 +140,8 @@ struct Point
     double m_y;
     double m_z;
     double m_gps_time;
-    lvox::Classification m_classification;
+    bool   m_is_hit;
+    bool   m_is_theoritical;
 };
 
 using PointCloud    = std::vector<Point>;
@@ -151,7 +156,6 @@ lvox_pe::PADEstimator               g_pad_estimator         = lvox_pe::BeerLambe
 std::vector<Point>                  g_scan_origins          = {};
 std::vector<PointCloud>             g_point_clouds          = {};
 std::vector<lvox::Bounds<double>>   g_point_cloud_bounds    = {};
-bool                                g_use_classifications   = false;
 std::mutex                          g_print_guard           = {};
 std::vector<Trajectory>             g_scan_trajectories     = {};
 fs::path                            g_grid_file             = "out.h5";
@@ -160,6 +164,8 @@ bool                                g_use_sparse_grids      = false;
 unsigned int                        g_required_counts       = 5;
 std::optional<lvox::Bounds<double>> g_bounds                = {};
 double                              g_smallest_element_area = 0.;
+std::set<int>                       g_theoritical_classes   = {};
+std::set<int>                       g_hitless_classes       = {};
 fs::path                            g_file;
 
 PointCloud load_point_cloud_from_file(
@@ -210,7 +216,7 @@ PointCloud load_point_cloud_from_file(
         logger.info("Loading file {}", file.filename().string());
     }
 
-    PointCloud out;
+    PointCloud                 out;
     const bool                 calculate_bounds = bounds.has_value();
     pdal::StreamCallbackFilter sc;
     sc.setCallback([calculate_bounds, &bounds, &out, &progress](const auto& pt) mutable -> bool {
@@ -220,34 +226,13 @@ PointCloud load_point_cloud_from_file(
         const double gps_time = pt.template getFieldAs<double>(dim::GpsTime);
         const int    clss_i   = pt.template getFieldAs<int>(dim::Classification);
 
-        bool increases_bounds = true;
-        lvox::Classification cls;
-        switch (clss_i)
-        {
-            // TODO: make this configurable (comes from simpleforestmesh)
-            case 1:
-                cls = lvox::Classification::UNCLASSIFIED;
-                break;
-            case 2:
-                cls = lvox::Classification::GROUND;
-                break;
-            case 3:
-                cls = lvox::Classification::MOUNTAINS;
-                increases_bounds = false;
-                break;
-            case 4:
-                cls = lvox::Classification::SKY;
-                increases_bounds = false;
-                break;
-            default:
-                cls = lvox::Classification::UNCLASSIFIED;
-                break;
-        }
+        const bool is_theoritical =
+            g_theoritical_classes.find(clss_i) != g_theoritical_classes.end();
+        const bool is_hit = !is_theoritical && g_hitless_classes.find(clss_i) == g_hitless_classes.end();
 
-        out.emplace_back(x, y, z, gps_time, cls);
+        out.emplace_back(x, y, z, gps_time, is_hit, is_theoritical);
 
-
-        if (calculate_bounds && increases_bounds)
+        if (calculate_bounds && !is_theoritical)
         {
             bounds->get().grow(x, y, z);
         }
@@ -380,7 +365,8 @@ void export_to_h5(
 
         {
             H5::PredType h5_hits_lengths_t = H5::PredType::NATIVE_DOUBLE;
-            H5::DataSet  hits_lengths_data = get_or_create_dataset("hits lengths", h5_hits_lengths_t, data_space);
+            H5::DataSet  hits_lengths_data =
+                get_or_create_dataset("hits lengths", h5_hits_lengths_t, data_space);
             hits_lengths_data.write(lengths.data(), h5_hits_lengths_t);
         }
 
@@ -424,7 +410,9 @@ void export_to_h5(
         );
 
         const std::array<double, 3> min_coords = {
-            bounded_grid.bounds().m_min_x, bounded_grid.bounds().m_min_y, bounded_grid.bounds().m_min_z
+            bounded_grid.bounds().m_min_x,
+            bounded_grid.bounds().m_min_y,
+            bounded_grid.bounds().m_min_z
         };
         min_coord_attr.write(h5_bounds_coords_t, min_coords.data());
     }
@@ -436,7 +424,9 @@ void export_to_h5(
         );
 
         const std::array<double, 3> max_coords = {
-            bounded_grid.bounds().m_max_x, bounded_grid.bounds().m_max_y, bounded_grid.bounds().m_max_z
+            bounded_grid.bounds().m_max_x,
+            bounded_grid.bounds().m_max_y,
+            bounded_grid.bounds().m_max_z
         };
         max_coord_attr.write(h5_bounds_coords_t, max_coords.data());
     }
@@ -497,21 +487,21 @@ int main(int argc, char* argv[])
     }
 
     auto arg_it = args.begin();
+    auto extract_classifications = [](std::string classes_str, std::set<int> &classes) {
+            std::replace(classes_str.begin(), classes_str.end(), ',', ' ');
+            std::istringstream iss{classes_str};
+            int classif;
+            while (iss >> classif)
+                classes.emplace(classif);
+    };
+    std::vector<fs::path> point_clouds_to_read;
+    std::vector<fs::path> point_clouds_traj_to_read;
     while (arg_it != args.end())
     {
         // TODO: handle this better? Or just make it PDAL plugin
         if (*arg_it == "-t" || *arg_it == "--trajectory")
         {
-            fs::path traj_file = *++arg_it;
-            if (!g_scan_origins.empty())
-            {
-                logger.warn("Scan trajectory being set while in TLS mode, ignoring it");
-                continue;
-            }
-
-            logger.info("Loading trajectory file {}", traj_file.string());
-
-            g_scan_trajectories.emplace_back(load_point_cloud_from_file(traj_file, {}));
+            point_clouds_traj_to_read.emplace_back(*++arg_it);
         }
         else if (*arg_it == "-v" || *arg_it == "--voxel-size")
         {
@@ -528,15 +518,13 @@ int main(int argc, char* argv[])
             auto y = std::stod(*++arg_it);
             auto z = std::stod(*++arg_it);
 
-            auto& p = g_scan_origins.emplace_back(x, y, z, 0, lvox::Classification::UNCLASSIFIED);
+            constexpr auto is_hit = false;
+            constexpr auto is_theoritical = true;
+            auto& p = g_scan_origins.emplace_back(x, y, z, 0, is_hit, is_theoritical);
         }
         else if (*arg_it == "-s" || *arg_it == "--scan")
         {
-            fs::path point_cloud_file = *++arg_it;
-            lvox::Bounds<double>& bounds = g_point_cloud_bounds.emplace_back();
-
-            // TODO: Somehow make it not compute bounds when one is provided, although that's a very neglible optimization.
-            g_point_clouds.emplace_back(load_point_cloud_from_file(point_cloud_file, std::ref(bounds)));
+            point_clouds_to_read.emplace_back(*++arg_it);
         }
         else if (*arg_it == "-g" || *arg_it == "--grid")
         {
@@ -586,13 +574,13 @@ int main(int argc, char* argv[])
         else if (*arg_it == "-b" || *arg_it == "--bounds")
         {
             std::string bounds_str = *++arg_it;
-            std::transform(
-                bounds_str.begin(), bounds_str.end(), bounds_str.begin(), [](char c) -> char {
-                    if (c == '(' || c == ')' || c == ',')
-                        return ' ';
-
-                    return c;
-                }
+            std::replace_if(
+                bounds_str.begin(),
+                bounds_str.end(),
+                [](char c) -> bool {
+                    return c == '(' || c == ')' || c == ',';
+                },
+                ' '
             );
 
             std::istringstream   iss{bounds_str};
@@ -611,9 +599,13 @@ int main(int argc, char* argv[])
         {
             g_smallest_element_area = std::stod(*++arg_it);
         }
-        else if (*arg_it == "-c" || *arg_it == "--classification")
+        else if (*arg_it == "-hc" || *arg_it == "--hitless-classifications")
         {
-            g_use_classifications = true;
+            extract_classifications(*++arg_it, g_hitless_classes);
+        }
+        else if (*arg_it == "-tc" || *arg_it == "--theoritical-classifications")
+        {
+            extract_classifications(*++arg_it, g_theoritical_classes);
         }
         else if (*arg_it == "-a" || *arg_it == "--all")
         {
@@ -664,10 +656,43 @@ int main(int argc, char* argv[])
         ++arg_it;
     }
 
-    if ((!g_scan_origins.empty() && g_scan_origins.size() != g_point_clouds.size()) ||
-            (!g_scan_trajectories.empty() && g_scan_trajectories.size() != g_point_clouds.size()))
+    for (const auto& point_cloud_file : point_clouds_to_read )
     {
-        logger.error("Provided point cloud configuration is invalid: too many or too little origins/trajectories.");
+        if (g_bounds)
+        {
+            g_point_clouds.emplace_back(
+                load_point_cloud_from_file(point_cloud_file)
+            );
+            continue;
+
+        }
+
+        lvox::Bounds<double>& bounds = g_point_cloud_bounds.emplace_back();
+        g_point_clouds.emplace_back(
+            load_point_cloud_from_file(point_cloud_file, std::ref(bounds))
+        );
+    }
+
+    for (const auto& traj_file : point_clouds_traj_to_read)
+    {
+        if (!g_scan_origins.empty())
+        {
+            logger.warn("Scan trajectory being set while in TLS mode, ignoring it");
+            continue;
+        }
+
+        logger.info("Loading trajectory file {}", traj_file.string());
+
+        g_scan_trajectories.emplace_back(load_point_cloud_from_file(traj_file, {}));
+    }
+
+    if ((!g_scan_origins.empty() && g_scan_origins.size() != g_point_clouds.size()) ||
+        (!g_scan_trajectories.empty() && g_scan_trajectories.size() != g_point_clouds.size()))
+    {
+        logger.error(
+            "Provided point cloud configuration is invalid: too many or too little "
+            "origins/trajectories."
+        );
         return 1;
     }
 
@@ -676,30 +701,24 @@ int main(int argc, char* argv[])
     {
         for (size_t i = 0; i < g_point_clouds.size(); ++i)
         {
-            const auto& pc = g_point_clouds[i];
-            auto count_class_type = [&pc](lvox::Classification cls_type) -> size_t {
-                return std::count_if(
-                    pc.begin(),
-                    pc.begin(),
-                    [cls_type](const Point& p) -> bool {
-                        return p.classification() == cls_type;
-                    });
-            };
+            const auto& pc   = g_point_clouds[i];
+            const auto  hits = std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_hit));
+            const auto  theoriticals =
+                std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_theoritical));
 
             logger.info(
                 R"(
 Point cloud #{} at origin ({},{},{})
-UNCLASSIFIED: {}
-SKY: {}
-MOUNTAINS: {}
-                 )",
+Hits: {}
+Hitless: {}
+Theoriticals: {})",
                 i + 1,
                 g_scan_origins[i].x(),
                 g_scan_origins[i].y(),
                 g_scan_origins[i].z(),
-                count_class_type(lvox::Classification::UNCLASSIFIED),
-                count_class_type(lvox::Classification::SKY),
-                count_class_type(lvox::Classification::MOUNTAINS)
+                hits,
+                pc.size() - hits,
+                theoriticals
             );
             scans.emplace_back(Scan{pc, g_scan_origins[i], g_point_cloud_bounds[i]});
         }
@@ -707,7 +726,9 @@ MOUNTAINS: {}
     else
     {
         // TODO: check if we want to support MLS mutli-scan?
-        scans.emplace_back(Scan{g_point_clouds[0], g_scan_trajectories[0], g_point_cloud_bounds[0]});
+        scans.emplace_back(
+            Scan{g_point_clouds[0], g_scan_trajectories[0], g_point_cloud_bounds[0]}
+        );
     }
 
     if (scans.empty())
@@ -723,7 +744,7 @@ MOUNTAINS: {}
         .m_use_sparse_grid       = g_use_sparse_grids,
         .m_required_counts       = g_required_counts,
         .m_smallest_element_area = g_smallest_element_area,
-        .m_use_classification    = g_use_classifications,
+        .m_use_classification    = !(g_theoritical_classes.empty() && g_hitless_classes.empty()),
         .m_bounds                = g_bounds,
         .m_log_stream            = std::cout
     };
