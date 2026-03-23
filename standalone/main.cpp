@@ -92,7 +92,7 @@ Computing options:
                                                             [disabled by default]
 
    -tc, --theorical-classifications     list of integers    A comma separeted list of integer values representing the classes
-                                                            of the points that should be considered as "theoritical" points.
+                                                            of the points that should be considered as "theoretical" points.
                                                             This is used to represent points that have not touched anything.
 
    -hc, --hitless-classifications       list of integers    A comma separeted list of integer values representing the classes
@@ -111,13 +111,13 @@ namespace fs      = std::filesystem;
 // Type definitions
 struct Point
 {
-    Point(double x, double y, double z, double gps_time, bool is_hit, bool is_theoritical)
+    Point(double x, double y, double z, double gps_time, bool is_hit, bool is_theoretical)
         : m_x{x}
         , m_y{y}
         , m_z{z}
         , m_gps_time{gps_time}
         , m_is_hit{is_hit}
-        , m_is_theoritical{is_theoritical}
+        , m_is_theoretical{is_theoretical}
     {
     }
 
@@ -125,7 +125,7 @@ struct Point
     double y() const { return m_y; }
     double z() const { return m_z; }
     double gps_time() const { return m_gps_time; }
-    bool   is_theoritical() const { return m_is_theoritical; }
+    bool   is_theoretical() const { return m_is_theoretical; }
     bool   is_hit() const { return m_is_hit; }
 
     bool operator==(const Point& other) const
@@ -141,7 +141,7 @@ struct Point
     double m_z;
     double m_gps_time;
     bool   m_is_hit;
-    bool   m_is_theoritical;
+    bool   m_is_theoretical;
 };
 
 using PointCloud    = std::vector<Point>;
@@ -164,7 +164,7 @@ bool                                g_use_sparse_grids      = false;
 unsigned int                        g_required_counts       = 5;
 std::optional<lvox::Bounds<double>> g_bounds                = {};
 double                              g_smallest_element_area = 0.;
-std::set<int>                       g_theoritical_classes   = {};
+std::set<int>                       g_theoretical_classes   = {};
 std::set<int>                       g_hitless_classes       = {};
 fs::path                            g_file;
 
@@ -226,13 +226,13 @@ PointCloud load_point_cloud_from_file(
         const double gps_time = pt.template getFieldAs<double>(dim::GpsTime);
         const int    clss_i   = pt.template getFieldAs<int>(dim::Classification);
 
-        const bool is_theoritical =
-            g_theoritical_classes.find(clss_i) != g_theoritical_classes.end();
-        const bool is_hit = !is_theoritical && g_hitless_classes.find(clss_i) == g_hitless_classes.end();
+        const bool is_theoretical =
+            g_theoretical_classes.find(clss_i) != g_theoretical_classes.end();
+        const bool is_hit = !is_theoretical && g_hitless_classes.find(clss_i) == g_hitless_classes.end();
 
-        out.emplace_back(x, y, z, gps_time, is_hit, is_theoritical);
+        out.emplace_back(x, y, z, gps_time, is_hit, is_theoretical);
 
-        if (calculate_bounds && !is_theoritical)
+        if (calculate_bounds && !is_theoretical)
         {
             bounds->get().grow(x, y, z);
         }
@@ -519,8 +519,8 @@ int main(int argc, char* argv[])
             auto z = std::stod(*++arg_it);
 
             constexpr auto is_hit = false;
-            constexpr auto is_theoritical = true;
-            auto& p = g_scan_origins.emplace_back(x, y, z, 0, is_hit, is_theoritical);
+            constexpr auto is_theoretical = true;
+            auto& p = g_scan_origins.emplace_back(x, y, z, 0, is_hit, is_theoretical);
         }
         else if (*arg_it == "-s" || *arg_it == "--scan")
         {
@@ -603,9 +603,9 @@ int main(int argc, char* argv[])
         {
             extract_classifications(*++arg_it, g_hitless_classes);
         }
-        else if (*arg_it == "-tc" || *arg_it == "--theoritical-classifications")
+        else if (*arg_it == "-tc" || *arg_it == "--theoretical-classifications")
         {
-            extract_classifications(*++arg_it, g_theoritical_classes);
+            extract_classifications(*++arg_it, g_theoretical_classes);
         }
         else if (*arg_it == "-a" || *arg_it == "--all")
         {
@@ -703,22 +703,22 @@ int main(int argc, char* argv[])
         {
             const auto& pc   = g_point_clouds[i];
             const auto  hits = std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_hit));
-            const auto  theoriticals =
-                std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_theoritical));
+            const auto  theoreticals =
+                std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_theoretical));
 
             logger.info(
                 R"(
 Point cloud #{} at origin ({},{},{})
 Hits: {}
 Hitless: {}
-Theoriticals: {})",
+Theoreticals: {})",
                 i + 1,
                 g_scan_origins[i].x(),
                 g_scan_origins[i].y(),
                 g_scan_origins[i].z(),
                 hits,
                 pc.size() - hits,
-                theoriticals
+                theoreticals
             );
             scans.emplace_back(Scan{pc, g_scan_origins[i], g_point_cloud_bounds[i]});
         }
@@ -744,7 +744,7 @@ Theoriticals: {})",
         .m_use_sparse_grid       = g_use_sparse_grids,
         .m_required_counts       = g_required_counts,
         .m_smallest_element_area = g_smallest_element_area,
-        .m_use_classification    = !(g_theoritical_classes.empty() && g_hitless_classes.empty()),
+        .m_use_classification    = !(g_theoretical_classes.empty() && g_hitless_classes.empty()),
         .m_bounds                = g_bounds,
         .m_log_stream            = std::cout
     };

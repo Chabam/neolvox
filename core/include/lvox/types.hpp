@@ -13,7 +13,7 @@ concept Point = requires(const T& pts) {
     { pts.y() } -> std::convertible_to<double>;
     { pts.z() } -> std::convertible_to<double>;
     { pts.gps_time() } -> std::convertible_to<double>;
-    { pts.is_theoritical() } -> std::convertible_to<bool>;
+    { pts.is_theoretical() } -> std::convertible_to<bool>;
     { pts.is_hit() } -> std::convertible_to<bool>;
 };
 

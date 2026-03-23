@@ -31,7 +31,7 @@ static void bm_point_cloud_size(benchmark::State& state, bool is_sparse)
             .m_voxel_size           = 0.1,
             .m_job_limit            = std::thread::hardware_concurrency(),
             .m_pad_estimator        = lvox::algorithms::pad_estimators::BeerLambert{},
-            .m_compute_theoriticals = false,
+            .m_compute_theoreticals = false,
             .m_use_sparse_grid      = is_sparse,
             .m_log_stream           = std::cout
         };

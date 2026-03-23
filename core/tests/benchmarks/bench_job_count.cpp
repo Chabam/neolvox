@@ -34,7 +34,7 @@ static void bm_job_count(benchmark::State& state, bool is_sparse)
             .m_voxel_size           = 0.1,
             .m_job_limit            = static_cast<unsigned int>(state.range(0)),
             .m_pad_estimator        = lvox::algorithms::pad_estimators::BeerLambert{},
-            .m_compute_theoriticals = false,
+            .m_compute_theoreticals = false,
             .m_use_sparse_grid      = is_sparse,
             .m_log_stream           = std::cout
         };
