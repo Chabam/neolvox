@@ -227,12 +227,13 @@ PointCloud load_point_cloud_from_file(
         const int    clss_i   = pt.template getFieldAs<int>(dim::Classification);
 
         const bool is_theoretical =
+            !g_theoretical_classes.empty() &&
             g_theoretical_classes.find(clss_i) != g_theoretical_classes.end();
-        const bool is_hit = !is_theoretical && g_hitless_classes.find(clss_i) == g_hitless_classes.end();
-
+        const bool is_hit =
+            g_hitless_classes.empty() || g_hitless_classes.find(clss_i) == g_hitless_classes.end();
         out.emplace_back(x, y, z, gps_time, is_hit, is_theoretical);
 
-        if (calculate_bounds && !is_theoretical)
+        if (calculate_bounds && !is_theoretical && is_hit)
         {
             bounds->get().grow(x, y, z);
         }
@@ -486,13 +487,13 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    auto arg_it = args.begin();
-    auto extract_classifications = [](std::string classes_str, std::set<int> &classes) {
-            std::replace(classes_str.begin(), classes_str.end(), ',', ' ');
-            std::istringstream iss{classes_str};
-            int classif;
-            while (iss >> classif)
-                classes.emplace(classif);
+    auto arg_it                  = args.begin();
+    auto extract_classifications = [](std::string classes_str, std::set<int>& classes) {
+        std::replace(classes_str.begin(), classes_str.end(), ',', ' ');
+        std::istringstream iss{classes_str};
+        int                classif;
+        while (iss >> classif)
+            classes.emplace(classif);
     };
     std::vector<fs::path> point_clouds_to_read;
     std::vector<fs::path> point_clouds_traj_to_read;
@@ -518,9 +519,9 @@ int main(int argc, char* argv[])
             auto y = std::stod(*++arg_it);
             auto z = std::stod(*++arg_it);
 
-            constexpr auto is_hit = false;
+            constexpr auto is_hit         = false;
             constexpr auto is_theoretical = true;
-            auto& p = g_scan_origins.emplace_back(x, y, z, 0, is_hit, is_theoretical);
+            auto&          p = g_scan_origins.emplace_back(x, y, z, 0, is_hit, is_theoretical);
         }
         else if (*arg_it == "-s" || *arg_it == "--scan")
         {
@@ -656,21 +657,16 @@ int main(int argc, char* argv[])
         ++arg_it;
     }
 
-    for (const auto& point_cloud_file : point_clouds_to_read )
+    for (const auto& point_cloud_file : point_clouds_to_read)
     {
         if (g_bounds)
         {
-            g_point_clouds.emplace_back(
-                load_point_cloud_from_file(point_cloud_file)
-            );
+            g_point_clouds.emplace_back(load_point_cloud_from_file(point_cloud_file));
             continue;
-
         }
 
         lvox::Bounds<double>& bounds = g_point_cloud_bounds.emplace_back();
-        g_point_clouds.emplace_back(
-            load_point_cloud_from_file(point_cloud_file, std::ref(bounds))
-        );
+        g_point_clouds.emplace_back(load_point_cloud_from_file(point_cloud_file, std::ref(bounds)));
     }
 
     for (const auto& traj_file : point_clouds_traj_to_read)
