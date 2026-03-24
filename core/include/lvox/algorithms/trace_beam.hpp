@@ -23,11 +23,41 @@ struct TraceBeam
     TraceBeam(const BoundedGrid& grid)
         : m_grid{grid} {};
 
+    std::optional<double> get_ray_entry(const Beam& beam)
+    {
+        const auto&  bounds = m_grid.bounds();
+        const Vector min_point{
+            bounds.m_min_x,
+            bounds.m_min_y,
+            bounds.m_min_z,
+        };
+
+        const Vector max_point{
+            bounds.m_max_x,
+            bounds.m_max_y,
+            bounds.m_max_z,
+        };
+
+        const Vector v_min = (min_point - beam.origin()).cwiseQuotient(beam.direction());
+        const Vector v_max = (max_point - beam.origin()).cwiseQuotient(beam.direction());
+
+        double t_min = v_min.cwiseMin(v_max).maxCoeff();
+        double t_max = v_min.cwiseMax(v_max).minCoeff();
+
+        if (t_min > t_max)
+            return {};
+
+        if (t_min < 0)
+            return t_max;
+
+        return t_min;
+    }
+
     template <typename HitCallback>
     void operator()(
         const Beam&   beam,
         HitCallback&& callback,
-        const double  max_distance = std::numeric_limits<double>::infinity()
+        double  max_distance = std::numeric_limits<double>::infinity()
     )
     {
 
@@ -42,17 +72,28 @@ struct TraceBeam
         const size_t         dim_z        = m_grid.dim_z();
         const double         cell_size    = m_grid.cell_size();
 
-        const Vector beam_origin    = beam.origin();
+        Vector       beam_origin    = beam.origin();
         const Vector beam_direction = beam.direction();
 
         if (!bounds.contains(beam_origin.x(), beam_origin.y(), beam_origin.z()))
         {
-            constexpr auto err_msg = "Beam of origin ({},{},{}) is outside the grid, ignoring it";
-            Logger{"Grid Traversal"}.error(
-                err_msg, beam_origin.x(), beam_origin.y(), beam_origin.z()
-            );
+            auto t_entry = get_ray_entry(beam);
 
-            return;
+            if (!t_entry)
+            {
+                constexpr auto err_msg = "Beam of origin ({},{},{}) is outside the grid and "
+                                         "doesn't interect it! Ignoring";
+                Logger{"Grid Traversal"}.error(
+                    err_msg, beam_origin.x(), beam_origin.y(), beam_origin.z()
+                );
+                return;
+            }
+
+            const auto epsilon = std::numeric_limits<double>::epsilon() * std::abs(*t_entry);
+            const auto corrected_t_entry = *t_entry + epsilon;
+            // Sligthly nudging the point inside the grid
+            beam_origin += beam_direction * corrected_t_entry;
+            max_distance -= corrected_t_entry;
         }
 
         // Source: https://stackoverflow.com/a/4609795
@@ -112,8 +153,7 @@ struct TraceBeam
         };
         const Vector delta = (cell_size * step.unaryExpr([](const double val) -> double {
                                  return val == 0. ? inf : val;
-                             })).array() *
-                             inv_dir.array();
+                             })).cwiseProduct(inv_dir);
 
         double       total_traveled_distance = 0.;
         VoxelHitInfo current_hit{
