@@ -2,6 +2,7 @@
 #include <Rcpp/DataFrame.h>
 #include <Rcpp/macros/module.h>
 #include <Rcpp/vector/instantiation.h>
+#include <set>
 
 #include <lvox/algorithms/compute_options.hpp>
 #include <lvox/algorithms/compute_pad.hpp>
@@ -21,13 +22,15 @@ struct Point
     double y() const { return m_y; }
     double z() const { return m_z; }
     double gps_time() const { return m_gps_time; }
-    lvox::Classification classification() const { return m_classification; }
+    bool   is_hit() const { return m_is_hit; }
+    bool   is_theoretical() const { return m_is_theoretical; }
 
     double m_x;
     double m_y;
     double m_z;
     double m_gps_time;
-    lvox::Classification m_classification;
+    bool   m_is_hit;
+    bool   m_is_theoretical;
 };
 
 struct PointCloud
@@ -37,7 +40,9 @@ struct PointCloud
         const Rcpp::NumericVector& ys,
         const Rcpp::NumericVector& zs,
         const Rcpp::NumericVector& gps_times,
-        const Rcpp::NumericVector& classifications
+        const Rcpp::NumericVector& classifications,
+        const std::set<int>& hitless_classes,
+        const std::set<int>& theoretical_classes
     )
         : m_count{static_cast<size_t>(xs.size())}
         , m_xs{xs}
@@ -45,6 +50,8 @@ struct PointCloud
         , m_zs{zs}
         , m_gps_times{gps_times}
         , m_classifications{classifications}
+        , m_hitless_classes{hitless_classes}
+        , m_theoretical_classes{theoretical_classes}
     {
     }
 
@@ -157,43 +164,9 @@ struct PointCloud
         PointIterator(const PointCloud* point_cloud, size_t idx)
             : m_index{idx}
             , m_point_cloud{point_cloud}
-            , m_value{std::invoke([this]() -> std::optional<value_type> {
-                if (m_index < m_point_cloud->m_count)
-                {
-                    lvox::Classification cls;
-                    switch (m_point_cloud->m_classifications[m_index])
-                    {
-                        // TODO: make this configurable (comes from simpleforestmesh)
-                        case 1:
-                            cls = lvox::Classification::UNCLASSIFIED;
-                            break;
-                        case 2:
-                            cls = lvox::Classification::GROUND;
-                            break;
-                        case 3:
-                            cls = lvox::Classification::MOUNTAINS;
-                            break;
-                        case 4:
-                            cls = lvox::Classification::SKY;
-                            break;
-                        default:
-                            cls = lvox::Classification::UNCLASSIFIED;
-                            break;
-                    }
-
-                    return value_type{
-                        m_point_cloud->m_xs[m_index],
-                        m_point_cloud->m_ys[m_index],
-                        m_point_cloud->m_zs[m_index],
-                        m_point_cloud->m_gps_times[m_index],
-                        cls
-                    };
-                }
-                else {
-                    return {};
-                }
-            })}
+            , m_value{}
         {
+            change_index();
         }
 
         void change_index()
@@ -203,12 +176,19 @@ struct PointCloud
                 m_value.reset();
                 return;
             }
+            const int clss_i = m_point_cloud->m_classifications[m_index];
+            const bool is_theoretical = !m_point_cloud->m_theoretical_classes.empty() &&
+                                            m_point_cloud->m_theoretical_classes.find(clss_i) != m_point_cloud->m_theoretical_classes.end();
+            const bool is_hit = m_point_cloud->m_hitless_classes.empty() ||
+                                    m_point_cloud->m_hitless_classes.find(clss_i) == m_point_cloud->m_hitless_classes.end();
 
             m_value.emplace(
                 m_point_cloud->m_xs[m_index],
                 m_point_cloud->m_ys[m_index],
                 m_point_cloud->m_zs[m_index],
-                m_point_cloud->m_gps_times[m_index]
+                m_point_cloud->m_gps_times[m_index],
+                is_hit,
+                is_theoretical
             );
         }
     };
@@ -221,24 +201,34 @@ struct PointCloud
     const_iterator end() const { return const_iterator{this, m_count}; }
     size_t         size() const { return m_count; }
 
-    size_t             m_count;
-    Rcpp::DoubleVector m_xs;
-    Rcpp::DoubleVector m_ys;
-    Rcpp::DoubleVector m_zs;
-    Rcpp::DoubleVector m_gps_times;
+    size_t              m_count;
+    Rcpp::DoubleVector  m_xs;
+    Rcpp::DoubleVector  m_ys;
+    Rcpp::DoubleVector  m_zs;
+    Rcpp::DoubleVector  m_gps_times;
     Rcpp::IntegerVector m_classifications;
+    std::set<int>       m_hitless_classes;
+    std::set<int>       m_theoretical_classes;
 };
 
 using Scan          = lvox::Scan<Point, PointCloud>;
 using ScannerOrigin = lvox::ScannerOrigin<Point, PointCloud>;
 using Trajectory    = lvox::Trajectory<Point, PointCloud>;
 
-PointCloud read_point_cloud_from_raw_data(const Rcpp::List& raw_data)
+PointCloud read_point_cloud_from_raw_data(const Rcpp::List& raw_data, const std::set<int>& hitless_classes, const std::set<int>& theoretical_classes)
 {
-  return PointCloud{raw_data["X"], raw_data["Y"], raw_data["Z"], raw_data["gpstime"], raw_data["Classification"]};
+    return PointCloud{
+        raw_data["X"],
+        raw_data["Y"],
+        raw_data["Z"],
+        raw_data["gpstime"],
+        raw_data["Classification"],
+        hitless_classes,
+        theoretical_classes
+    };
 }
 
-PointCloud try_read_point_cloud_as_las(const SEXP& expr)
+PointCloud try_read_point_cloud_as_las(const SEXP& expr, const std::set<int>& hitless_classes, const std::set<int>& theoretical_classes)
 {
     try
     {
@@ -246,14 +236,14 @@ PointCloud try_read_point_cloud_as_las(const SEXP& expr)
         if (!las.is("LAS"))
             stop("Point cloud data type is not supported");
 
-        return read_point_cloud_from_raw_data(las.slot("data"));
+        return read_point_cloud_from_raw_data(las.slot("data"), hitless_classes, theoretical_classes);
     }
     catch (std::exception _)
     {
         // We tried ¯\_(ツ)_/¯
     }
 
-    return read_point_cloud_from_raw_data(expr);
+    return read_point_cloud_from_raw_data(expr, hitless_classes, theoretical_classes);
 }
 
 lvox_pe::PADEstimator get_estimator_from_string(std::string pe)
@@ -372,34 +362,56 @@ Rcpp::List do_lvox_computation(
 //'    This value is used in BCMLE and UPBL as a mean of removing bias
 //'    for unexplored voxels. If set to 0, it will be ignored. Several helper functions are provided
 //'    to compute the projected area in `LVoxSmallestElementArea.R`.
+//' @param hitlessClasses A list of integer values representing the classes
+//'        of the points that should not be considered as returns in the PAD
+//'        estimation. Useful for excluding ground points.
+//' @param theoreticalClasses A list of integer values representing the classes
+//'        of the points that should be considered as "theoretical" points.
+//'        This is used to represent points that have not touched anything.s.
 //' @param threadCount The amount of parallel processing thread to use. Set this to your
 //'    core count for best performance.
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
 //'    contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List estimatePADForMLS(
-    const SEXP&                pointCloud,
-    const Rcpp::List&          trajectory,
-    std::string                padEstimator           = "BCMLE",
-    double                     voxelSize              = 0.5,
-    unsigned int               requiredCounts         = 5,
-    bool                       useSparseGrid          = false,
-    bool                       exportIntermediateData = false,
-    Rcpp::Nullable<Rcpp::List> bounds                 = R_NilValue,
-    bool                       useClassification      = false,
-    double                     smallestElementArea    = 0,
-    unsigned int               threadCount            = 8
+    const SEXP&                         pointCloud,
+    const Rcpp::List&                   trajectory,
+    std::string                         padEstimator           = "BCMLE",
+    double                              voxelSize              = 0.5,
+    unsigned int                        requiredCounts         = 5,
+    bool                                useSparseGrid          = false,
+    bool                                exportIntermediateData = false,
+    Rcpp::Nullable<Rcpp::List>          bounds                 = R_NilValue,
+    double                              smallestElementArea    = 0,
+    Rcpp::Nullable<Rcpp::IntegerVector> hitlessClasses         = R_NilValue,
+    Rcpp::Nullable<Rcpp::IntegerVector> theoreticalClasses     = R_NilValue,
+    unsigned int                        threadCount            = 8
 )
 {
     lvox::Bounds<double> lvox_bounds;
-    PointCloud           points = try_read_point_cloud_as_las(pointCloud);
+
+    std::set<int> hitless_classes;
+    if (hitlessClasses.isNotNull())
+    {
+        Rcpp::IntegerVector classes{hitlessClasses};
+        hitless_classes = std::set<int>{classes.begin(), classes.end()};
+    }
+
+    std::set<int> theoretical_classes;
+    if (theoreticalClasses.isNotNull())
+    {
+        Rcpp::IntegerVector classes{theoreticalClasses};
+        theoretical_classes = std::set<int>{classes.begin(), classes.end()};
+    }
+
+    PointCloud           points = try_read_point_cloud_as_las(pointCloud, hitless_classes, theoretical_classes);
 
     if (!bounds.isNull())
     {
-        Rcpp::List provided_bounds   = Rcpp::List(bounds);
-        Rcpp::DoubleVector min_point = provided_bounds[0];
-        Rcpp::DoubleVector max_point = provided_bounds[1];
-        lvox_bounds                  = lvox::Bounds{
+        Rcpp::List         provided_bounds = Rcpp::List(bounds);
+        Rcpp::DoubleVector min_point       = provided_bounds[0];
+        Rcpp::DoubleVector max_point       = provided_bounds[1];
+        lvox_bounds                        = lvox::Bounds{
             min_point[0], max_point[0], min_point[1], max_point[1], min_point[2], max_point[2]
         };
     }
@@ -407,12 +419,13 @@ Rcpp::List estimatePADForMLS(
     {
         for (const auto& pt : points)
         {
-            lvox_bounds.grow(pt.x(), pt.y(), pt.z());
+            if (pt.is_hit() && !pt.is_theoretical())
+                lvox_bounds.grow(pt.x(), pt.y(), pt.z());
         }
     }
 
     std::vector<Scan> scans;
-    scans.emplace_back(points, read_point_cloud_from_raw_data(trajectory), lvox_bounds);
+    scans.emplace_back(points, read_point_cloud_from_raw_data(trajectory, hitless_classes, theoretical_classes), lvox_bounds);
 
     return do_lvox_computation(
         scans,
@@ -423,7 +436,7 @@ Rcpp::List estimatePADForMLS(
         exportIntermediateData,
         lvox_bounds,
         smallestElementArea,
-        useClassification,
+        !theoretical_classes.empty() || !hitless_classes.empty(),
         threadCount
     );
 }
@@ -449,21 +462,28 @@ Rcpp::List estimatePADForMLS(
 //'    This value is used in BCMLE and UPBL as a mean of removing bias
 //'    for unexplored voxels. If set to 0, it will be ignored. Several helper functions are provided
 //'    to compute the projected area in `LVoxSmallestElementArea.R`.
+//' @param hitlessClasses A list of integer values representing the classes
+//'        of the points that should not be considered as returns in the PAD
+//'        estimation. Useful for excluding ground points.
+//' @param theoreticalClasses A list of integer values representing the classes
+//'        of the points that should be considered as "theoretical" points.
+//'        This is used to represent points that have not touched anything.s.
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
 //'    contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
 Rcpp::List estimatePADForTLS(
-    const Rcpp::List&          pointClouds,
-    const Rcpp::List&          scannersOrigin,
-    std::string                padEstimator           = "BCMLE",
-    double                     voxelSize              = 0.5,
-    unsigned int               requiredCounts         = 5,
-    bool                       useSparseGrid          = false,
-    bool                       exportIntermediateData = false,
-    Rcpp::Nullable<Rcpp::List> bounds                 = R_NilValue,
-    bool                       useClassification      = false,
-    double                     smallestElementArea    = 0,
-    unsigned int               threadCount            = 8
+    const Rcpp::List&                   pointClouds,
+    const Rcpp::List&                   scannersOrigin,
+    std::string                         padEstimator           = "BCMLE",
+    double                              voxelSize              = 0.5,
+    unsigned int                        requiredCounts         = 5,
+    bool                                useSparseGrid          = false,
+    bool                                exportIntermediateData = false,
+    Rcpp::Nullable<Rcpp::List>          bounds                 = R_NilValue,
+    double                              smallestElementArea    = 0,
+    Rcpp::Nullable<Rcpp::IntegerVector> hitlessClasses         = R_NilValue,
+    Rcpp::Nullable<Rcpp::IntegerVector> theoreticalClasses     = R_NilValue,
+    unsigned int                        threadCount            = 8
 )
 {
     if (pointClouds.size() != scannersOrigin.size())
@@ -476,24 +496,48 @@ Rcpp::List estimatePADForTLS(
     std::vector<Scan>       scans;
     std::vector<PointCloud> point_clouds;
     std::vector<Point>      origins_point;
+
+    std::set<int> hitless_classes;
+    if (hitlessClasses.isNotNull())
+    {
+        Rcpp::IntegerVector classes{hitlessClasses};
+        hitless_classes = std::set<int>{classes.begin(), classes.end()};
+    }
+
+    std::set<int> theoretical_classes;
+    if (theoreticalClasses.isNotNull())
+    {
+        Rcpp::IntegerVector classes{theoreticalClasses};
+        theoretical_classes = std::set<int>{classes.begin(), classes.end()};
+    }
+
     scans.reserve(pointClouds.size());
     point_clouds.reserve(pointClouds.size());
 
     for (size_t i = 0; i < pointClouds.size(); ++i)
     {
-        point_clouds.emplace_back(try_read_point_cloud_as_las(pointClouds[i]));
+        point_clouds.emplace_back(try_read_point_cloud_as_las(pointClouds[i], hitless_classes, theoretical_classes));
         Rcpp::DoubleVector current_origin = scannersOrigin[i];
+        constexpr bool is_hit = false;
+        constexpr bool is_theoretical = true;
         origins_point.emplace_back(
-            Point{current_origin[0], current_origin[1], current_origin[2], 0, lvox::Classification::UNCLASSIFIED}
+            Point{
+                current_origin[0],
+                current_origin[1],
+                current_origin[2],
+                0,
+                is_hit,
+                is_theoretical
+            }
         );
     }
 
     if (!bounds.isNull())
     {
-        Rcpp::List provided_bounds   = Rcpp::List(bounds);
-        Rcpp::DoubleVector min_point = provided_bounds[0];
-        Rcpp::DoubleVector max_point = provided_bounds[1];
-        lvox_bounds                  = lvox::Bounds{
+        Rcpp::List         provided_bounds = Rcpp::List(bounds);
+        Rcpp::DoubleVector min_point       = provided_bounds[0];
+        Rcpp::DoubleVector max_point       = provided_bounds[1];
+        lvox_bounds                        = lvox::Bounds{
             min_point[0], max_point[0], min_point[1], max_point[1], min_point[2], max_point[2]
         };
     }
@@ -503,9 +547,10 @@ Rcpp::List estimatePADForTLS(
         {
             for (const auto& pt : pc)
             {
-                if (!(pt.classification() == lvox::Classification::SKY ||
-                      pt.classification() == lvox::Classification::MOUNTAINS))
+                if (pt.is_hit() && !pt.is_theoretical())
+                {
                     lvox_bounds.grow(pt.x(), pt.y(), pt.z());
+                }
             }
         }
     }
@@ -524,7 +569,7 @@ Rcpp::List estimatePADForTLS(
         exportIntermediateData,
         lvox_bounds,
         smallestElementArea,
-        useClassification,
+        !theoretical_classes.empty() || !hitless_classes.empty(),
         threadCount
     );
 }

@@ -76,16 +76,14 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
 
             if constexpr (use_classifications)
             {
-                switch (timed_point.classification())
+                if (!timed_point.is_hit() || timed_point.is_theoretical())
                 {
-                    case Classification::SKY:
-                        limit_ray_length = false;
-                        [[fallthrough]];
-                    case Classification::GROUND:
-                        compute_hit = false;
-                        break;
-                    default:
-                        break;
+                    compute_hit = false;
+                }
+
+                if (timed_point.is_theoretical())
+                {
+                    limit_ray_length = false;
                 }
             }
 
