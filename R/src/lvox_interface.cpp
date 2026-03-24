@@ -164,30 +164,9 @@ struct PointCloud
         PointIterator(const PointCloud* point_cloud, size_t idx)
             : m_index{idx}
             , m_point_cloud{point_cloud}
-            , m_value{std::invoke([this]() -> std::optional<value_type> {
-                if (m_index < m_point_cloud->m_count)
-                {
-                    const int clss_i = m_point_cloud->m_classifications[m_index];
-                    const bool is_theoretical = !m_point_cloud->m_theoretical_classes.empty() &&
-                                                 m_point_cloud->m_theoretical_classes.find(clss_i) != m_point_cloud->m_theoretical_classes.end();
-                    const bool is_hit = m_point_cloud->m_hitless_classes.empty() ||
-                                        m_point_cloud->m_hitless_classes.find(clss_i) == m_point_cloud->m_hitless_classes.end();
-
-                    return value_type{
-                        m_point_cloud->m_xs[m_index],
-                        m_point_cloud->m_ys[m_index],
-                        m_point_cloud->m_zs[m_index],
-                        m_point_cloud->m_gps_times[m_index],
-                        is_hit,
-                        is_theoretical
-                    };
-                }
-                else
-                {
-                    return {};
-                }
-            })}
+            , m_value{}
         {
+            change_index();
         }
 
         void change_index()
@@ -197,12 +176,19 @@ struct PointCloud
                 m_value.reset();
                 return;
             }
+            const int clss_i = m_point_cloud->m_classifications[m_index];
+            const bool is_theoretical = !m_point_cloud->m_theoretical_classes.empty() &&
+                                            m_point_cloud->m_theoretical_classes.find(clss_i) != m_point_cloud->m_theoretical_classes.end();
+            const bool is_hit = m_point_cloud->m_hitless_classes.empty() ||
+                                    m_point_cloud->m_hitless_classes.find(clss_i) == m_point_cloud->m_hitless_classes.end();
 
             m_value.emplace(
                 m_point_cloud->m_xs[m_index],
                 m_point_cloud->m_ys[m_index],
                 m_point_cloud->m_zs[m_index],
-                m_point_cloud->m_gps_times[m_index]
+                m_point_cloud->m_gps_times[m_index],
+                is_hit,
+                is_theoretical
             );
         }
     };
@@ -561,8 +547,6 @@ Rcpp::List estimatePADForTLS(
         {
             for (const auto& pt : pc)
             {
-                Rcpp::Rcout << std::boolalpha;
-                Rcpp::Rcout << pt.is_hit() << " " << pt.is_theoretical() << std::endl;
                 if (pt.is_hit() && !pt.is_theoretical())
                 {
                     lvox_bounds.grow(pt.x(), pt.y(), pt.z());
