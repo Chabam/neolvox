@@ -716,14 +716,31 @@ Theoreticals: {})",
                 pc.size() - hits,
                 theoreticals
             );
+
             scans.emplace_back(Scan{pc, g_scan_origins[i], g_point_cloud_bounds[i]});
         }
     }
     else
     {
+        const auto& pc   = g_point_clouds[0];
+        const auto  hits = std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_hit));
+        const auto  theoreticals =
+            std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_theoretical));
+
+        logger.info(
+            R"(
+Point cloud
+Hits: {}
+Hitless: {}
+Theoreticals: {})",
+            hits,
+            pc.size() - hits,
+            theoreticals
+        );
+
         // TODO: check if we want to support MLS mutli-scan?
         scans.emplace_back(
-            Scan{g_point_clouds[0], g_scan_trajectories[0], g_point_cloud_bounds[0]}
+            Scan{pc, g_scan_trajectories[0], g_point_cloud_bounds[0]}
         );
     }
 
