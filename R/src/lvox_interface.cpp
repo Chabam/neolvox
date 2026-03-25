@@ -217,12 +217,22 @@ using Trajectory    = lvox::Trajectory<Point, PointCloud>;
 
 PointCloud read_point_cloud_from_raw_data(const Rcpp::List& raw_data, const std::set<int>& hitless_classes, const std::set<int>& theoretical_classes)
 {
+    Rcpp::NumericVector classifications;
+
+    if (raw_data.containsElementNamed("Classification"))
+        classifications = raw_data["Classification"];
+    else
+    {
+        Rcpp::NumericVector xs = raw_data["X"];
+        classifications = Rcpp::NumericVector(xs.size()); // Making up classifications if they're missing
+    }
+
     return PointCloud{
         raw_data["X"],
         raw_data["Y"],
         raw_data["Z"],
         raw_data["gpstime"],
-        raw_data["Classification"],
+        classifications,
         hitless_classes,
         theoretical_classes
     };
