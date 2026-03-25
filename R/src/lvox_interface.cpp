@@ -342,7 +342,7 @@ Rcpp::List do_lvox_computation(
 
 // [[Rcpp::depends(RcppParallel)]]
 
-//' Perform the PAD estimation for a MLS scan
+//' Perform the PAD estimation for a plot using a tractory (SLAM point cloud)
 //'
 //' @param pointCloud A point cloud acquired from a mobile lidar, this can be LAS object or a list
 //'    containing X, Y, Z and gpstime.
@@ -373,7 +373,7 @@ Rcpp::List do_lvox_computation(
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
 //'    contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
-Rcpp::List estimatePADForMLS(
+Rcpp::List estimatePADWithTrajectory(
     const SEXP&                         pointCloud,
     const Rcpp::List&                   trajectory,
     std::string                         padEstimator           = "BCMLE",
@@ -441,7 +441,7 @@ Rcpp::List estimatePADForMLS(
     );
 }
 
-//' Perform the PAD estimation for TLS multi-scans
+//' Perform the PAD estimation using multiple fixed scanner locations
 //'
 //' @param pointClouds A list of point clouds acquired from a mobile lidar, this can be  LAS object
 //'    or a list containing X, Y, Z and gpstime.
@@ -471,7 +471,7 @@ Rcpp::List estimatePADForMLS(
 //' @return A LvoxGrid object containing the 3d grid in a coordinate list (COO) form. It also
 //'    contains metadata about the grid (voxel size, grid dimensions, etc.)
 // [[Rcpp::export]]
-Rcpp::List estimatePADForTLS(
+Rcpp::List estimatePADWithMultipleScans(
     const Rcpp::List&                   pointClouds,
     const Rcpp::List&                   scannersOrigin,
     std::string                         padEstimator           = "BCMLE",
