@@ -5,7 +5,7 @@ mls <- readLAS("~/Documents/Lidar/PRF133/MLS/MLS-PRF133.laz")
 traj <- read.csv("~/Documents/Lidar/PRF133/MLS/MLS-PRF133-traj.txt", sep = " ", skip = 1)
 names(traj) <- c("gpstime", "X", "Y", "Z", "Q0", "Q1", "Q2", "Q3", "Red", "Green", "Blue", "NormalX", "NormalY", "NormalZ", "Pitch", "Roll", "Azimuth")
 
-grid <- estimatePADForMLS(mls, traj, threadCount = 12)
+grid <- estimatePADWithTrajectory(mls, traj, voxelSize = 0.3, threadCount = 12)
 hp <- computeHeightProfile(grid)
 hp
 plot(hp)

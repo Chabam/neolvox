@@ -17,10 +17,21 @@ def main():
     group: h5py.Group = file["lvox"]
 
     dims = group.attrs["Dimensions"]
+    minIdx = group.attrs["Minimal index values"]
     min_vals = group.attrs["Minimal coordinates values"]
     voxel_size = group.attrs["Voxel size"]
 
-    dset_m = sparse.COO((group["pad"], (group["x"], group["y"], group["z"])), shape=dims).todense()
+    x = group["x"][()]
+    y = group["y"][()]
+    z = group["z"][()]
+
+    xs = x - minIdx[0]
+    ys = y - minIdx[1]
+    zs = z - minIdx[2]
+
+    coords = numpy.vstack([xs, ys, zs])
+
+    dset_m = sparse.COO(coords, group["pad"], shape=dims).todense()
     dset_m = numpy.nan_to_num(dset_m, nan = 0, posinf = 0, neginf = 0)
 
     profile = numpy.average(dset_m, axis=(0, 1))

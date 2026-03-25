@@ -14,16 +14,18 @@ origins <- list(
   c(0.506694, 12.121184, 93.97213),
   c(11.452984, -1.91865, 93.727236),
   c(-0.821686, -10.803126, 94.414889),
-  c(11.340925, 2.670768, 94.75565)
+  c(-11.340925, 2.670768, 94.75565)
 )
 lowestPoint <- c(-25, -25, 90)
 highestPoint <- c(25, 25, 130)
-grid <- estimatePADForTLS(
+grid <- estimatePADWithMultipleScans(
   tls,
   origins,
-  padEstimator = "BCMLE",
+  voxelSize = 0.2,
   smallestElementArea = needleProjectedAreaFromDimensions(0.06, 0.01),
-  bounds = list(lowestPoint, highestPoint)
+  exportIntermediateData = TRUE,
+  bounds = list(lowestPoint, highestPoint),
+  threadCount = 12
 )
 
 hp <- computeHeightProfile(grid)
