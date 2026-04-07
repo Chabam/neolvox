@@ -111,11 +111,11 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
 
                                 if constexpr (pe::is_uplbl<PadEstimator>::value)
                                     grid.add_length_count_and_variance(
-                                        hit.m_index, effective_length, hit.m_is_destination
+                                        hit.m_index, effective_length, compute_hit && hit.m_is_destination
                                     );
                                 else
                                     grid.add_length_and_count(
-                                        hit.m_index, effective_length, hit.m_is_destination
+                                        hit.m_index, effective_length, compute_hit && hit.m_is_destination
                                     );
                             },
                             grid
