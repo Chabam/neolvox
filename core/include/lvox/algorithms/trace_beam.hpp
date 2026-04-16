@@ -3,7 +3,6 @@
 
 #include <limits>
 
-#include <lvox/logger/logger.hpp>
 #include <lvox/scanner/beam.hpp>
 #include <lvox/voxel/grid.hpp>
 
@@ -81,11 +80,7 @@ struct TraceBeam
 
             if (!t_entry)
             {
-                constexpr auto err_msg = "Beam of origin ({},{},{}) is outside the grid and "
-                                         "doesn't interect it! Ignoring";
-                Logger{"Grid Traversal"}.error(
-                    err_msg, beam_origin.x(), beam_origin.y(), beam_origin.z()
-                );
+                // Ray misses the bounding box, nothing to do!
                 return;
             }
 
