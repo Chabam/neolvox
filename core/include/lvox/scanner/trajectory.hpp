@@ -44,7 +44,7 @@ class Trajectory
         // gps time is not found in the trajectory
         if (upper == m_traj_points.begin() || upper == m_traj_points.end())
         {
-            return {};
+            return std::nullopt;
         }
 
         // Returning a point in the trajectory that is the closest to the

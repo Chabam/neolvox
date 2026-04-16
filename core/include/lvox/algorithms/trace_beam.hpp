@@ -44,7 +44,7 @@ struct TraceBeam
         double t_max = v_min.cwiseMax(v_max).minCoeff();
 
         if (t_min > t_max)
-            return {};
+            return std::nullopt;
 
         if (t_min < 0)
             return t_max;
