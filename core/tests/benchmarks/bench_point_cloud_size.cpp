@@ -28,12 +28,15 @@ static void bm_point_cloud_size(benchmark::State& state, bool is_sparse)
         std::vector<lvox::Scan<Point, PointCloud>> scans;
         scans.emplace_back(pc, Point{0., 0., 0.}, point_cloud_bounds);
         lvox::algorithms::ComputeOptions options{
-            .m_voxel_size           = 0.1,
-            .m_job_limit            = std::thread::hardware_concurrency(),
-            .m_pad_estimator        = lvox::algorithms::pad_estimators::BeerLambert{},
-            .m_compute_theoreticals = false,
-            .m_use_sparse_grid      = is_sparse,
-            .m_log_stream           = std::cout
+            .m_voxel_size            = 0.1,
+            .m_job_limit             = std::thread::hardware_concurrency(),
+            .m_pad_estimator         = lvox::algorithms::pad_estimators::BeerLambert{},
+            .m_use_sparse_grid       = false,
+            .m_required_counts       = 0,
+            .m_smallest_element_area = 0.0,
+            .m_use_classification    = false,
+            .m_bounds                = {},
+            .m_log_stream            = std::cout
         };
         logger.info("Starting computation");
         lvox::Logger::set_global_level(lvox::Logger::Level::Error);

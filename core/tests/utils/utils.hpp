@@ -16,6 +16,8 @@ struct Point
     double y() const { return m_y; }
     double z() const { return m_z; }
     double gps_time() const { return m_gps_time; }
+    bool is_hit() const { return true; }
+    bool is_theoretical() const { return false; }
 
     double m_x;
     double m_y;
