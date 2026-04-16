@@ -100,7 +100,7 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
                     if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
                     {
                         std::visit(
-                            [&hit, unit_attenuation_coeff](auto& grid) {
+                            [&hit, unit_attenuation_coeff, compute_hit](auto& grid) {
                                 double effective_length = hit.m_distance_in_voxel;
                                 if (unit_attenuation_coeff != 0.0)
                                     effective_length =
