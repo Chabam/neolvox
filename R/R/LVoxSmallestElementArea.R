@@ -1,7 +1,8 @@
 #' @description Helper function for computing the projected area of a
 #'   single needle from a coniferous tree from its dimensions. This
 #'   function can be used for the `smallestElementArea` parameter of
-#'   `lvoxR::computeTLS` and `lvoxR::computeMLS`
+#'   `lvoxR::estimatePADWithMultipleScans` and
+#'   `lvoxR::estimatePADWithTrajectory`
 #' @param length The length of the needle expressed in meters
 #' @param diameter The diameter of the needle expressed in meters
 #' @return The random projected area of the needle
@@ -12,7 +13,8 @@ needleProjectedAreaFromDimensions <- function(length, diameter) {
 #' @description Helper function for computing the projected area of a
 #'   single needle from a coniferous tree from its flat area. This
 #'   function can be used for the `smallestElementArea` parameter of
-#'   `lvoxR::computeTLS` and `lvoxR::computeMLS`
+#'   `lvoxR::estimatePADWithMultipleScans` and
+#'   `lvoxR::estimatePADWithTrajectory`
 #' @param flatArea The flat area of the needle expressed in meters
 #' @return The random projected area of the needle
 needleProjectedAreaFromFlatArea <- function(flatArea) {
@@ -22,7 +24,8 @@ needleProjectedAreaFromFlatArea <- function(flatArea) {
 #' @description Helper function for computing the projected area of a
 #'   broad leaf from a deciduous tree from its dimensions. This
 #'   function can be used for the `smallestElementArea` parameter of
-#'   `lvoxR::computeTLS` and `lvoxR::computeMLS`
+#'   `lvoxR::estimatePADWithMultipleScans` and
+#'   `lvoxR::estimatePADWithTrajectory`
 #' @param length The length of the broad leaf expressed in meters
 #' @param diameter The diameter of the broad leaf expressed in meters
 #' @return The random projected area of the broad leaf
@@ -33,7 +36,8 @@ broadLeafProjectedAreaFromDimensions <- function(length) {
 #' @description Helper function for computing the projected area of a
 #'   broad leaf from a deciduous tree from its flat area. This
 #'   function can be used for the `smallestElementArea` parameter of
-#'   `lvoxR::computeTLS` and `lvoxR::computeMLS`
+#'   `lvoxR::estimatePADWithMultipleScans` and
+#'   `lvoxR::estimatePADWithTrajectory`
 #' @param flatArea The flat area of the broad leaf expressed in meters
 #' @return The random projected area of the broad leaf
 broadLeafProjectedAreaFromFlatArea <- function(flatArea) {
