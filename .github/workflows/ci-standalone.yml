@@ -15,6 +15,10 @@ jobs:
   job:
     name: ${{ matrix.os }}-${{ github.workflow }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     env:
       VCPKG_BINARY_SOURCES: 'clear;x-gha,readwrite'
       VCPKG_BUILD_TYPE: release
@@ -24,7 +28,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         include:
           - os: windows-latest
-            triplet: x64-windows
+            triplet: x64-windows-release
             configurePreset: 'windows-standalone'
           - os: ubuntu-latest
             configurePreset: 'linux-standalone'
