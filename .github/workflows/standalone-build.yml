@@ -10,3 +10,8 @@ jobs:
     with:
       do_release: false
       do_testing: true
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
