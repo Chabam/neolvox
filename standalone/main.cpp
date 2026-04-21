@@ -764,4 +764,5 @@ Theoreticals: {})",
 
     lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
     export_to_h5(std::move(result), "lvox", g_grid_file, g_include_all_info);
+    logger.info("PAD value used for missing hits: {}", lvox::algorithms::PADEstimation::s_missing_hits_val);
 }

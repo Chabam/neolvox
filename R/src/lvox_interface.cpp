@@ -350,6 +350,13 @@ Rcpp::List do_lvox_computation(
     return new_grid;
 }
 
+//' @return the PAD value used for identifying missing hits in the grid
+// [[Rcpp::export]]
+double missingHitsPADValue()
+{
+    return lvox::algorithms::PADEstimation::s_missing_hits_val;
+}
+
 // [[Rcpp::depends(RcppParallel)]]
 
 //' Perform the PAD estimation for a plot using a tractory (SLAM point cloud)
