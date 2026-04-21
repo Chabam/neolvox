@@ -24,7 +24,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         include:
           - os: windows-latest
-            triplet: x64-windows-static
+            triplet: x64-windows
             configurePreset: 'windows-standalone'
           - os: ubuntu-latest
             configurePreset: 'linux-standalone'
@@ -63,7 +63,15 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@latest
         if: runner.os == 'Linux'
         with:
-          packages: libpdal-dev libhdf5-dev libeigen3-dev libgtest-dev libbenchmark-dev
+          packages: |
+            libpdal-dev
+            libhdf5-dev
+            libeigen3-dev
+            libgtest-dev
+            libbenchmark-dev
+            libblas-dev
+            liblapack-dev
+            libarmadillo-dev
           version: 1.0
 
 
