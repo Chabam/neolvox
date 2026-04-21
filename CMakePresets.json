@@ -46,7 +46,6 @@
         "LVOX_COMPUTREE_BINDINGS": "OFF",
         "LVOX_STANDALONE": "ON",
         "LVOX_R": "OFF",
-        "BUILD_TESTING": "ON"
       }
     },
     {
@@ -66,7 +65,6 @@
         "LVOX_COMPUTREE_BINDINGS": "OFF",
         "LVOX_STANDALONE": "ON",
         "LVOX_R": "OFF",
-        "BUILD_TESTING": "ON"
       }
     }
   ]

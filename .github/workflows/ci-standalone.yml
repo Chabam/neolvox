@@ -1,0 +1,93 @@
+name: ci-standalone
+on:
+  workflow_call:
+    inputs:
+      do_release:
+        required: false
+        type: boolean
+        default: false
+      do_testing:
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  job:
+    name: ${{ matrix.os }}-${{ github.workflow }}
+    runs-on: ${{ matrix.os }}
+    env:
+      VCPKG_BINARY_SOURCES: 'clear;x-gha,readwrite'
+      VCPKG_BUILD_TYPE: release
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: windows-latest
+            triplet: x64-windows-static
+            configurePreset: 'windows-standalone'
+          - os: ubuntu-latest
+            configurePreset: 'linux-standalone'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            submodules: true
+
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - uses: lukka/get-cmake@latest
+
+      - name: Setup vcpkg
+        if: runner.os == 'Windows'
+        uses: lukka/run-vcpkg@v11
+        id: runvcpkg
+        with:
+            vcpkgGitCommitId: '120deac3062162151622ca4860575a33844ba10b' # 2025.08.27
+            vcpkgJsonGlob: "vcpkg.json"
+            runVcpkgInstall: true
+            vcpkgTriplet: ${{ matrix.triplet }}
+
+      - name: Linux setup PPA for pdal
+        if: runner.os == 'Linux'
+        run: |
+          sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
+          sudo apt-get update -y
+
+      - name: Install Linux dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        if: runner.os == 'Linux'
+        with:
+          packages: libpdal-dev libhdf5-dev libeigen3-dev libgtest-dev libbenchmark-dev
+          version: 1.0
+
+
+      - name: CMake generate project
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: '${{ matrix.configurePreset }}'
+          configurePresetAdditionalArgs: "['-DVCPKG_TARGET_TRIPLET=${{matrix.triplet }}', '-DBUILD_TESTING=${{ inputs.do_testing && 'ON' || 'OFF' }}']"
+
+      - name: Build Standalone
+        run: cmake --build ${{github.workspace}}/build --config Release
+
+      - name: Test
+        if: inputs.do_testing == true
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            ./build/lvox_tests.exe --gtest_output="xml:test-results/results-windows.xml"
+          else
+            chmod +x ./build/lvox_tests
+            ./build/lvox_tests --gtest_output="xml:test-results/results-linux.xml"
+          fi
+
+      - name: Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always() && inputs.do_testing == true
+        with:
+          files: "test-results/*.xml"
