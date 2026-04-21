@@ -45,7 +45,7 @@
       "cacheVariables": {
         "LVOX_COMPUTREE_BINDINGS": "OFF",
         "LVOX_STANDALONE": "ON",
-        "LVOX_R": "OFF",
+        "LVOX_R": "OFF"
       }
     },
     {
@@ -64,7 +64,7 @@
       "cacheVariables": {
         "LVOX_COMPUTREE_BINDINGS": "OFF",
         "LVOX_STANDALONE": "ON",
-        "LVOX_R": "OFF",
+        "LVOX_R": "OFF"
       }
     }
   ]

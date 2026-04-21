@@ -50,7 +50,8 @@ jobs:
             vcpkgGitCommitId: '120deac3062162151622ca4860575a33844ba10b' # 2025.08.27
             vcpkgJsonGlob: "vcpkg.json"
             runVcpkgInstall: true
-            vcpkgTriplet: ${{ matrix.triplet }}
+        env:
+          VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }}
 
       - name: Linux setup PPA for pdal
         if: runner.os == 'Linux'
