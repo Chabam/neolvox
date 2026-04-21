@@ -75,12 +75,15 @@ jobs:
             libarmadillo-dev
           version: 1.2
 
+      - name: Refresh Linker Cache
+        if: runner.os == 'Linux'
+        run: sudo ldconfig
 
       - name: CMake generate project
         uses: lukka/run-cmake@v10
         with:
           configurePreset: '${{ matrix.configurePreset }}'
-          configurePresetAdditionalArgs: "['-DVCPKG_TARGET_TRIPLET=${{matrix.triplet }}', '-DBUILD_TESTING=${{ inputs.do_testing && 'ON' || 'OFF' }}']"
+          configurePresetAdditionalArgs: "['-DVCPKG_TARGET_TRIPLET=${{matrix.triplet }}', '-DBUILD_TESTING=${{ inputs.do_testing && 'ON' || 'OFF' }}', '-DVCPKG_MANIFEST_INSTALL=OFF']"
 
       - name: Build Standalone
         run: cmake --build ${{github.workspace}}/build --config Release
