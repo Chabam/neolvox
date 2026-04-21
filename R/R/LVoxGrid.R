@@ -30,10 +30,10 @@ computeHeightProfile <- function(lvox_grid) {
   if (!inherits(lvox_grid, "LVoxGrid"))
     error("Input must be an LVoxGrid object")
   dense_grid <- as.matrix(lvox_grid)
-  dense_grid[is.nan(dense_grid)] <- 0
-  dense_grid[is.infinite(dense_grid)] <- 0
+  dense_grid[dense_grid == missingHitsPADValue()] = NA
+  dense_grid[is.infinite(dense_grid)] <- unname(quantile(dense_grid, 0.9999, na.rm = TRUE))
   profile_real_height <- seq(0, lvox_grid$Dimensions[3] - 1) * lvox_grid$VoxelSize + lvox_grid$MinimalCoords[3]
-  profile <- apply(dense_grid, MARGIN = 3, FUN = mean)
+  profile <- apply(dense_grid, MARGIN = 3, FUN = function(x) mean(x, na.rm = TRUE))
 
   structure(list(Heights = profile_real_height, PAD = profile), class = "LVoxHeightProfile")
 }

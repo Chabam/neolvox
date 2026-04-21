@@ -18,11 +18,22 @@ namespace lvox::algorithms
 template <typename PADEstimationFunc>
 void estimate_pad_impl(COOGrid& grid, unsigned int required_counts, PADEstimationFunc&& func)
 {
-    auto filtered_grid =
-        grid | std::views::filter([required_counts](COOGrid::VoxelData voxel_view) {
+    const auto is_enough_hits = [required_counts](COOGrid::VoxelData voxel_view) {
             return *voxel_view.count >= required_counts;
-        });
+    };
+
+    auto filtered_grid = grid | std::views::filter(is_enough_hits);
     std::for_each(std::execution::par, filtered_grid.begin(), filtered_grid.end(), func);
+
+    auto missing_hits_grid = grid | std::views::filter(std::not_fn(is_enough_hits));
+    std::for_each(
+        std::execution::par,
+        missing_hits_grid.begin(),
+        missing_hits_grid.end(),
+        [](COOGrid::VoxelData voxel_view) {
+            *voxel_view.pad = PADEstimation::s_missing_hits_val;
+        }
+    );
 }
 
 PADEstimation::PADEstimation(COOGrid& grid, unsigned int required_hits)

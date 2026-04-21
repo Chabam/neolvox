@@ -21,6 +21,8 @@ namespace algorithms
 class PADEstimation
 {
   public:
+    static constexpr double s_missing_hits_val = -1.0;
+
     PADEstimation(COOGrid& grid, unsigned int required_hits);
     void operator()(algorithms::pad_estimators::BeerLambert);
     void operator()(algorithms::pad_estimators::ContactFrequency);
