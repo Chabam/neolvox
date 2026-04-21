@@ -52,6 +52,7 @@ jobs:
             runVcpkgInstall: true
         env:
           VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }}
+          VCPKG_BUILD_TYPE: release
 
       - name: Linux setup PPA for pdal
         if: runner.os == 'Linux'
