@@ -24,8 +24,8 @@
 \details{
   lvoxR provides two main functions:
 
-  - estimatePADForTLS
-  - estimatePADForMLS
+  - estimatePADWithMultipleScans
+  - estimatePADWithTrajectory
 
   For point cloud representation, it is compatible with the LAS objects
   from the lidR package. Otherwise, it also accepts an R list object
@@ -77,11 +77,10 @@ traj <- read.csv("/path/to/a/traj_file.txt", skip = 1, sep = " ")
 names(traj) <- c("gpstime", "X", "Y", "Z")
 
 # See the documentation for the available computation options
-grid <- estimatePADForMLS(mls, traj, voxelSize = 0.4)
+grid <- estimatePADWithTrajectory(mls, traj, voxelSize = 0.4)
 
 # TLS processing (with multi-scans) ============================
-readASCIIPointCloud <- function(filename)
-{
+readASCIIPointCloud <- function(filename) {
   read.csv(filename, skip = 1, sep = " ")
 }
 
@@ -111,7 +110,7 @@ scanner_origins <- list(
   c(-11.340925, 2.670768, 94.75565)
 )
 
-grid <- estimatePADForTLS(scans, scanner_origins)
+grid <- estimatePADWithMultipleScans(scans, scanner_origins)
 
 # To then use the grid to compute a height profile
 height_profile <- computeHeightProfile(grid)
