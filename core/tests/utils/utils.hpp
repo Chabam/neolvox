@@ -17,7 +17,7 @@ struct Point
     double z() const { return m_z; }
     double gps_time() const { return m_gps_time; }
     bool is_hit() const { return true; }
-    bool is_theoretical() const { return false; }
+    bool is_in_bounding_box() const { return true; }
 
     double m_x;
     double m_y;

@@ -76,12 +76,12 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
 
             if constexpr (use_classifications)
             {
-                if (!timed_point.is_hit() || timed_point.is_theoretical())
+                if (!timed_point.is_hit() || !timed_point.is_in_bounding_box())
                 {
                     compute_hit = false;
                 }
 
-                if (timed_point.is_theoretical())
+                if (!timed_point.is_in_bounding_box())
                 {
                     limit_ray_length = false;
                 }

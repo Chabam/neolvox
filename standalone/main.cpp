@@ -91,13 +91,13 @@ Computing options:
                                                             They are slower, but will require less memory.
                                                             [disabled by default]
 
-   -tc, --theorical-classifications     list of integers    A comma separeted list of integer values representing the classes
-                                                            of the points that should be considered as "theoretical" points.
-                                                            This is used to represent points that have not touched anything.
+   -ibb, --ignore-bounding-box-classes  list of integers    A comma separeted list of integer values representing the classes
+                                                            of the points that shouldn't be considered when constructing the
+                                                            scene's bounding box.
 
-   -hc, --hitless-classifications       list of integers    A comma separeted list of integer values representing the classes
+   -ih, --ignore-hit-classes            list of integers    A comma separeted list of integer values representing the classes
                                                             of the points that should not be considered as returns in the PAD
-                                                            estimation. Useful for excluded ground points.
+                                                            estimation. Useful for excluding ground points.
 
    -l, --log-level                      debug, info,        Max log level to display [defaults to info]
                                         warning, error
@@ -111,13 +111,13 @@ namespace fs      = std::filesystem;
 // Type definitions
 struct Point
 {
-    Point(double x, double y, double z, double gps_time, bool is_hit, bool is_theoretical)
+    Point(double x, double y, double z, double gps_time, bool is_hit, bool is_in_bounding_box)
         : m_x{x}
         , m_y{y}
         , m_z{z}
         , m_gps_time{gps_time}
         , m_is_hit{is_hit}
-        , m_is_theoretical{is_theoretical}
+        , m_is_in_bounding_box{is_in_bounding_box}
     {
     }
 
@@ -125,7 +125,7 @@ struct Point
     double y() const { return m_y; }
     double z() const { return m_z; }
     double gps_time() const { return m_gps_time; }
-    bool   is_theoretical() const { return m_is_theoretical; }
+    bool   is_in_bounding_box() const { return m_is_in_bounding_box; }
     bool   is_hit() const { return m_is_hit; }
 
     bool operator==(const Point& other) const
@@ -141,7 +141,7 @@ struct Point
     double m_z;
     double m_gps_time;
     bool   m_is_hit;
-    bool   m_is_theoretical;
+    bool   m_is_in_bounding_box;
 };
 
 using PointCloud    = std::vector<Point>;
@@ -164,8 +164,8 @@ bool                                g_use_sparse_grids      = false;
 unsigned int                        g_required_counts       = 5;
 std::optional<lvox::Bounds<double>> g_bounds                = {};
 double                              g_smallest_element_area = 0.;
-std::set<int>                       g_theoretical_classes   = {};
-std::set<int>                       g_hitless_classes       = {};
+std::set<int>                       g_ignore_bounding_box_classes = {};
+std::set<int>                       g_ignore_hit_classes          = {};
 fs::path                            g_file;
 
 PointCloud load_point_cloud_from_file(
@@ -226,14 +226,14 @@ PointCloud load_point_cloud_from_file(
         const double gps_time = pt.template getFieldAs<double>(dim::GpsTime);
         const int    clss_i   = pt.template getFieldAs<int>(dim::Classification);
 
-        const bool is_theoretical =
-            !g_theoretical_classes.empty() &&
-            g_theoretical_classes.find(clss_i) != g_theoretical_classes.end();
-        const bool is_hit =
-            g_hitless_classes.empty() || g_hitless_classes.find(clss_i) == g_hitless_classes.end();
-        out.emplace_back(x, y, z, gps_time, is_hit, is_theoretical);
+        const bool is_in_bounding_box =
+            g_ignore_bounding_box_classes.empty() ||
+            g_ignore_bounding_box_classes.find(clss_i) == g_ignore_bounding_box_classes.end();
+        const bool is_hit = g_ignore_hit_classes.empty() ||
+                            g_ignore_hit_classes.find(clss_i) == g_ignore_hit_classes.end();
+        out.emplace_back(x, y, z, gps_time, is_hit, is_in_bounding_box);
 
-        if (calculate_bounds && !is_theoretical && is_hit)
+        if (calculate_bounds && is_in_bounding_box && is_hit)
         {
             bounds->get().grow(x, y, z);
         }
@@ -476,9 +476,8 @@ void export_to_h5(
     // Missing hits value
     const auto    h5_missing_hits_t = H5::PredType::NATIVE_DOUBLE;
     H5::Attribute missing_hits_attr =
-        get_or_create_attribute("Missing hits value", h5_voxel_size_t, H5::DataSpace{});
+        get_or_create_attribute("Missing hits value", h5_missing_hits_t, H5::DataSpace{});
     voxel_size_attr.write(h5_missing_hits_t, &lvox::algorithms::PADEstimation::s_missing_hits_val);
-
 
     file.close();
 }
@@ -608,13 +607,13 @@ int main(int argc, char* argv[])
         {
             g_smallest_element_area = std::stod(*++arg_it);
         }
-        else if (*arg_it == "-hc" || *arg_it == "--hitless-classifications")
+        else if (*arg_it == "-ih" || *arg_it == "--ignore-hit-classes")
         {
-            extract_classifications(*++arg_it, g_hitless_classes);
+            extract_classifications(*++arg_it, g_ignore_hit_classes);
         }
-        else if (*arg_it == "-tc" || *arg_it == "--theoretical-classifications")
+        else if (*arg_it == "-ibb" || *arg_it == "--ignore-bounding-box-classes")
         {
-            extract_classifications(*++arg_it, g_theoretical_classes);
+            extract_classifications(*++arg_it, g_ignore_bounding_box_classes);
         }
         else if (*arg_it == "-a" || *arg_it == "--all")
         {
@@ -707,22 +706,22 @@ int main(int argc, char* argv[])
         {
             const auto& pc   = g_point_clouds[i];
             const auto  hits = std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_hit));
-            const auto  theoreticals =
-                std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_theoretical));
+            const auto  is_not_in_bb =
+                std::count_if(pc.begin(), pc.end(), std::not_fn(std::mem_fn(&Point::is_in_bounding_box)));
 
             logger.info(
                 R"(
 Point cloud #{} at origin ({},{},{})
-Hits: {}
-Hitless: {}
-Theoreticals: {})",
+Hits:                {}
+Ignore hits:         {}
+Ignore bounding box: {})",
                 i + 1,
                 g_scan_origins[i].x(),
                 g_scan_origins[i].y(),
                 g_scan_origins[i].z(),
                 hits,
                 pc.size() - hits,
-                theoreticals
+                is_not_in_bb
             );
 
             scans.emplace_back(Scan{pc, g_scan_origins[i], g_point_cloud_bounds[i]});
@@ -732,24 +731,22 @@ Theoreticals: {})",
     {
         const auto& pc   = g_point_clouds[0];
         const auto  hits = std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_hit));
-        const auto  theoreticals =
-            std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_theoretical));
+        const auto  is_not_in_bb =
+            std::count_if(pc.begin(), pc.end(), std::not_fn(std::mem_fn(&Point::is_in_bounding_box)));
 
         logger.info(
             R"(
 Point cloud
-Hits: {}
-Hitless: {}
-Theoreticals: {})",
+Hits:                {}
+Ignore hits:         {}
+Ignore bounding box: {})",
             hits,
             pc.size() - hits,
-            theoreticals
+            is_not_in_bb
         );
 
         // TODO: check if we want to support MLS mutli-scan?
-        scans.emplace_back(
-            Scan{pc, g_scan_trajectories[0], g_point_cloud_bounds[0]}
-        );
+        scans.emplace_back(Scan{pc, g_scan_trajectories[0], g_point_cloud_bounds[0]});
     }
 
     if (scans.empty())
@@ -765,9 +762,10 @@ Theoreticals: {})",
         .m_use_sparse_grid       = g_use_sparse_grids,
         .m_required_counts       = g_required_counts,
         .m_smallest_element_area = g_smallest_element_area,
-        .m_use_classification    = !(g_theoretical_classes.empty() && g_hitless_classes.empty()),
-        .m_bounds                = g_bounds,
-        .m_log_stream            = std::cout
+        .m_use_classification =
+            !(g_ignore_bounding_box_classes.empty() && g_ignore_hit_classes.empty()),
+        .m_bounds     = g_bounds,
+        .m_log_stream = std::cout
     };
 
     lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
