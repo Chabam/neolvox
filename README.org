@@ -1,8 +1,8 @@
-* Neolvox
+* neolvox
 
 ** Description
 
-/Neovlox/ is the successor of [[https://computree.onf.fr/?page_id=1348][Lvox]] (a plugin within the [[https://computree.onf.fr/?page_id=589][Computree]]
+/neovlox/ is the successor of [[https://computree.onf.fr/?page_id=1348][Lvox]] (a plugin within the [[https://computree.onf.fr/?page_id=589][Computree]]
 platform). It is a tool used to compute the Plant Area Density (PAD)
 from a point cloud acquired in a forest setting. The approach used by
 this program is described in [[https://doi.org/10.1016/j.rse.2022.113115][Nguyen et al. 2022]].
@@ -15,13 +15,13 @@ in several ways:
   analyzed in other languages.
 - It is meant to be used in operationnal settings. A great care was
   put into performance, you can get your results in matter of minutes.
-- The core component of Neolvox is a library which can be reused
+- The core component of neolvox is a library which can be reused
   in different programming environments.
 
-** Using Neolvox
+** Using neolvox
 
 *** R Package
-Neolvox, is now available as an R package. Look at the [[https://github.com/Chabam/neolvox/releases][releases]] to get
+neolvox, is now available as an R package. Look at the [[https://github.com/Chabam/neolvox/releases][releases]] to get
 the source package. It is not on CRAN yet, so you will need to compile
 it first. For Windows users, that means installing [[https://cran.r-project.org/bin/windows/Rtools/][RTools]] for your R
 version. If you have downloaded the package, to install it use the
@@ -38,7 +38,8 @@ $ R CMD INSTALL lvox_X.X.X.tar.gz
 #+end_src
 
 *** Standalone
-The easiest way to use Neolvox, is with the standalone version which
+
+The easiest way to use neolvox, is with the standalone version which
 is a command line utility. It consists of a single binary file to which
 you can provide your arguments. Use the =--help= or =-h= flag in the
 command line to see the available options.
@@ -53,59 +54,51 @@ row. See [[https://pdal.io/en/stable/dimensions.html][PDAL's supported dimension
 
 ** What can it do?
 
-Neolvox can process points cloud from two types of lidar scanner:
+neolvox can process points cloud from two types of lidar scanner:
 - Terrestrial laser scanner (TLS)
 - Mobile laser scanner (MLS)
+- Unmanned laser scanner (ULS)
 
-The files it can read are all the ones supported by [[https://pdal.io/en/stable/stages/readers.html][PDAL]] and
-proprietary Z+F ASCII cloud registration file produced by Z+F
-software.
+The files it can read are all the ones supported by [[https://pdal.io/en/stable/stages/readers.html][PDAL]].
 
 *** TLS
 
-If you want to compute the PAD for a TLS point cloud, you can simply
-provide a point cloud file to Neolvox. By default, the scanner origin
-will be set to =(0,0,0)=, this is configurable with the =-o= or
-=--scan-origin= flag.
+neolvox works out of the box with multiple scans of the same scene. To
+register the scene and its various scan location, you must use the
+=-s= and =-o= (=--origin=) flags respectively:
 
-It is also possible to compute multiple scans using the =.in= file
-format as an input. The file format is composed of multiple
-lines. Each line represent a scan which must have this form:
+#+begin_src shell
 
-#+begin_src
-<Point cloud file> Z+F <X> <Y> <Z> <ang. res.> <start hor. ang.> <end hor. ang.> <start vert. ang.> <end vert. ang.>
+lvox -s /path/to/a/point_cloud_file_0.laz -o  0  0  0 \ # The first scan at (0,0,0)
+     -s /path/to/a/point_cloud_file_1.laz -o  0  5  0 \ # The second scan at (0,5,0)
+     -s /path/to/a/point_cloud_file_2.laz -o  0 -5  0 \ # and so on...
+     -s /path/to/a/point_cloud_file_3.laz -o  5  0  0 \
+     -s /path/to/a/point_cloud_file_4.laz -o -5  0  0
+
 #+end_src
-
-Here's a full file example:
-
-#+begin_src
-Petawawa_133_Scan_000.txt Z+F 0 0 94.131491 0.36 0 360 0 180
-Petawawa_133_Scan_001.txt Z+F 0.506694 12.121184 93.97213 0.36 0 360 0 180
-Petawawa_133_Scan_002.txt Z+F 11.452984 -1.91865 93.727236 0.36 0 360 0 180
-Petawawa_133_Scan_003.txt Z+F -0.821686 -10.803126 94.414889 0.36 0 360 0 180
-Petawawa_133_Scan_004.txt Z+F -11.340925 2.670768 94.75565 0.36 0 360 0 180
-#+end_src
-
-This file must be located next to the point cloud files.
 
 All scans will be computed and will give a single combined PAD grid.
 
 *** MLS
 
-For MLS, in addition of a point cloud file, the user must provide
-another point cloud file for the trajectory taken by the scanner. This
-can be done with the =-t= or =--trajectory= flag. The trajectory must
-contain points that have GPS time recorded.
+For MLS, in addition of a point cloud file (specified with the =-s=
+flag, same as with TLS), the user must provide another point cloud
+file for the trajectory taken by the scanner. This can be done with
+the =-t= or =--trajectory= flag. The trajectory must contain points
+that have GPS time recorded.
 
 *** Output
 
-The output of Neolvox is managed using the =HDF5= format. The values
+The output of neolvox is managed using the =HDF5= format. The values
 contained within this file goes as follows:
 
 #+begin_src
 root
-  \_ pad
-     |- values
+  \_ lvox
+     |- pad
+     |- counts (only with the `-a' flag)
+     |- hits (only with the `-a' flag)
+     |- hits lenghts (only with the `-a' flag)
      |- x
      |- y
      \_ z
@@ -116,12 +109,27 @@ in this repository for examples on how to get the data in those files
 in =Python=. The =pad= dataset also has the following attributes:
 
 - *Dimensions*: the dimensions of the grid as a =(x,y,z)= triplet.
-- *Minimal coordinates values*: the minimal coordinates as a =(x,y,z)= triplet.
+
+- *Minimal coordinates values*: the minimal coordinates as a =(x,y,z)=
+  triplet.
+
+- *Maximum coordinates values*: the maximum coordinates as a =(x,y,z)=
+  triplet.
+
+- *Minimum index values*: the minimum index of the grid as a =(x,y,z)=
+  triplet.
+
+- *Maximum index values*: the maximum index of the grid as a =(x,y,z)=
+  triplet.
+
+- *Missing hits value*: the value used to represent PAD values with
+  not enough hits to be considered in the PAD estimation
+
 - *Voxel size*: the size of a cubic voxel as a single floating point.
 
 Which you can use for further analysis.
 
-** Developing Neolvox
+** Developing neolvox
 
 *** Depedencies
 :PROPERTIES:
@@ -150,8 +158,8 @@ dependencies. Refer to Microsoft's [[https://learn.microsoft.com/en-us/vcpkg/get
 Same as Computree itself. Refer to this [[https://computree.onf.fr/?page_id=1662][page]] for information
 
 *** Building
-Building Neolvox is done through =CMake=. To generate a build script for
-your platform, you can use a =CMakePreset=:
+Building neolvox is done through =CMake=. To generate a build script
+for your platform, you can use a =CMakePreset=:
 
 #+begin_src
 $ cmake --preset linux-standalone
@@ -186,9 +194,4 @@ $ cmake --build build/
 - [X] Support mutliple scans as arguments in the standalone version
 - [X] Bounding box as input
 - [X] Bounding aligned to axis at (0,0,0)
-- [ ] Handling more classes
-  - [ ] Disabling ground for hits
-  - [ ] Trunk
-  - [ ] Leaves
-  - [ ] Stem
-  - [ ] Blank shots
+- [X] Handling classes
