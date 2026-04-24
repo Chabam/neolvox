@@ -397,6 +397,7 @@ void export_to_h5(
 
         return plot_group.createAttribute(name, type, dataspace);
     };
+
     // Voxel size
     const auto    h5_voxel_size_t = H5::PredType::NATIVE_DOUBLE;
     H5::Attribute voxel_size_attr =
@@ -471,6 +472,13 @@ void export_to_h5(
         };
         grid_dims_attr.write(h5_grid_dim_t, grid_dims.data());
     }
+
+    // Missing hits value
+    const auto    h5_missing_hits_t = H5::PredType::NATIVE_DOUBLE;
+    H5::Attribute missing_hits_attr =
+        get_or_create_attribute("Missing hits value", h5_voxel_size_t, H5::DataSpace{});
+    voxel_size_attr.write(h5_missing_hits_t, &lvox::algorithms::PADEstimation::s_missing_hits_val);
+
 
     file.close();
 }
