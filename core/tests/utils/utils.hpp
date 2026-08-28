@@ -1,9 +1,6 @@
 #ifndef LVOX_TEST_GRID_HELPERS
 #define LVOX_TEST_GRID_HELPERS
 
-#include <pdal/PDALUtils.hpp>
-#include <pdal/PointTable.hpp>
-
 #include <lvox/voxel/bounds.hpp>
 
 double get_current_time_as_gps_time();
