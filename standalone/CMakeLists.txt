@@ -14,7 +14,7 @@ find_package(HDF5 COMPONENTS REQUIRED C CXX)
 
 target_link_libraries(lvox PUBLIC
   lvox::core
-  pdalcpp
+  pdal::pdal
   hdf5::hdf5_cpp
   hdf5::hdf5
 )

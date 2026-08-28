@@ -14,6 +14,12 @@
       }
     },
     {
+      "name": "conan",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/conan_toolchain.cmake"
+      }
+    },
+    {
       "name": "linux",
       "inherits": [
         "base"
@@ -47,6 +53,10 @@
         "LVOX_STANDALONE": "ON",
         "LVOX_R": "OFF"
       }
+    },
+    {
+      "name": "linux-standalone-conan",
+      "inherits": [ "linux-standalone", "conan" ]
     },
     {
       "name": "R",
