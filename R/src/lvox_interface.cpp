@@ -324,9 +324,9 @@ Rcpp::List do_lvox_computation(
     if (exportIntermediateData)
     {
         df.push_back(grid.hits(), "Hits");
-        df.push_back(grid.lengths(), "Lengths");
         df.push_back(grid.counts(), "Counts");
         df.push_back(grid.hits_lengths(), "HitsLengths");
+        df.push_back(grid.lengths(), "Lengths");
         if (!grid.lengths_variance().empty())
             df.push_back(grid.lengths_variance(), "LengthsVariance");
     }
