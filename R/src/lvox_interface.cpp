@@ -252,19 +252,12 @@ PointCloud try_read_point_cloud_as_las(
     const std::set<int>& ignore_bounding_box_classes
 )
 {
-    try
+    Rcpp::S4 las{expr};
+    if (las.is("LAS"))
     {
-        Rcpp::S4 las{expr};
-        if (!las.is("LAS"))
-            stop("Point cloud data type is not supported");
-
         return read_point_cloud_from_raw_data(
             las.slot("data"), ignore_hit_classes, ignore_bounding_box_classes
         );
-    }
-    catch (std::exception _)
-    {
-        // We tried ¯\_(ツ)_/¯
     }
 
     return read_point_cloud_from_raw_data(expr, ignore_hit_classes, ignore_bounding_box_classes);
