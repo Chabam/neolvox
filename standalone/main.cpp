@@ -35,7 +35,7 @@
 constexpr auto g_usage_info =
     R"(Usage: lvox [OPTIONS] [-s SCAN_FILE [-o COORDINATE | -t TRAJECTORY_FILE]]...
 Scan definitions:
-   -s, --scan                           filename            Path to a trajectory file, at least one required for
+   -s, --scan                           filename            Path to a scan file, at least one required for
                                                             computing PAD. [none by default]
 
    -t, --trajectory                     filename            Path to a trajectory file, required for
