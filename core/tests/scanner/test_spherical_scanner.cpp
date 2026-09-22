@@ -6,7 +6,7 @@
 
 #include <lvox/scanner/spherical_scanner.hpp>
 
-#include "lvox/types.hpp"
+#include <lvox/types.hpp>
 
 TEST(SphericalScannerTests, creation_all_6_axis)
 {

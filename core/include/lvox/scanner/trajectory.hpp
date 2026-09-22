@@ -30,7 +30,7 @@ class Trajectory
         );
     }
 
-    std::optional<Vector> interpolate_point_from_gps_time(double gps_time) const
+    Vector interpolate_point_from_gps_time(double gps_time) const
     {
         auto upper = std::lower_bound(
             m_traj_points.begin(),
@@ -41,14 +41,19 @@ class Trajectory
             }
         );
 
-        // gps time is not found in the trajectory
-        if (upper == m_traj_points.begin() || upper == m_traj_points.end())
+        // Returning the first point when the requested gps time is
+        // before the first point
+        if (upper == m_traj_points.begin())
+            return Vector{upper->x, upper->y, upper->z};
+
+        // If it's after, return the last point
+        if (upper == m_traj_points.end())
         {
-            return std::nullopt;
+            const auto& last = m_traj_points.back();
+            return Vector{last.x, last.y, last.z};
         }
 
-        // Returning a point in the trajectory that is the closest to the
-        // requested gps time by linear interpolation.
+        // Otherwise interpolate the two closests points
         const auto   p1   = *(upper - 1);
         const auto   p2   = *upper;
         const double t1   = p1.gps_time;

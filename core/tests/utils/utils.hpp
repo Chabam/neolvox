@@ -1,5 +1,5 @@
-#ifndef LVOX_TEST_GRID_HELPERS
-#define LVOX_TEST_GRID_HELPERS
+#ifndef LVOX_TEST_UTILS
+#define LVOX_TEST_UTILS
 
 #include <lvox/voxel/bounds.hpp>
 
@@ -35,4 +35,4 @@ PointCloud generate_cubic_point_cloud_with_random_points(
     size_t point_count, double dim_x = 2., double dim_y = 2., double dim_z = 2.
 );
 
-#endif // !LVOX_TEST_GRID_HELPERS
+#endif // !LVOX_TEST_UTILS

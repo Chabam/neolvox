@@ -32,16 +32,7 @@ struct Scan
 
         Vector operator()(const Trajectory<PointT, PointCloudT>& trajectory)
         {
-            const auto point = trajectory.interpolate_point_from_gps_time(gps_time);
-
-            if (!point)
-            {
-                constexpr auto err_msg = "requested gps time for point not in trajectory {}!";
-                Logger{"Compute beam origin"}.error(err_msg, gps_time);
-                throw std::runtime_error(std::format(err_msg, gps_time));
-            }
-
-            return *point;
+            return trajectory.interpolate_point_from_gps_time(gps_time);
         }
     };
 };

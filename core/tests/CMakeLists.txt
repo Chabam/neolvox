@@ -30,6 +30,7 @@ add_executable(lvox_tests)
 target_sources(lvox_tests
     PRIVATE
     scanner/test_spherical_scanner.cpp
+    scanner/test_trajectory.cpp
     voxel/test_grid_cell_count.cpp
     voxel/test_grid_create_from_point_cloud.cpp
     voxel/test_grid_creation_from_bounds.cpp
