@@ -35,7 +35,9 @@ jobs:
 
 
       - name: Install Conan dependencies
-        run: conan install . --build=missing --output-folder=build && conan cache clean
+        run: |
+          conan install . --build=missing --output-folder=build -s compiler.cppstd=20
+          conan cache clean
 
 
       - uses: lukka/get-cmake@latest
