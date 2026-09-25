@@ -30,11 +30,12 @@ jobs:
 
       - name: Install Conan
         uses: conan-io/setup-conan@v1
+        with:
+          cache_packages: true
+
 
       - name: Install Conan dependencies
         run: conan install . --build=missing --output-folder=build && conan cache clean
-        with:
-          cache_packages: true
 
 
       - uses: lukka/get-cmake@latest
