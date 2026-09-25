@@ -20,34 +20,7 @@
       }
     },
     {
-      "name": "linux",
-      "inherits": [
-        "base"
-      ],
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
-    },
-    {
-      "name": "windows-vcpkg",
-      "inherits": [
-        "base"
-      ],
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "X_VCPKG_APPLOCAL_DEPS_INSTALL": "ON"
-      }
-    },
-    {
-      "name": "linux-standalone",
-      "inherits": [ "linux" ],
+      "name": "standalone",
       "cacheVariables": {
         "LVOX_COMPUTREE_BINDINGS": "OFF",
         "LVOX_STANDALONE": "ON",
@@ -55,8 +28,15 @@
       }
     },
     {
-      "name": "linux-standalone-conan",
-      "inherits": [ "linux-standalone", "conan" ]
+      "name": "standalone-conan",
+      "inherits": [ "base", "standalone", "conan" ]
+    },
+    {
+      "name": "standalone-conan-dev",
+      "inherits": [ "standalone-conan" ],
+      "cacheVariables": {
+        "BUILD_TESTING" : "ON"
+      }
     },
     {
       "name": "R",
@@ -66,15 +46,6 @@
         "LVOX_STANDALONE": "OFF",
         "LVOX_R": "ON",
         "BUILD_TESTING": "OFF"
-      }
-    },
-    {
-      "name": "windows-standalone",
-      "inherits": [ "windows-vcpkg" ],
-      "cacheVariables": {
-        "LVOX_COMPUTREE_BINDINGS": "OFF",
-        "LVOX_STANDALONE": "ON",
-        "LVOX_R": "OFF"
       }
     }
   ]
