@@ -33,17 +33,9 @@ jobs:
         with:
           cache_packages: true
 
-      - uses: lukka/get-cmake@latest
-        with:
-          cmakeVersion: "~3.30.0"
-
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v3
-        if: runner.os == 'Windows'
-
       - name: Install Conan dependencies
         run: |
-          conan install . --build=missing  --output-folder=build  -s compiler.cppstd=20
+          conan install . --build=missing  --output-folder=build  -s compiler.cppstd=20 tools.cmake.cmaketoolchain:extra_variables="{'CMAKE_POLICY_VERSION_MINIMUM': '3.5'}"
           conan cache clean
 
       - name: Configure project
