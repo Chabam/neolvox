@@ -33,14 +33,14 @@ jobs:
         with:
           cache_packages: true
 
+      - uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "~3.30.0"
 
       - name: Install Conan dependencies
         run: |
-          conan install .  --build=missing  --output-folder=build  -s compiler.cppstd=20  --tool-requires=cmake/[>=3 <4]
+          conan install .  --build=missing  --output-folder=build  -s compiler.cppstd=20
           conan cache clean
-
-
-      - uses: lukka/get-cmake@latest
 
       - name: Configure project
         run: cmake --preset standalone-conan-dev
