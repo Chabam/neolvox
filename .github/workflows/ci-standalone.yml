@@ -36,14 +36,8 @@ jobs:
           cache_packages: true
 
       - name: Install Conan dependencies
-        shell: bash
         run: |
-          conan install . \
-            --build=missing \
-            --output-folder=build \
-            --tool-requires="cmake/4.4.3" \
-            -s compiler.cppstd=20 \
-            -c tools.cmake.cmaketoolchain:extra_variables="{'CMAKE_POLICY_VERSION_MINIMUM': '3.5'}"
+          conan install .  --build=missing  --output-folder=build  --tool-requires="cmake/4.4.3"  -s compiler.cppstd=20  -c tools.cmake.cmaketoolchain:extra_variables="{'CMAKE_POLICY_VERSION_MINIMUM': '3.5'}"
           conan cache clean
 
       - name: Configure project
