@@ -36,7 +36,11 @@ jobs:
 
       - name: Install Conan dependencies
         run: |
-          conan install . --build=missing --output-folder=build -s compiler.cppstd=20
+          conan install . \
+            --build=missing \
+            --output-folder=build \
+            -s compiler.cppstd=20 \
+            --tool-requires=cmake/[>=3 <4]
           conan cache clean
 
 

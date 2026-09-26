@@ -17,6 +17,3 @@ class NeolvoxRecipe(ConanFile):
         self.requires("hdf5/1.14.6")
         self.requires("gtest/1.18.0")
         self.requires("benchmark/1.9.5")
-
-    def build_requirements(self):
-        self.tool_requires("cmake/*: cmake/[>=3 <4]")
