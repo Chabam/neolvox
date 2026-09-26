@@ -37,13 +37,17 @@ jobs:
         with:
           cmakeVersion: "~3.30.0"
 
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v3
+        if: runner.os == 'Windows'
+
       - name: Install Conan dependencies
         run: |
-          conan install .  --build=missing  --output-folder=build  -s compiler.cppstd=20
+          conan install . --build=missing  --output-folder=build  -s compiler.cppstd=20
           conan cache clean
 
       - name: Configure project
-        run: cmake --preset standalone-conan-dev
+        run: cmake --preset standalone-conan-dev -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build build
