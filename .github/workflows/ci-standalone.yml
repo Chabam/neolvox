@@ -28,6 +28,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: lukka/get-cmake@latest
+
       - name: Install Conan
         uses: conan-io/setup-conan@v1
         with:
