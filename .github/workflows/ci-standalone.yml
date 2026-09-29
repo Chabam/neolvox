@@ -28,17 +28,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: lukka/get-cmake@latest
-
       - name: Install Conan
         uses: conan-io/setup-conan@v1
         with:
           cache_packages: true
 
       - name: Install Conan dependencies
+        shell: bash
         run: |
-          conan install .  --build=missing  --output-folder=build  --tool-requires="cmake/4.4.3"  -s compiler.cppstd=20  -c tools.cmake.cmaketoolchain:extra_variables="{'CMAKE_POLICY_VERSION_MINIMUM': '3.5'}"
+          conan install . \
+            --build=missing \
+            --output-folder=build \
+            -s compiler.cppstd=20 \
+            -c tools.cmake.cmaketoolchain:extra_variables="{'CMAKE_POLICY_VERSION_MINIMUM': '3.5'}"
+            --tool-requires=cmake/4.4.3
           conan cache clean
+
+      - name: Activate conan build env
+        if: runner.os == 'Windows'
+        run: ./build/conanbuild.bat
+
+      - name: Activate conan build env
+        if: runner.os == 'Linux'
+        run: source ./build/conanbuild.sh
 
       - name: Configure project
         run: cmake --preset standalone-conan-dev -DCMAKE_BUILD_TYPE=Release
