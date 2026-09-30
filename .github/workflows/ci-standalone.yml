@@ -40,7 +40,8 @@ jobs:
             --build=missing \
             --output-folder=build \
             -s compiler.cppstd=20 \
-            -s compiler.runtime=static \
+            -s build_type=Release \
+            ${{ runner.os == 'Windows' && '-s compiler.runtime=dynamic' || '' }} \
             -c tools.cmake.cmaketoolchain:extra_variables="{'CMAKE_POLICY_VERSION_MINIMUM': '3.5'}" \
             -c tools.cmake.cmaketoolchain:generator=Ninja
           conan cache clean
@@ -54,7 +55,7 @@ jobs:
         run: source ./build/conanbuild.sh
 
       - name: Configure project
-        run: cmake --preset standalone-conan-dev -DCMAKE_BUILD_TYPE=Release
+        run: cmake --preset standalone-conan-dev -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build build
