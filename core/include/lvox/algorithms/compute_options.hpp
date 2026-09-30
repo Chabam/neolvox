@@ -1,5 +1,5 @@
-#ifndef LVOX_ALGORITHMS_HPP
-#define LVOX_ALGORITHMS_HPP
+#ifndef LVOX_COMPUTE_OPTIONS_HPP
+#define LVOX_COMPUTE_OPTIONS_HPP
 
 #include <optional>
 
@@ -18,10 +18,11 @@ struct ComputeOptions
     unsigned int                        m_required_counts;
     double                              m_smallest_element_area;
     bool                                m_use_classification;
+    bool                                m_compute_occlusion;
     std::optional<lvox::Bounds<double>> m_bounds;
     std::ostream&                       m_log_stream;
 };
 
 } // namespace lvox::algorithms
 
-#endif // LVOX_ALGORITHMS_HPP
+#endif // LVOX_COMPUTE_OPTIONS_HPP

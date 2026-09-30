@@ -59,6 +59,9 @@ Computing options:
                                                               - BCMLE: Bias Corrected Maximum
                                                                 Likelyhood Estimator
 
+   -co --compute-occlusion              none                Whether or not to compute the occluded areas in the grid
+                                                            [disabled by default]
+
    -r, --required-counts                number              The number of ray required for PAD computation, if
                                                             the amount of rays that entered the voxel is lower
                                                             than this number it will be excluded from the estimation
@@ -149,21 +152,22 @@ using Scan          = lvox::Scan<Point, PointCloud>;
 using ScannerOrigin = lvox::ScannerOrigin<Point, PointCloud>;
 using Trajectory    = lvox::Trajectory<Point, PointCloud>;
 
-bool                                g_outputs_profile       = false;
-double                              g_voxel_size            = 0.5;
-unsigned int                        g_job_count             = std::thread::hardware_concurrency();
-lvox_pe::PADEstimator               g_pad_estimator         = lvox_pe::BeerLambert{};
-std::vector<Point>                  g_scan_origins          = {};
-std::vector<PointCloud>             g_point_clouds          = {};
-std::vector<lvox::Bounds<double>>   g_point_cloud_bounds    = {};
-std::mutex                          g_print_guard           = {};
-std::vector<Trajectory>             g_scan_trajectories     = {};
-fs::path                            g_grid_file             = "out.h5";
-bool                                g_include_all_info      = false;
-bool                                g_use_sparse_grids      = false;
-unsigned int                        g_required_counts       = 5;
-std::optional<lvox::Bounds<double>> g_bounds                = {};
-double                              g_smallest_element_area = 0.;
+bool                                g_outputs_profile             = false;
+double                              g_voxel_size                  = 0.5;
+unsigned int                        g_job_count                   = std::thread::hardware_concurrency();
+lvox_pe::PADEstimator               g_pad_estimator               = lvox_pe::BeerLambert{};
+std::vector<Point>                  g_scan_origins                = {};
+std::vector<PointCloud>             g_point_clouds                = {};
+std::vector<lvox::Bounds<double>>   g_point_cloud_bounds          = {};
+std::mutex                          g_print_guard                 = {};
+std::vector<Trajectory>             g_scan_trajectories           = {};
+fs::path                            g_grid_file                   = "out.h5";
+bool                                g_include_all_info            = false;
+bool                                g_use_sparse_grids            = false;
+bool                                g_compute_occlusion           = false;
+unsigned int                        g_required_counts             = 5;
+std::optional<lvox::Bounds<double>> g_bounds                      = {};
+double                              g_smallest_element_area       = 0.;
 std::set<int>                       g_ignore_bounding_box_classes = {};
 std::set<int>                       g_ignore_hit_classes          = {};
 fs::path                            g_file;
@@ -506,7 +510,6 @@ int main(int argc, char* argv[])
     std::vector<fs::path> point_clouds_traj_to_read;
     while (arg_it != args.end())
     {
-        // TODO: handle this better? Or just make it PDAL plugin
         if (*arg_it == "-t" || *arg_it == "--trajectory")
         {
             point_clouds_traj_to_read.emplace_back(*++arg_it);
@@ -573,6 +576,10 @@ int main(int argc, char* argv[])
         else if (*arg_it == "-j" || *arg_it == "--jobs")
         {
             g_job_count = std::stoi(*++arg_it);
+        }
+        else if (*arg_it == "-co" || *arg_it == "--compute-occlusion")
+        {
+            g_compute_occlusion = true;
         }
         else if (*arg_it == "-h" || *arg_it == "--help")
         {
@@ -762,10 +769,11 @@ Ignore bounding box: {})",
         .m_use_sparse_grid       = g_use_sparse_grids,
         .m_required_counts       = g_required_counts,
         .m_smallest_element_area = g_smallest_element_area,
-        .m_use_classification =
-            !(g_ignore_bounding_box_classes.empty() && g_ignore_hit_classes.empty()),
-        .m_bounds     = g_bounds,
-        .m_log_stream = std::cout
+        .m_compute_occlusion     = g_compute_occlusion,
+        .m_use_classification    = !(g_ignore_bounding_box_classes.empty() &&
+                                         g_ignore_hit_classes.empty()),
+        .m_bounds                = g_bounds,
+        .m_log_stream            = std::cout
     };
 
     lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
