@@ -40,6 +40,7 @@ jobs:
             --build=missing \
             --output-folder=build \
             -s compiler.cppstd=20 \
+            -s compiler.runtime=static \
             -c tools.cmake.cmaketoolchain:extra_variables="{'CMAKE_POLICY_VERSION_MINIMUM': '3.5'}" \
             -c tools.cmake.cmaketoolchain:generator=Ninja
           conan cache clean
