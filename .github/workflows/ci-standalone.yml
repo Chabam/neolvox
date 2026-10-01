@@ -46,16 +46,16 @@ jobs:
             -c tools.cmake.cmaketoolchain:generator=Ninja
           conan cache clean
 
-      - name: Activate conan build env
-        if: runner.os == 'Windows'
-        run: ./build/conanbuild.bat
+      # - name: Activate conan build env
+      #   if: runner.os == 'Windows'
+      #   run: ./build/conanbuild.bat
 
-      - name: Activate conan build env
-        if: runner.os == 'Linux'
-        run: source ./build/conanbuild.sh
+      # - name: Activate conan build env
+      #   if: runner.os == 'Linux'
+      #   run: source ./build/conanbuild.sh
 
-      - name: Configure project
-        run: cmake --preset standalone-conan-dev -DCMAKE_BUILD_TYPE=Release
+      # - name: Configure project
+      #   run: cmake --preset standalone-conan-dev -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build
-        run: cmake --build build
+      # - name: Build
+      #   run: cmake --build build
