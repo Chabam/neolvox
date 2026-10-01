@@ -19,7 +19,7 @@ template <typename PADEstimationFunc>
 void estimate_pad_impl(COOGrid& grid, unsigned int required_counts, PADEstimationFunc&& func)
 {
     const auto is_enough_hits = [required_counts](COOGrid::VoxelData voxel_view) {
-            return *voxel_view.count >= required_counts;
+            return *voxel_view.counts >= required_counts;
     };
 
     auto filtered_grid = grid | std::views::filter(is_enough_hits);
@@ -47,8 +47,8 @@ void PADEstimation::operator()(algorithms::pe::BeerLambert)
     estimate_pad_impl(m_grid, m_required_counts, [this](COOGrid::VoxelData voxel_view) -> void {
         const auto G = 0.5;
 
-        const double       hits            = *voxel_view.hit;
-        const unsigned int ray_count       = *voxel_view.count;
+        const double       hits            = *voxel_view.hits;
+        const unsigned int ray_count       = *voxel_view.counts;
         const double       RDI             = hits / static_cast<double>(ray_count);
         const double       ray_length      = *voxel_view.lengths;
         const double       mean_ray_length = ray_length / ray_count;
@@ -62,8 +62,8 @@ void PADEstimation::operator()(algorithms::pe::ContactFrequency)
     estimate_pad_impl(m_grid, m_required_counts, [this](COOGrid::VoxelData voxel_view) -> void {
         const auto G = 0.5;
 
-        const double       hits       = *voxel_view.hit;
-        const unsigned int ray_count  = *voxel_view.count;
+        const double       hits       = *voxel_view.hits;
+        const unsigned int ray_count  = *voxel_view.counts;
         const double       RDI        = hits / static_cast<double>(ray_count);
         const double       ray_length = *voxel_view.lengths;
 
@@ -77,8 +77,8 @@ void PADEstimation::operator()(algorithms::pe::UnequalPathLengthBeerLambert)
         Logger     logger{"ComputePAD UPLBL"};
         const auto G = 0.5;
 
-        const double       hits               = *voxel_view.hit;
-        const unsigned int ray_count          = *voxel_view.count;
+        const double       hits               = *voxel_view.hits;
+        const unsigned int ray_count          = *voxel_view.counts;
         const double       RDI                = hits / static_cast<double>(ray_count);
         const double       ray_length         = *voxel_view.lengths;
         const double       variance           = *voxel_view.lengths_variance;
@@ -133,8 +133,8 @@ void PADEstimation::operator()(algorithms::pe::BiasCorrectedMaximumLikelyhoodEst
     estimate_pad_impl(m_grid, m_required_counts, [this](COOGrid::VoxelData voxel_view) -> void {
         const auto G = 0.5;
 
-        const double       hits        = *voxel_view.hit;
-        const unsigned int ray_count   = *voxel_view.count;
+        const double       hits        = *voxel_view.hits;
+        const unsigned int ray_count   = *voxel_view.counts;
         const double       hits_length = *voxel_view.hits_length;
         const double       lengths     = *voxel_view.lengths;
 

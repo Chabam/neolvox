@@ -12,9 +12,12 @@
 namespace lvox
 {
 
-ChunkedGrid::ChunkedGrid(const Bounds<double>& bounds, double cell_size, bool compute_variance)
+ChunkedGrid::ChunkedGrid(
+    const Bounds<double>& bounds, double cell_size, bool compute_variance, bool compute_occlusion
+)
     : m_bounded_grid{bounds, cell_size, VoxelChunk::s_edge_size}
     , m_compute_variance{compute_variance}
+    , m_compute_occlusion{compute_occlusion}
     , m_chunks_x{static_cast<unsigned int>(
           std::ceil(static_cast<float>(m_bounded_grid.m_dim_x) / VoxelChunk::s_edge_size)
       )}
@@ -41,11 +44,21 @@ ChunkedGrid::ChunkedGrid(ChunkedGrid&& other)
 {
 }
 
-ChunkedGrid::VoxelChunk::VoxelChunk(bool compute_variance)
+ChunkedGrid::VoxelChunk::VoxelChunk(bool compute_variance, bool compute_occlusion)
     : m_hits{s_cell_count, std::allocator<unsigned int>{}}
     , m_counts{s_cell_count, std::allocator<unsigned int>{}}
+    , m_potential_counts{std::invoke([this, compute_occlusion]() -> std::vector<unsigned int> {
+        if (compute_occlusion)
+            return std::vector<unsigned int>{s_cell_count, std::allocator<unsigned int>{}};
+        return {};
+    })}
     , m_lengths{s_cell_count, std::allocator<double>{}}
     , m_hits_lengths{s_cell_count, std::allocator<double>{}}
+    , m_potential_lengths{std::invoke([this, compute_occlusion]() -> std::vector<double> {
+        if (compute_occlusion)
+            return std::vector<double>{s_cell_count, std::allocator<double>{}};
+        return {};
+    })}
     , m_lengths_variance{std::invoke([this, compute_variance]() -> std::vector<double> {
         if (compute_variance)
             return std::vector<double>{s_cell_count, std::allocator<double>{}};
@@ -63,7 +76,7 @@ const ChunkedGrid::chunk_ptr& ChunkedGrid::get_or_create_chunk(size_t chunk_idx)
     if (existing_chunk)
         return m_chunks_data[chunk_idx];
 
-    auto new_chunk = std::make_unique<VoxelChunk>(m_compute_variance);
+    auto new_chunk = std::make_unique<VoxelChunk>(m_compute_variance, m_compute_occlusion);
 
     if (chunk_ref.compare_exchange_strong(
             existing_chunk, new_chunk.get(), std::memory_order_release, std::memory_order_acquire

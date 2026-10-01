@@ -67,9 +67,9 @@ COOGrid compute_pad(
 
     Grid grid = std::invoke([&]() -> Grid {
         if (options.m_use_sparse_grid)
-            return ChunkedGrid{bounds, options.m_voxel_size, uses_variance};
+            return ChunkedGrid{bounds, options.m_voxel_size, uses_variance, options.m_compute_occlusion};
         else
-            return DenseGrid{bounds, options.m_voxel_size, uses_variance};
+            return DenseGrid{bounds, options.m_voxel_size, uses_variance, options.m_compute_occlusion};
     });
 
     auto scan_num = 1;

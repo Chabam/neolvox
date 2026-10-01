@@ -769,9 +769,9 @@ Ignore bounding box: {})",
         .m_use_sparse_grid       = g_use_sparse_grids,
         .m_required_counts       = g_required_counts,
         .m_smallest_element_area = g_smallest_element_area,
-        .m_compute_occlusion     = g_compute_occlusion,
         .m_use_classification    = !(g_ignore_bounding_box_classes.empty() &&
                                          g_ignore_hit_classes.empty()),
+        .m_compute_occlusion     = g_compute_occlusion,
         .m_bounds                = g_bounds,
         .m_log_stream            = std::cout
     };

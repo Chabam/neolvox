@@ -16,11 +16,12 @@ class ChunkedGrid
     friend class COOGrid;
 
   public:
-    ChunkedGrid(const Bounds<double>& bounds, double cell_size, bool compute_variance);
+    ChunkedGrid(const Bounds<double>& bounds, double cell_size, bool compute_variance, bool compute_occlusion);
     ChunkedGrid(ChunkedGrid&& other);
 
     void register_hit(const Index3D& idx);
     void add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit);
+    void add_potential_length_and_count(const Index3D& voxel_idx, double length, bool is_hit);
     void add_length_count_and_variance(const Index3D& idx, double length, bool is_hit);
 
     const BoundedGrid& bounded_grid() const { return m_bounded_grid; }
@@ -33,14 +34,16 @@ class ChunkedGrid
         static constexpr auto s_edge_mask = s_edge_size - 1; // Inverting the size
         static constexpr auto s_cell_count = s_edge_size * s_edge_size * s_edge_size;
 
-        VoxelChunk(bool compute_variance);
+        VoxelChunk(bool compute_variance, bool compute_occlusion);
 
         size_t index3d_to_flat_idx(const Bounds<int>& index_bounds, const Index3D& voxel_idx);
 
         std::vector<unsigned int> m_hits;
         std::vector<unsigned int> m_counts;
+        std::vector<unsigned int> m_potential_counts;
         std::vector<double>       m_lengths;
         std::vector<double>       m_hits_lengths;
+        std::vector<double>       m_potential_lengths;
         std::vector<double>       m_lengths_variance;
         std::mutex                m_write_access;
     };
@@ -50,6 +53,7 @@ class ChunkedGrid
 
     BoundedGrid              m_bounded_grid;
     bool                     m_compute_variance;
+    bool                     m_compute_occlusion;
     unsigned int             m_chunks_x;
     unsigned int             m_chunks_y;
     unsigned int             m_chunks_z;

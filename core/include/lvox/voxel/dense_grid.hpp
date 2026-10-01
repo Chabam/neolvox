@@ -14,11 +14,12 @@ class DenseGrid
     friend class COOGrid;
 
   public:
-    DenseGrid(const Bounds<double>& bounds, double cell_size, bool compute_variance);
+    DenseGrid(const Bounds<double>& bounds, double cell_size, bool compute_variance, bool compute_occlusion);
     DenseGrid(DenseGrid&& other);
 
     void register_hit(const Index3D& voxel_idx);
     void add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit);
+    void add_potential_length_and_count(const Index3D& voxel_idx, double length, bool is_hit);
     void add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit);
 
     const BoundedGrid& bounded_grid() const { return m_bounded_grid; }
@@ -37,8 +38,10 @@ class DenseGrid
     BoundedGrid                   m_bounded_grid;
     std::vector<std::atomic_uint> m_hits;
     std::vector<std::atomic_uint> m_counts;
+    std::vector<std::atomic_uint> m_potential_counts;
     std::vector<atomic_f64>       m_lengths;
     std::vector<atomic_f64>       m_hits_lengths;
+    std::vector<atomic_f64>       m_potential_lengths;
     std::vector<atomic_wa_ptr>    m_lengths_variance;
     std::vector<atomic_f64>       m_pad;
 

@@ -25,11 +25,13 @@ class COOGrid
         std::vector<int>::iterator          x;
         std::vector<int>::iterator          y;
         std::vector<int>::iterator          z;
-        std::vector<unsigned int>::iterator count;
-        std::vector<unsigned int>::iterator hit;
+        std::vector<unsigned int>::iterator counts;
+        std::vector<unsigned int>::iterator potential_counts;
+        std::vector<unsigned int>::iterator hits;
         std::vector<double>::iterator       pad;
         std::vector<double>::iterator       lengths;
         std::vector<double>::iterator       hits_length;
+        std::vector<double>::iterator       potential_lengths;
         std::vector<double>::iterator       lengths_variance;
     };
 
@@ -38,11 +40,13 @@ class COOGrid
         std::vector<int>::const_iterator          x;
         std::vector<int>::const_iterator          y;
         std::vector<int>::const_iterator          z;
-        std::vector<unsigned int>::const_iterator count;
-        std::vector<unsigned int>::const_iterator hit;
+        std::vector<unsigned int>::const_iterator counts;
+        std::vector<unsigned int>::const_iterator potential_counts;
+        std::vector<unsigned int>::const_iterator hits;
         std::vector<double>::const_iterator       pad;
         std::vector<double>::const_iterator       lengths;
         std::vector<double>::const_iterator       hits_length;
+        std::vector<double>::const_iterator       potential_lengths;
         std::vector<double>::const_iterator       lengths_variance;
     };
 
@@ -174,10 +178,12 @@ class COOGrid
                 m_grid->m_ys.begin() + m_index,
                 m_grid->m_zs.begin() + m_index,
                 m_grid->m_counts.begin() + m_index,
+                m_grid->m_potential_counts.begin() + m_index,
                 m_grid->m_hits.begin() + m_index,
                 m_grid->m_pads.begin() + m_index,
                 m_grid->m_lengths.begin() + m_index,
                 m_grid->m_hits_lengths.begin() + m_index,
+                m_grid->m_potential_lengths.begin() + m_index,
                 {}
             };
 
@@ -205,10 +211,12 @@ class COOGrid
     const std::vector<int>&          ys() const { return m_ys; }
     const std::vector<int>&          zs() const { return m_zs; }
     const std::vector<unsigned int>& counts() const { return m_counts; }
+    const std::vector<unsigned int>& potential_counts() const { return m_potential_counts; }
     const std::vector<unsigned int>& hits() const { return m_hits; }
     const std::vector<double>&       pads() const { return m_pads; }
     const std::vector<double>&       lengths() const { return m_lengths; }
     const std::vector<double>&       hits_lengths() const { return m_hits_lengths; }
+    const std::vector<double>&       potential_lengths() const { return m_potential_lengths; }
     const std::vector<double>&       lengths_variance() const { return m_lengths_variance; }
     const lvox::BoundedGrid&         bounds() const { return m_bounded_grid; }
 
@@ -219,10 +227,12 @@ class COOGrid
     std::vector<int>          m_ys;
     std::vector<int>          m_zs;
     std::vector<unsigned int> m_counts;
+    std::vector<unsigned int> m_potential_counts;
     std::vector<unsigned int> m_hits;
     std::vector<double>       m_pads;
     std::vector<double>       m_lengths;
     std::vector<double>       m_hits_lengths;
+    std::vector<double>       m_potential_lengths;
     std::vector<double>       m_lengths_variance;
     lvox::BoundedGrid         m_bounded_grid;
 };

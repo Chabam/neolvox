@@ -9,11 +9,29 @@
 namespace lvox
 {
 
-DenseGrid::DenseGrid(const Bounds<double>& bounds, double cell_size, bool compute_variance)
+DenseGrid::DenseGrid(
+    const Bounds<double>& bounds, double cell_size, bool compute_variance, bool compute_occlusion
+)
     : m_bounded_grid{bounds, cell_size}
     , m_hits{m_bounded_grid.m_cell_count, std::allocator<std::atomic_uint>{}}
     , m_counts{m_bounded_grid.m_cell_count, std::allocator<std::atomic_uint>{}}
+    , m_potential_counts{std::invoke([&]() -> std::vector<std::atomic_uint> {
+        if (compute_occlusion)
+            return std::vector<std::atomic_uint>{
+                m_bounded_grid.m_cell_count, std::allocator<std::atomic_uint>{}
+            };
+        else
+            return {};
+    })}
     , m_lengths{m_bounded_grid.m_cell_count, std::allocator<atomic_f64>{}}
+    , m_potential_lengths{std::invoke([&]() -> std::vector<atomic_f64> {
+        if (compute_occlusion)
+            return std::vector<atomic_f64>{
+                m_bounded_grid.m_cell_count, std::allocator<atomic_f64>{}
+            };
+        else
+            return {};
+    })}
     , m_hits_lengths{m_bounded_grid.m_cell_count, std::allocator<atomic_f64>{}}
     , m_lengths_variance{std::invoke([&]() -> std::vector<atomic_wa_ptr> {
         if (compute_variance)
@@ -31,8 +49,10 @@ DenseGrid::DenseGrid(DenseGrid&& other)
     : m_bounded_grid{std::move(other.m_bounded_grid)}
     , m_hits{std::move(other.m_hits)}
     , m_counts{std::move(other.m_counts)}
+    , m_potential_counts{std::move(other.m_potential_counts)}
     , m_lengths{std::move(other.m_lengths)}
     , m_hits_lengths{std::move(other.m_hits_lengths)}
+    , m_potential_lengths{std::move(other.m_potential_lengths)}
     , m_lengths_variance{std::move(other.m_lengths_variance)}
     , m_pad{std::move(other.m_pad)}
 
@@ -68,6 +88,15 @@ void DenseGrid::add_length_and_count(const Index3D& voxel_idx, double length, bo
 
     m_counts[idx].fetch_add(1, std::memory_order_relaxed);
 }
+
+void DenseGrid::add_potential_length_and_count(const Index3D& voxel_idx, double length, bool is_hit)
+{
+    auto idx = index3d_to_flat_idx(voxel_idx);
+
+    m_potential_lengths[idx].fetch_add(length, std::memory_order_relaxed);
+    m_potential_counts[idx].fetch_add(1, std::memory_order_relaxed);
+}
+
 
 void DenseGrid::add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit)
 {
