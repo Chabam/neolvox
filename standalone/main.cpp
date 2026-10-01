@@ -152,22 +152,22 @@ using Scan          = lvox::Scan<Point, PointCloud>;
 using ScannerOrigin = lvox::ScannerOrigin<Point, PointCloud>;
 using Trajectory    = lvox::Trajectory<Point, PointCloud>;
 
-bool                                g_outputs_profile             = false;
-double                              g_voxel_size                  = 0.5;
-unsigned int                        g_job_count                   = std::thread::hardware_concurrency();
-lvox_pe::PADEstimator               g_pad_estimator               = lvox_pe::BeerLambert{};
-std::vector<Point>                  g_scan_origins                = {};
-std::vector<PointCloud>             g_point_clouds                = {};
-std::vector<lvox::Bounds<double>>   g_point_cloud_bounds          = {};
-std::mutex                          g_print_guard                 = {};
-std::vector<Trajectory>             g_scan_trajectories           = {};
-fs::path                            g_grid_file                   = "out.h5";
-bool                                g_include_all_info            = false;
-bool                                g_use_sparse_grids            = false;
-bool                                g_compute_occlusion           = false;
-unsigned int                        g_required_counts             = 5;
-std::optional<lvox::Bounds<double>> g_bounds                      = {};
-double                              g_smallest_element_area       = 0.;
+bool                                g_outputs_profile       = false;
+double                              g_voxel_size            = 0.5;
+unsigned int                        g_job_count             = std::thread::hardware_concurrency();
+lvox_pe::PADEstimator               g_pad_estimator         = lvox_pe::BeerLambert{};
+std::vector<Point>                  g_scan_origins          = {};
+std::vector<PointCloud>             g_point_clouds          = {};
+std::vector<lvox::Bounds<double>>   g_point_cloud_bounds    = {};
+std::mutex                          g_print_guard           = {};
+std::vector<Trajectory>             g_scan_trajectories     = {};
+fs::path                            g_grid_file             = "out.h5";
+bool                                g_include_all_info      = false;
+bool                                g_use_sparse_grids      = false;
+bool                                g_compute_occlusion     = false;
+unsigned int                        g_required_counts       = 5;
+std::optional<lvox::Bounds<double>> g_bounds                = {};
+double                              g_smallest_element_area = 0.;
 std::set<int>                       g_ignore_bounding_box_classes = {};
 std::set<int>                       g_ignore_hit_classes          = {};
 fs::path                            g_file;
@@ -283,17 +283,19 @@ void export_to_h5(
         std::filesystem::remove(filename);
     }
 
-    file                                       = H5::H5File{filename.string(), H5F_ACC_TRUNC};
-    std::vector<int>          xs               = grid.xs();
-    std::vector<int>          ys               = grid.ys();
-    std::vector<int>          zs               = grid.zs();
-    std::vector<unsigned int> counts           = grid.counts();
-    std::vector<unsigned int> hits             = grid.hits();
-    std::vector<double>       pads             = grid.pads();
-    std::vector<double>       lengths          = grid.lengths();
-    std::vector<double>       hits_lengths     = grid.hits_lengths();
-    std::vector<double>       lengths_variance = grid.lengths_variance();
-    lvox::BoundedGrid         bounded_grid     = grid.bounds();
+    file                                        = H5::H5File{filename.string(), H5F_ACC_TRUNC};
+    std::vector<int>          xs                = grid.xs();
+    std::vector<int>          ys                = grid.ys();
+    std::vector<int>          zs                = grid.zs();
+    std::vector<unsigned int> counts            = grid.counts();
+    std::vector<unsigned int> potential_counts  = grid.potential_counts();
+    std::vector<unsigned int> hits              = grid.hits();
+    std::vector<double>       pads              = grid.pads();
+    std::vector<double>       lengths           = grid.lengths();
+    std::vector<double>       hits_lengths      = grid.hits_lengths();
+    std::vector<double>       potential_lengths = grid.potential_lengths();
+    std::vector<double>       lengths_variance  = grid.lengths_variance();
+    lvox::BoundedGrid         bounded_grid      = grid.bounds();
 
     const hsize_t voxels_with_data = std::ranges::distance(pads);
 
@@ -382,6 +384,21 @@ void export_to_h5(
                 get_or_create_dataset("lengths variance", h5_lengths_var_t, data_space);
             length_variances_data.write(lengths_variance.data(), h5_lengths_var_t);
         }
+    }
+
+    // If there's occlusion that was computed, just add it to file
+    if (!potential_counts.empty())
+    {
+        H5::PredType h5_potential_counts_t = H5::PredType::NATIVE_UINT;
+        H5::DataSet  potential_counts_data = get_or_create_dataset("potential counts", h5_potential_counts_t, data_space);
+        potential_counts_data.write(potential_counts.data(), h5_potential_counts_t);
+    }
+
+    if (!potential_lengths.empty())
+    {
+        H5::PredType h5_potential_lengths_t = H5::PredType::NATIVE_DOUBLE;
+        H5::DataSet  potential_lengths_data = get_or_create_dataset("potential lengths", h5_potential_lengths_t, data_space);
+        potential_lengths_data.write(potential_lengths.data(), h5_potential_lengths_t);
     }
 
     // Minimum coordinate attribute
@@ -713,8 +730,9 @@ int main(int argc, char* argv[])
         {
             const auto& pc   = g_point_clouds[i];
             const auto  hits = std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_hit));
-            const auto  is_not_in_bb =
-                std::count_if(pc.begin(), pc.end(), std::not_fn(std::mem_fn(&Point::is_in_bounding_box)));
+            const auto  is_not_in_bb = std::count_if(
+                pc.begin(), pc.end(), std::not_fn(std::mem_fn(&Point::is_in_bounding_box))
+            );
 
             logger.info(
                 R"(
@@ -736,10 +754,11 @@ Ignore bounding box: {})",
     }
     else
     {
-        const auto& pc   = g_point_clouds[0];
-        const auto  hits = std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_hit));
-        const auto  is_not_in_bb =
-            std::count_if(pc.begin(), pc.end(), std::not_fn(std::mem_fn(&Point::is_in_bounding_box)));
+        const auto& pc           = g_point_clouds[0];
+        const auto  hits         = std::count_if(pc.begin(), pc.end(), std::mem_fn(&Point::is_hit));
+        const auto  is_not_in_bb = std::count_if(
+            pc.begin(), pc.end(), std::not_fn(std::mem_fn(&Point::is_in_bounding_box))
+        );
 
         logger.info(
             R"(
@@ -769,11 +788,11 @@ Ignore bounding box: {})",
         .m_use_sparse_grid       = g_use_sparse_grids,
         .m_required_counts       = g_required_counts,
         .m_smallest_element_area = g_smallest_element_area,
-        .m_use_classification    = !(g_ignore_bounding_box_classes.empty() &&
-                                         g_ignore_hit_classes.empty()),
-        .m_compute_occlusion     = g_compute_occlusion,
-        .m_bounds                = g_bounds,
-        .m_log_stream            = std::cout
+        .m_use_classification =
+            !(g_ignore_bounding_box_classes.empty() && g_ignore_hit_classes.empty()),
+        .m_compute_occlusion = g_compute_occlusion,
+        .m_bounds            = g_bounds,
+        .m_log_stream        = std::cout
     };
 
     lvox::COOGrid result = lvox::algorithms::compute_pad(scans, compute_options);
