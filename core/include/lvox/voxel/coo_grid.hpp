@@ -222,6 +222,7 @@ class COOGrid
 
   private:
     bool                      m_uses_variance;
+    bool                      m_uses_occlusion;
     size_t                    m_size;
     std::vector<int>          m_xs;
     std::vector<int>          m_ys;

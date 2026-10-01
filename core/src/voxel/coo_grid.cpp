@@ -1,4 +1,4 @@
-c#include <algorithm>
+#include <algorithm>
 #include <atomic>
 #include <cassert>
 #include <cmath>
@@ -18,6 +18,7 @@ namespace lvox
 COOGrid::COOGrid(const ChunkedGrid& grid)
     : m_size{}
     , m_uses_variance{grid.m_compute_variance}
+    , m_uses_occlusion{grid.m_compute_occlusion}
     , m_xs{}
     , m_ys{}
     , m_zs{}
@@ -102,6 +103,16 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
             }),
             std::back_inserter(m_counts)
         );
+        if (!chunk->m_potential_counts.empty())
+        {
+            std::ranges::copy(
+                index_with_data |
+                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                        return chunk->m_potential_counts[index];
+                    }),
+                std::back_inserter(m_potential_counts)
+            );
+        }
 
         std::ranges::copy(
             index_with_data | std::views::transform([&chunk](const size_t& index) -> double {
@@ -116,6 +127,16 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
             }),
             std::back_inserter(m_hits_lengths)
         );
+
+        if (!chunk->m_potential_lengths.empty())
+        {
+            std::ranges::copy(
+                index_with_data | std::views::transform([&chunk](const size_t& index) -> double {
+                    return chunk->m_potential_lengths[index];
+                }),
+                std::back_inserter(m_potential_lengths)
+            );
+        }
 
         if (!chunk->m_lengths_variance.empty())
         {
@@ -138,21 +159,24 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
     m_pads.resize(m_size);
 
     assert(
-        m_xs.size() == m_size &&                                  //
-        m_ys.size() == m_size &&                                  //
-        m_zs.size() == m_size &&                                  //
-        m_counts.size() == m_size &&                              //
-        m_hits.size() == m_size &&                                //
-        m_pads.size() == m_size &&                                //
-        m_lengths.size() == m_size &&                             //
-        m_hits_lengths.size() == m_size &&                        //
-        (!m_uses_variance || m_lengths_variance.size() == m_size) //
+        m_xs.size() == m_size &&                                      //
+        m_ys.size() == m_size &&                                      //
+        m_zs.size() == m_size &&                                      //
+        m_counts.size() == m_size &&                                  //
+        (!m_uses_occlusion || m_potential_counts.size() == m_size) && //
+        m_hits.size() == m_size &&                                    //
+        m_pads.size() == m_size &&                                    //
+        m_lengths.size() == m_size &&                                 //
+        m_hits_lengths.size() == m_size &&                            //
+        (!m_uses_occlusion || m_potential_lengths.size() == m_size)   //
+        (!m_uses_variance || m_lengths_variance.size() == m_size)     //
     );
 }
 
 COOGrid::COOGrid(const DenseGrid& grid)
     : m_size{}
     , m_uses_variance{!grid.m_lengths_variance.empty()}
+    , m_uses_occlusion{!grid.m_potential_lengths.empty() || !grid.m_potential_counts.empty()}
     , m_xs{}
     , m_ys{}
     , m_zs{}
@@ -194,8 +218,15 @@ COOGrid::COOGrid(const DenseGrid& grid)
     m_pads.resize(m_size);
     m_lengths.resize(m_size);
     m_hits_lengths.resize(m_size);
+
     if (m_uses_variance)
         m_lengths_variance.resize(m_size);
+
+    if (m_uses_occlusion)
+    {
+        m_potential_counts.resize(m_size);
+        m_potential_lengths.resize(m_size);
+    }
 
     const auto& index_bounds = grid.bounded_grid().index_bounds();
     std::ranges::copy(
@@ -233,21 +264,38 @@ COOGrid::COOGrid(const DenseGrid& grid)
         m_counts.begin()
     );
 
+    if (m_uses_occlusion)
     {
         std::ranges::copy(
-            index_with_data | std::views::transform([&grid](const size_t& index) -> double {
-                return grid.m_lengths[index];
+            index_with_data | std::views::transform([&grid](const size_t& index) -> unsigned int {
+                return grid.m_potential_counts[index];
             }),
-            m_lengths.begin()
+            m_potential_counts.begin()
         );
     }
 
+
+    std::ranges::copy(
+        index_with_data | std::views::transform([&grid](const size_t& index) -> double {
+            return grid.m_lengths[index];
+        }),
+        m_lengths.begin()
+    );
+
+    std::ranges::copy(
+        index_with_data | std::views::transform([&grid](const size_t& index) -> double {
+            return grid.m_hits_lengths[index];
+        }),
+        m_hits_lengths.begin()
+    );
+
+    if (m_uses_occlusion)
     {
         std::ranges::copy(
             index_with_data | std::views::transform([&grid](const size_t& index) -> double {
-                return grid.m_hits_lengths[index];
+                return grid.m_potential_lengths[index];
             }),
-            m_hits_lengths.begin()
+            m_potential_lengths.begin()
         );
     }
 
@@ -266,16 +314,19 @@ COOGrid::COOGrid(const DenseGrid& grid)
             m_lengths_variance.begin()
         );
     }
+
     assert(
-        m_xs.size() == m_size &&                                  //
-        m_ys.size() == m_size &&                                  //
-        m_zs.size() == m_size &&                                  //
-        m_counts.size() == m_size &&                              //
-        m_hits.size() == m_size &&                                //
-        m_pads.size() == m_size &&                                //
-        m_lengths.size() == m_size &&                             //
-        m_hits_lengths.size() == m_size &&                        //
-        (!m_uses_variance || m_lengths_variance.size() == m_size) //
+        m_xs.size() == m_size &&                                      //
+        m_ys.size() == m_size &&                                      //
+        m_zs.size() == m_size &&                                      //
+        m_counts.size() == m_size &&                                  //
+        (!m_uses_occlusion || m_potential_counts.size() == m_size) && //
+        m_hits.size() == m_size &&                                    //
+        m_pads.size() == m_size &&                                    //
+        m_lengths.size() == m_size &&                                 //
+        m_hits_lengths.size() == m_size &&                            //
+        (!m_uses_occlusion || m_potential_lengths.size() == m_size)   //
+        (!m_uses_variance || m_lengths_variance.size() == m_size)     //
     );
 }
 
