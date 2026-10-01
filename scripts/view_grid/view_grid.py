@@ -20,14 +20,14 @@ zs = z - minIdx[2]
 
 coords = numpy.vstack([xs, ys, zs])
 
-dset_hits = sparse.COO(coords, group["hits"], shape=dims).todense()
-dset_counts = sparse.COO(coords, group["counts"], shape=dims).todense()
-dset_lengths = sparse.COO(coords, group["lengths"], shape=dims).todense()
-dset_pad = sparse.COO(coords, group["pad"], shape=dims).todense()
 viewer = napari.Viewer(ndisplay=3)
-viewer.add_image(dset_pad[:], name="pad")
-viewer.add_image(dset_hits[:], name="hits")
-viewer.add_image(dset_counts[:], name="counts")
-viewer.add_image(dset_lengths[:], name="lengths")
-viewer.camera.orientation2d = ('up', 'right')
+
+dsets = ["pad", "hits", "counts", "lengths", "potential lengths", "potential counts"]
+
+for dset_name in dsets:
+    if dset_name in group:
+        dset = sparse.COO(coords, group[dset_name], shape=dims).todense()
+        viewer.add_image(dset[:], name=dset_name)
+
+viewer.scene.camera.orientation2d = ('up', 'right')
 napari.run()
