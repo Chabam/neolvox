@@ -146,6 +146,18 @@ void ChunkedGrid::add_length_and_count(const Index3D& idx, double length, bool i
     chunk->m_counts[voxel_idx_in_chunk] += 1;
 }
 
+void ChunkedGrid::add_potential_length_and_count(const Index3D &idx, double length)
+{
+    auto        chunk_idx          = index3d_to_chunk_idx(idx);
+    const auto& chunk              = get_or_create_chunk(chunk_idx);
+    const auto  voxel_idx_in_chunk = chunk->index3d_to_flat_idx(m_bounded_grid.index_bounds(), idx);
+
+    std::lock_guard lock{chunk->m_write_access};
+    chunk->m_lengths[voxel_idx_in_chunk] += length;
+    chunk->m_counts[voxel_idx_in_chunk] += 1;
+}
+
+
 void ChunkedGrid::add_length_count_and_variance(const Index3D& idx, double length, bool is_hit)
 {
     auto        chunk_idx          = index3d_to_chunk_idx(idx);

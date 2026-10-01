@@ -89,7 +89,7 @@ void DenseGrid::add_length_and_count(const Index3D& voxel_idx, double length, bo
     m_counts[idx].fetch_add(1, std::memory_order_relaxed);
 }
 
-void DenseGrid::add_potential_length_and_count(const Index3D& voxel_idx, double length, bool is_hit)
+void DenseGrid::add_potential_length_and_count(const Index3D& voxel_idx, double length)
 {
     auto idx = index3d_to_flat_idx(voxel_idx);
 

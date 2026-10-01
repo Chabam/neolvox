@@ -159,17 +159,17 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
     m_pads.resize(m_size);
 
     assert(
-        m_xs.size() == m_size &&                                      //
-        m_ys.size() == m_size &&                                      //
-        m_zs.size() == m_size &&                                      //
-        m_counts.size() == m_size &&                                  //
-        (!m_uses_occlusion || m_potential_counts.size() == m_size) && //
-        m_hits.size() == m_size &&                                    //
-        m_pads.size() == m_size &&                                    //
-        m_lengths.size() == m_size &&                                 //
-        m_hits_lengths.size() == m_size &&                            //
-        (!m_uses_occlusion || m_potential_lengths.size() == m_size)   //
-        (!m_uses_variance || m_lengths_variance.size() == m_size)     //
+        m_xs.size() == m_size &&                                       //
+        m_ys.size() == m_size &&                                       //
+        m_zs.size() == m_size &&                                       //
+        m_counts.size() == m_size &&                                   //
+        (!m_uses_occlusion || m_potential_counts.size() == m_size) &&  //
+        m_hits.size() == m_size &&                                     //
+        m_pads.size() == m_size &&                                     //
+        m_lengths.size() == m_size &&                                  //
+        m_hits_lengths.size() == m_size &&                             //
+        (!m_uses_occlusion || m_potential_lengths.size() == m_size) && //
+        (!m_uses_variance || m_lengths_variance.size() == m_size)      //
     );
 }
 
@@ -274,7 +274,6 @@ COOGrid::COOGrid(const DenseGrid& grid)
         );
     }
 
-
     std::ranges::copy(
         index_with_data | std::views::transform([&grid](const size_t& index) -> double {
             return grid.m_lengths[index];
@@ -316,17 +315,17 @@ COOGrid::COOGrid(const DenseGrid& grid)
     }
 
     assert(
-        m_xs.size() == m_size &&                                      //
-        m_ys.size() == m_size &&                                      //
-        m_zs.size() == m_size &&                                      //
-        m_counts.size() == m_size &&                                  //
-        (!m_uses_occlusion || m_potential_counts.size() == m_size) && //
-        m_hits.size() == m_size &&                                    //
-        m_pads.size() == m_size &&                                    //
-        m_lengths.size() == m_size &&                                 //
-        m_hits_lengths.size() == m_size &&                            //
-        (!m_uses_occlusion || m_potential_lengths.size() == m_size)   //
-        (!m_uses_variance || m_lengths_variance.size() == m_size)     //
+        m_xs.size() == m_size &&                                       //
+        m_ys.size() == m_size &&                                       //
+        m_zs.size() == m_size &&                                       //
+        m_counts.size() == m_size &&                                   //
+        (!m_uses_occlusion || m_potential_counts.size() == m_size) &&  //
+        m_hits.size() == m_size &&                                     //
+        m_pads.size() == m_size &&                                     //
+        m_lengths.size() == m_size &&                                  //
+        m_hits_lengths.size() == m_size &&                             //
+        (!m_uses_occlusion || m_potential_lengths.size() == m_size) && //
+        (!m_uses_variance || m_lengths_variance.size() == m_size)      //
     );
 }
 

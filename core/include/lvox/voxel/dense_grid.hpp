@@ -19,7 +19,7 @@ class DenseGrid
 
     void register_hit(const Index3D& voxel_idx);
     void add_length_and_count(const Index3D& voxel_idx, double length, bool is_hit);
-    void add_potential_length_and_count(const Index3D& voxel_idx, double length, bool is_hit);
+    void add_potential_length_and_count(const Index3D& voxel_idx, double length);
     void add_length_count_and_variance(const Index3D& voxel_idx, double length, bool is_hit);
 
     const BoundedGrid& bounded_grid() const { return m_bounded_grid; }

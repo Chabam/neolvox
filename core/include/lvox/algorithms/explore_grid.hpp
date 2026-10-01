@@ -21,7 +21,7 @@ template <
     typename ScanT,
     Point              PointT,
     PointCloud<PointT> PointCloudT,
-    bool use_classifications,
+    bool               use_classifications,
     typename PadEstimator>
 void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& options, Logger logger)
 {
@@ -63,6 +63,7 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
     }
 
     const auto ray_trace = [&](const PointRange& points) -> void {
+        const bool compute_occlusion = options.m_compute_occlusion;
         for (const auto& timed_point : points)
         {
             const double gps_time = timed_point.gps_time();
@@ -71,7 +72,9 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
             const Vector scan_origin =
                 std::visit(ComputeBeamOrigin{gps_time}, scan.m_scanner_origin);
 
-            bool compute_hit = true;
+            bool start_computing_occlusion = false;
+
+            bool compute_hit      = true;
             bool limit_ray_length = true;
 
             if constexpr (use_classifications)
@@ -87,16 +90,22 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
                 }
             }
 
+            if (compute_occlusion)
+                limit_ray_length = false;
+
             const Vector beam_dir{pt - scan_origin};
-            double max_distance = std::numeric_limits<double>::infinity();
+            double       max_distance = std::numeric_limits<double>::infinity();
 
             if (limit_ray_length)
                 max_distance = beam_dir.norm();
 
             grid_traversal(
                 Beam{scan_origin, beam_dir},
-                [&grid, unit_attenuation_coeff, compute_hit](const VoxelHitInfo& hit) {
-
+                [&grid,
+                 unit_attenuation_coeff,
+                 compute_hit,
+                 compute_occlusion,
+                 &start_computing_occlusion](const VoxelHitInfo& hit) {
                     if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
                     {
                         std::visit(
@@ -111,11 +120,15 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
 
                                 if constexpr (pe::is_uplbl<PadEstimator>::value)
                                     grid.add_length_count_and_variance(
-                                        hit.m_index, effective_length, compute_hit && hit.m_is_destination
+                                        hit.m_index,
+                                        effective_length,
+                                        compute_hit && hit.m_is_destination
                                     );
                                 else
                                     grid.add_length_and_count(
-                                        hit.m_index, effective_length, compute_hit && hit.m_is_destination
+                                        hit.m_index,
+                                        effective_length,
+                                        compute_hit && hit.m_is_destination
                                     );
                             },
                             grid
@@ -144,6 +157,17 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
                                 grid
                             );
                         }
+                    }
+
+                    if (compute_occlusion && (start_computing_occlusion || hit.m_is_destination))
+                    {
+                        start_computing_occlusion = true;
+                        std::visit(
+                            [&hit](auto& grid) {
+                                grid.add_potential_length_and_count(hit.m_index, hit.m_distance_in_voxel);
+                            },
+                            grid
+                        );
                     }
                 },
                 max_distance
