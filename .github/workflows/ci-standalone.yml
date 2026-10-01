@@ -55,7 +55,7 @@ jobs:
         run: source ./build/conanbuild.sh
 
       - name: Configure project
-        run: cmake --preset standalone-conan-dev -G Ninja -DCMAKE_BUILD_TYPE=Release
+        run: cmake --preset standalone-conan-dev -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build build
