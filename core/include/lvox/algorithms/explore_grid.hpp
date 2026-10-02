@@ -72,44 +72,45 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
             const Vector scan_origin =
                 std::visit(ComputeBeamOrigin{gps_time}, scan.m_scanner_origin);
 
-            bool start_computing_occlusion = false;
-
-            bool compute_hit      = true;
-            bool limit_ray_length = true;
+            bool compute_hit = true;
 
             if constexpr (use_classifications)
             {
-                if (!timed_point.is_hit() || !timed_point.is_in_bounding_box())
-                {
-                    compute_hit = false;
-                }
-
-                if (!timed_point.is_in_bounding_box())
-                {
-                    limit_ray_length = false;
-                }
+                compute_hit = !timed_point.is_hit() || !timed_point.is_in_bounding_box();
             }
 
-            if (compute_occlusion)
-                limit_ray_length = false;
+            // When computing the hit, we know that the point is in
+            // the bounding box. Given that knowledge, we can take a
+            // shortcut and start computing from the point to the
+            // scanner. That way, the first voxel that intersects with
+            // the ray is the one containing the hit.
+            const Vector beam_dir = std::invoke([&scan_origin, &pt, compute_hit]() {
+                if (compute_hit)
+                    return Vector{scan_origin - pt};
+                else
+                    return Vector{pt - scan_origin};
+            });
 
-            const Vector beam_dir{pt - scan_origin};
-            double       max_distance = std::numeric_limits<double>::infinity();
+            const Vector point_origin = std::invoke([&scan_origin, &pt, compute_hit]() {
+                if (compute_hit)
+                    return pt;
+                else
+                    return scan_origin;
+            });
 
-            if (limit_ray_length)
-                max_distance = beam_dir.norm();
+            bool is_hit_computed = false;
 
             grid_traversal(
-                Beam{scan_origin, beam_dir},
-                [&grid,
-                 unit_attenuation_coeff,
-                 compute_hit,
-                 compute_occlusion,
-                 &start_computing_occlusion](const VoxelHitInfo& hit) {
+                Beam{point_origin, beam_dir},
+                [&grid, unit_attenuation_coeff, compute_hit, &is_hit_computed, compute_occlusion](
+                    const VoxelHitInfo& hit
+                ) {
                     if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
                     {
                         std::visit(
-                            [&hit, unit_attenuation_coeff, compute_hit](auto& grid) {
+                            [&hit, unit_attenuation_coeff, compute_hit, is_hit_computed](
+                                auto& grid
+                            ) {
                                 double effective_length = hit.m_distance_in_voxel;
                                 if (unit_attenuation_coeff != 0.0)
                                     effective_length =
@@ -122,13 +123,13 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
                                     grid.add_length_count_and_variance(
                                         hit.m_index,
                                         effective_length,
-                                        compute_hit && hit.m_is_destination
+                                        compute_hit && !is_hit_computed
                                     );
                                 else
                                     grid.add_length_and_count(
                                         hit.m_index,
                                         effective_length,
-                                        compute_hit && hit.m_is_destination
+                                        compute_hit && !is_hit_computed
                                     );
                             },
                             grid
@@ -137,9 +138,9 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
                     else
                     {
                         std::visit(
-                            [&hit](auto& grid) {
+                            [&hit, is_hit_computed](auto& grid) {
                                 grid.add_length_and_count(
-                                    hit.m_index, hit.m_distance_in_voxel, hit.m_is_destination
+                                    hit.m_index, hit.m_distance_in_voxel, !is_hit_computed
                                 );
                             },
                             grid
@@ -148,7 +149,7 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
 
                     if (compute_hit)
                     {
-                        if (hit.m_is_destination)
+                        if (!is_hit_computed)
                         {
                             std::visit(
                                 [&hit](auto& grid) {
@@ -156,22 +157,32 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
                                 },
                                 grid
                             );
+                            is_hit_computed = true;
                         }
                     }
+                },
+                beam_dir.norm()
+            );
 
-                    if (compute_occlusion && (start_computing_occlusion || hit.m_is_destination))
-                    {
-                        start_computing_occlusion = true;
+            if (compute_occlusion)
+            {
+                const Vector beam_to_point{pt - scan_origin};
+                grid_traversal(
+                    Beam{pt, beam_to_point},
+                    [&grid](const VoxelHitInfo& hit) {
                         std::visit(
-                            [&hit](auto& grid) {
-                                grid.add_potential_length_and_count(hit.m_index, hit.m_distance_in_voxel);
+                            [&hit](auto&& grid) {
+                                grid.add_potential_length_and_count(
+                                    hit.m_index, hit.m_distance_in_voxel
+                                );
                             },
                             grid
                         );
-                    }
-                },
-                max_distance
-            );
+                    },
+                    std::numeric_limits<double>::infinity()
+                );
+            }
+
             progress.increase_progression_by(1);
         }
     };
