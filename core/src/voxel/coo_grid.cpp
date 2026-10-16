@@ -48,9 +48,14 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
         std::vector<unsigned int> all_indexes;
         all_indexes.resize(ChunkedGrid::VoxelChunk::s_cell_count);
         std::iota(all_indexes.begin(), all_indexes.end(), 0);
-        auto index_with_data = all_indexes | std::views::filter([&chunk](auto idx) -> bool {
-                                   return chunk->m_counts[idx] != 0;
-                               });
+        auto index_with_data =
+            all_indexes | std::views::filter([&chunk, this](auto idx) -> bool {
+                if (m_uses_occlusion)
+                    return chunk->m_counts[idx] != 0 || chunk->m_potential_counts[idx] != 0;
+                else
+                    return chunk->m_counts[idx] != 0;
+            });
+
         std::vector<Index3D> index3d_with_data;
         std::ranges::transform(
             index_with_data,
@@ -103,15 +108,9 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
             }),
             std::back_inserter(m_counts)
         );
+
         if (!chunk->m_potential_counts.empty())
         {
-            std::ranges::copy(
-                index_with_data |
-                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
-                        return chunk->m_potential_counts[index];
-                    }),
-                std::back_inserter(m_potential_counts)
-            );
         }
 
         std::ranges::copy(
@@ -128,7 +127,7 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
             std::back_inserter(m_hits_lengths)
         );
 
-        if (!chunk->m_potential_lengths.empty())
+        if (m_uses_occlusion)
         {
             std::ranges::copy(
                 index_with_data | std::views::transform([&chunk](const size_t& index) -> double {
@@ -136,9 +135,17 @@ COOGrid::COOGrid(const ChunkedGrid& grid)
                 }),
                 std::back_inserter(m_potential_lengths)
             );
+
+            std::ranges::copy(
+                index_with_data |
+                    std::views::transform([&chunk](const size_t& index) -> unsigned int {
+                        return chunk->m_potential_counts[index];
+                    }),
+                std::back_inserter(m_potential_counts)
+            );
         }
 
-        if (!chunk->m_lengths_variance.empty())
+        if (m_uses_variance)
         {
             auto chunk_lengths_variance =
                 index_with_data |
@@ -191,9 +198,13 @@ COOGrid::COOGrid(const DenseGrid& grid)
     std::vector<unsigned int> all_indexes;
     all_indexes.resize(grid.m_counts.size());
     std::iota(all_indexes.begin(), all_indexes.end(), 0);
-    auto index_with_data = all_indexes | std::views::filter([&grid](auto idx) -> bool {
-                               return grid.m_counts[idx] != 0;
-                           });
+    auto index_with_data =
+        all_indexes | std::views::filter([&grid, this](auto idx) -> bool {
+            if (m_uses_occlusion)
+                return grid.m_counts[idx] != 0 || grid.m_potential_counts[idx] != 0;
+            else
+                return grid.m_counts[idx] != 0;
+        });
     std::vector<Index3D> index3d_with_data;
     std::ranges::transform(
         index_with_data, std::back_inserter(index3d_with_data), [&grid](size_t idx) -> Index3D {
@@ -290,6 +301,13 @@ COOGrid::COOGrid(const DenseGrid& grid)
 
     if (m_uses_occlusion)
     {
+        std::ranges::copy(
+            index_with_data | std::views::transform([&grid](const size_t& index) -> unsigned int {
+                return grid.m_potential_counts[index];
+            }),
+            m_potential_counts.begin()
+        );
+
         std::ranges::copy(
             index_with_data | std::views::transform([&grid](const size_t& index) -> double {
                 return grid.m_potential_lengths[index];

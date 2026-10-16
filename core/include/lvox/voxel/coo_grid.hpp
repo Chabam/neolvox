@@ -178,18 +178,24 @@ class COOGrid
                 m_grid->m_ys.begin() + m_index,
                 m_grid->m_zs.begin() + m_index,
                 m_grid->m_counts.begin() + m_index,
-                m_grid->m_potential_counts.begin() + m_index,
+                {}, // potential counts
                 m_grid->m_hits.begin() + m_index,
                 m_grid->m_pads.begin() + m_index,
                 m_grid->m_lengths.begin() + m_index,
                 m_grid->m_hits_lengths.begin() + m_index,
-                m_grid->m_potential_lengths.begin() + m_index,
-                {}
+                {}, // potential lengths
+                {} // lengths variance
             };
 
             if (m_grid->m_uses_variance)
             {
                 m_value.lengths_variance = m_grid->m_lengths_variance.begin() + m_index;
+            }
+
+            if (m_grid->m_uses_occlusion)
+            {
+                m_value.potential_counts = m_grid->m_potential_counts.begin() + m_index;
+                m_value.potential_lengths = m_grid->m_potential_lengths.begin() + m_index;
             }
         }
     };

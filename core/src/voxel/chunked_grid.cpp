@@ -1,8 +1,5 @@
 #include <atomic>
-#include <format>
-#include <iterator>
 #include <mutex>
-#include <ranges>
 
 #include <lvox/algorithms/pad_estimators.hpp>
 #include <lvox/logger/logger.hpp>
@@ -35,6 +32,8 @@ ChunkedGrid::ChunkedGrid(
 
 ChunkedGrid::ChunkedGrid(ChunkedGrid&& other)
     : m_bounded_grid{std::move(other.m_bounded_grid)}
+    , m_compute_variance{std::move(other.m_compute_variance)}
+    , m_compute_occlusion{std::move(other.m_compute_occlusion)}
     , m_chunks_x{std::move(other.m_chunks_x)}
     , m_chunks_y{std::move(other.m_chunks_y)}
     , m_chunks_z{std::move(other.m_chunks_z)}
@@ -47,19 +46,19 @@ ChunkedGrid::ChunkedGrid(ChunkedGrid&& other)
 ChunkedGrid::VoxelChunk::VoxelChunk(bool compute_variance, bool compute_occlusion)
     : m_hits{s_cell_count, std::allocator<unsigned int>{}}
     , m_counts{s_cell_count, std::allocator<unsigned int>{}}
-    , m_potential_counts{std::invoke([this, compute_occlusion]() -> std::vector<unsigned int> {
+    , m_potential_counts{std::invoke([compute_occlusion]() -> std::vector<unsigned int> {
         if (compute_occlusion)
             return std::vector<unsigned int>{s_cell_count, std::allocator<unsigned int>{}};
         return {};
     })}
     , m_lengths{s_cell_count, std::allocator<double>{}}
     , m_hits_lengths{s_cell_count, std::allocator<double>{}}
-    , m_potential_lengths{std::invoke([this, compute_occlusion]() -> std::vector<double> {
+    , m_potential_lengths{std::invoke([compute_occlusion]() -> std::vector<double> {
         if (compute_occlusion)
             return std::vector<double>{s_cell_count, std::allocator<double>{}};
         return {};
     })}
-    , m_lengths_variance{std::invoke([this, compute_variance]() -> std::vector<double> {
+    , m_lengths_variance{std::invoke([compute_variance]() -> std::vector<double> {
         if (compute_variance)
             return std::vector<double>{s_cell_count, std::allocator<double>{}};
         return {};
@@ -153,8 +152,8 @@ void ChunkedGrid::add_potential_length_and_count(const Index3D &idx, double leng
     const auto  voxel_idx_in_chunk = chunk->index3d_to_flat_idx(m_bounded_grid.index_bounds(), idx);
 
     std::lock_guard lock{chunk->m_write_access};
-    chunk->m_lengths[voxel_idx_in_chunk] += length;
-    chunk->m_counts[voxel_idx_in_chunk] += 1;
+    chunk->m_potential_lengths[voxel_idx_in_chunk] += length;
+    chunk->m_potential_counts[voxel_idx_in_chunk] += 1;
 }
 
 

@@ -61,9 +61,12 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
         unit_attenuation_coeff =
             options.m_smallest_element_area / (voxel_size * voxel_size * voxel_size);
     }
+    const bool compute_occlusion = options.m_compute_occlusion;
 
-    const auto ray_trace = [&](const PointRange& points) -> void {
-        const bool compute_occlusion = options.m_compute_occlusion;
+    const auto ray_trace =
+        [&scan, &grid, &progress, &grid_traversal, compute_occlusion, unit_attenuation_coeff](
+            const PointRange& points
+        ) -> void {
         for (const auto& timed_point : points)
         {
             const double gps_time = timed_point.gps_time();
@@ -102,7 +105,7 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
 
             grid_traversal(
                 Beam{point_origin, beam_dir},
-                [&grid, unit_attenuation_coeff, compute_hit, &is_hit_computed, compute_occlusion](
+                [&grid, unit_attenuation_coeff, compute_hit, &is_hit_computed](
                     const VoxelHitInfo& hit
                 ) {
                     if constexpr (pe::estimator_uses_effective_lengths<PadEstimator>::value)
@@ -178,8 +181,7 @@ void explore_grid_impl(Grid& grid, const ScanT& scan, const ComputeOptions& opti
                             },
                             grid
                         );
-                    },
-                    std::numeric_limits<double>::infinity()
+                    }
                 );
             }
 

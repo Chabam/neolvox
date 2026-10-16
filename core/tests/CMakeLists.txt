@@ -35,7 +35,8 @@ target_sources(lvox_tests
     voxel/test_grid_create_from_point_cloud.cpp
     voxel/test_grid_creation_from_bounds.cpp
     voxel/test_grid_index_of_point.cpp
-    voxel/test_grid_traversal.cpp
+    voxel/test_grid_occlusion_computing.cpp
+    voxel/test_grid_trace_beam.cpp
     voxel/test_grid_voxel_bounds.cpp
     voxel/test_grid_voxel_bounds_from_point.cpp
 )

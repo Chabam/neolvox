@@ -6,7 +6,7 @@
 #include <lvox/types.hpp>
 #include <lvox/voxel/grid.hpp>
 
-TEST(grid, grid_traversal_x_axis)
+TEST(grid, trace_beam_x_axis)
 {
 
     const double dim_x = 8;
@@ -70,7 +70,7 @@ TEST(grid, grid_traversal_x_axis)
     }
 }
 
-TEST(grid, grid_traversal_y_axis)
+TEST(grid, trace_beam_y_axis)
 {
 
     const double dim_x = 8;
@@ -134,7 +134,7 @@ TEST(grid, grid_traversal_y_axis)
     }
 }
 
-TEST(grid, grid_traversal_z_axis)
+TEST(grid, trace_beam_z_axis)
 {
 
     const double dim_x = 8;
@@ -197,7 +197,7 @@ TEST(grid, grid_traversal_z_axis)
     }
 }
 
-TEST(grid, grid_traversal_diagonals)
+TEST(grid, trace_beam_diagonals)
 {
 
     const double dim_x = 10;
@@ -304,7 +304,7 @@ TEST(grid, grid_traversal_diagonals)
     }
 }
 
-TEST(grid, grid_traversal_max_distance)
+TEST(grid, trace_beam_max_distance)
 {
 
     const double dim_x = 8;
@@ -348,7 +348,7 @@ TEST(grid, grid_traversal_max_distance)
     }
 }
 
-TEST(grid, grid_traversal_exact_distance_in_voxel)
+TEST(grid, trace_beam_exact_distance_in_voxel)
 {
     const double dim_x = 10;
     const double dim_y = 20;
@@ -424,7 +424,7 @@ TEST(grid, grid_traversal_exact_distance_in_voxel)
     }
 }
 
-TEST(grid, grid_traversal_rounding_distance_in_voxel)
+TEST(grid, trace_beam_rounding_distance_in_voxel)
 {
     const double dim_x = 10;
     const double dim_y = 20;
