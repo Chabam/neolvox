@@ -286,6 +286,7 @@ Rcpp::List do_lvox_computation(
     std::string              padEstimator,
     double                   voxelSize,
     bool                     useSparseGrid,
+    bool                     computeOcclusion,
     unsigned int             requiredCounts,
     bool                     exportIntermediateData,
     lvox::Bounds<double>     bounds,
@@ -302,6 +303,7 @@ Rcpp::List do_lvox_computation(
         .m_required_counts       = requiredCounts,
         .m_smallest_element_area = smallestElementArea,
         .m_use_classification    = useClassification,
+        .m_compute_occlusion     = computeOcclusion,
         .m_bounds                = bounds,
         .m_log_stream            = Rcpp::Rcout
     };
@@ -314,6 +316,12 @@ Rcpp::List do_lvox_computation(
         Rcpp::Named("PAD") = grid.pads()
     );
 
+    if (computeOcclusion)
+    {
+        df.push_back(grid.potential_counts(), "PotentialCounts");
+        df.push_back(grid.potential_lengths(), "PotentialLengths");
+    }
+
     if (exportIntermediateData)
     {
         df.push_back(grid.hits(), "Hits");
@@ -323,6 +331,7 @@ Rcpp::List do_lvox_computation(
         if (!grid.lengths_variance().empty())
             df.push_back(grid.lengths_variance(), "LengthsVariance");
     }
+
 
     auto new_grid = Rcpp::List::create(
         Rcpp::Named("data")       = df,
@@ -375,6 +384,7 @@ double missingHitsPADValue()
 //' @param padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE)
 //' @param voxelSize The size of the voxels in the grid in meters
 //' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory.
+//' @param computeOcclusion Whether or not to compute the occluded areas in the grid
 //' @param requiredCounts The number of ray required for PAD computation, if the amount of rays that
 //'    entered the voxel is lower than this number it will be excluded from the estimation
 //' @param exportIntermediateData Whether or not to export all intermediate data from the
@@ -403,8 +413,9 @@ Rcpp::List estimatePADWithTrajectory(
     const Rcpp::List&                   trajectory,
     std::string                         padEstimator             = "BCMLE",
     double                              voxelSize                = 0.5,
-    unsigned int                        requiredCounts           = 5,
     bool                                useSparseGrid            = false,
+    bool                                computeOcclusion         = false,
+    unsigned int                        requiredCounts           = 5,
     bool                                exportIntermediateData   = false,
     Rcpp::Nullable<Rcpp::List>          bounds                   = R_NilValue,
     double                              smallestElementArea      = 0,
@@ -463,6 +474,7 @@ Rcpp::List estimatePADWithTrajectory(
         voxelSize,
         useSparseGrid,
         requiredCounts,
+        computeOcclusion,
         exportIntermediateData,
         lvox_bounds,
         smallestElementArea,
@@ -479,6 +491,7 @@ Rcpp::List estimatePADWithTrajectory(
 //' @param padEstimator Accronym for the PAD estimator to use (BL, CF, UPLBL and BCMLE)
 //' @param voxelSize The size of the voxels in the grid in meters
 //' @param useSparseGrid Whether or not to use sparse grid for computation, it should take less memory.
+//' @param computeOcclusion Whether or not to compute the occluded areas in the grid
 //' @param requiredCounts The number of ray required for PAD computation, if the amount of rays that
 //'    entered the voxel is lower than this number it will be excluded from the estimation
 //' @param threadCount The amount of parallel processing thread to use. Set this to your
@@ -507,8 +520,9 @@ Rcpp::List estimatePADWithMultipleScans(
     const Rcpp::List&                   scannersOrigin,
     std::string                         padEstimator             = "BCMLE",
     double                              voxelSize                = 0.5,
-    unsigned int                        requiredCounts           = 5,
     bool                                useSparseGrid            = false,
+    bool                                computeOcclusion         = false,
+    unsigned int                        requiredCounts           = 5,
     bool                                exportIntermediateData   = false,
     Rcpp::Nullable<Rcpp::List>          bounds                   = R_NilValue,
     double                              smallestElementArea      = 0,
@@ -598,6 +612,7 @@ Rcpp::List estimatePADWithMultipleScans(
         padEstimator,
         voxelSize,
         useSparseGrid,
+        computeOcclusion,
         requiredCounts,
         exportIntermediateData,
         lvox_bounds,
