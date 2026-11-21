@@ -1,5 +1,5 @@
 # Test utils
-add_library(lvox_test_utils)
+add_library(lvox_test_utils SHARED)
 
 target_sources(lvox_test_utils
   PRIVATE
