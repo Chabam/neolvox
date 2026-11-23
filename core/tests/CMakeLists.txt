@@ -4,7 +4,7 @@ if (WIN32)
   # MSVC requirement...
   add_library(lvox_test_utils SHARED)
   # Can't be bothered to do that `dllexport' thing on Windows...
-  set(WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 else()
   add_library(lvox_test_utils STATIC)
 endif()
@@ -62,7 +62,6 @@ target_link_libraries(lvox_tests
 
 if (WIN32)
   target_compile_definitions(lvox_tests PRIVATE NOMINMAX)
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 
 target_include_directories(lvox_tests PUBLIC ${neolvox_SOURCE_DIR}/include)

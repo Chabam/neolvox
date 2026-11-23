@@ -5,7 +5,7 @@ if (WIN32)
   # MSVC requirement...
   add_library(lvox_core SHARED)
   # Can't be bothered to do that `dllexport' thing on Windows...
-  set(WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 else()
   add_library(lvox_core STATIC)
 endif()
