@@ -1,5 +1,14 @@
 # Test utils
-add_library(lvox_test_utils STATIC)
+
+if (WIN32)
+  # MSVC requirement...
+  add_library(lvox_test_utils SHARED)
+  # Can't be bothered to do that `dllexport' thing on Windows...
+  set(WINDOWS_EXPORT_ALL_SYMBOLS ON)
+else()
+  add_library(lvox_test_utils STATIC)
+endif()
+
 
 target_sources(lvox_test_utils
   PRIVATE

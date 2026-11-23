@@ -1,7 +1,14 @@
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(lvox_core STATIC)
+if (WIN32)
+  # MSVC requirement...
+  add_library(lvox_core SHARED)
+  # Can't be bothered to do that `dllexport' thing on Windows...
+  set(WINDOWS_EXPORT_ALL_SYMBOLS ON)
+else()
+  add_library(lvox_core STATIC)
+endif()
 
 target_sources(lvox_core
   PUBLIC
@@ -43,11 +50,6 @@ endif()
 check_cxx_compiler_flag("-mavx2" COMPILER_SUPPORTS_AVX2)
 if (COMPILER_SUPPORTS_AVX2)
     target_compile_options(lvox_core PRIVATE -mavx2)
-endif()
-
-if (WIN32)
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-
 endif()
 
 if(BUILD_TESTING)
