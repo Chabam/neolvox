@@ -30,6 +30,11 @@ target_include_directories(lvox_core
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+set_target_properties(lvox_core
+  PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 target_compile_definitions(lvox_core PUBLIC $<$<CONFIG:Debug>:LVOX_DEBUG>)
 
 add_library(lvox::core ALIAS lvox_core)
@@ -47,6 +52,7 @@ endif()
 
 if (WIN32)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+
 endif()
 
 if(BUILD_TESTING)
