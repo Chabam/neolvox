@@ -1,7 +1,7 @@
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(lvox_core SHARED)
+add_library(lvox_core STATIC)
 
 target_sources(lvox_core
   PUBLIC
@@ -28,11 +28,6 @@ endif()
 target_include_directories(lvox_core
   PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-set_target_properties(lvox_core
-  PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
 target_compile_definitions(lvox_core PUBLIC $<$<CONFIG:Debug>:LVOX_DEBUG>)
