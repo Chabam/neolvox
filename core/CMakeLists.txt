@@ -45,6 +45,10 @@ if (COMPILER_SUPPORTS_AVX2)
     target_compile_options(lvox_core PRIVATE -mavx2)
 endif()
 
+if (WIN32)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()
