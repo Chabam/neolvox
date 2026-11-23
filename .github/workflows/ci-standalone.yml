@@ -61,6 +61,13 @@ jobs:
         run: cmake --build build --config Release
 
       - name: Test
+        if: runner.os == 'Linux'
         run: |
              cd build
+             ctest
+
+      - name: Test
+        if: runner.os == 'Windows'
+        run: |
+             cd build\Release
              ctest
