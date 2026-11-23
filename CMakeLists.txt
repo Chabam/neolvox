@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.26)
 
-cmake_policy(SET CMP0091 NEW)
-
 project(neolvox VERSION 0.0.16 LANGUAGES CXX)
 
 option("LVOX_COMPUTREE_BINDINGS" "Enables binding with the Computree's platform" OFF)
