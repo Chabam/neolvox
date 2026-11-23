@@ -57,5 +57,5 @@ jobs:
       - name: Configure project
         run: cmake --preset standalone-conan-dev -DCMAKE_BUILD_TYPE=Release
 
-      # - name: Build
-      #   run: cmake --build build
+      - name: Build
+        run: cmake --build build
