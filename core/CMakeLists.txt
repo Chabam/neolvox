@@ -46,7 +46,7 @@ if (COMPILER_SUPPORTS_AVX2)
 endif()
 
 if (WIN32)
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 
 if(BUILD_TESTING)

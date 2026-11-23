@@ -26,7 +26,7 @@ set_target_properties(lvox
 
 if (WIN32)
   target_compile_definitions(lvox PRIVATE NOMINMAX)
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 
 include(InstallRequiredSystemLibraries)

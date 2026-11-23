@@ -53,7 +53,7 @@ target_link_libraries(lvox_tests
 
 if (WIN32)
   target_compile_definitions(lvox_tests PRIVATE NOMINMAX)
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 
 target_include_directories(lvox_tests PUBLIC ${neolvox_SOURCE_DIR}/include)
